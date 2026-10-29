@@ -38,7 +38,8 @@
         },
         "files": [
             "app/Helpers/emailSendHelper.php",
-            "app/Helpers/NotificationHelper.php"
+            "app/Helpers/NotificationHelper.php",
+            "app/Helpers/tenant_helpers.php"
         ]
     },
     "autoload-dev": {

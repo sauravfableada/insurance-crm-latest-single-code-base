@@ -31,7 +31,7 @@
             // Validation
             if (!email || !password) {
                 alertBox.classList.remove('d-none');
-                alertBox.textContent = 'Please enter both email or mobile number and password';
+                alertBox.textContent = 'Please enter both username or email and password';
                 return;
             }
 
@@ -53,7 +53,9 @@
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: JSON.stringify({
+                        username: email,
                         email: email,
+                        login: email,
                         password: password,
                         device_name: 'web-browser'
                     })

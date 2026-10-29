@@ -23,6 +23,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'type',
         'password',
@@ -82,6 +83,14 @@ class User extends Authenticatable
 
     public function hasMatrixPermission(string $permission): bool
     {
+        // Enforce tenant plan boundary: if tenant does not have the module, deny
+        if (config('tenant.enabled', false) && tenant()) {
+            $module = $this->permissionToModule($permission);
+            if ($module && !tenant_has_module($module)) {
+                return false;
+            }
+        }
+
         if ($this->isAdmin()) {
             return true;
         }
@@ -97,6 +106,32 @@ class User extends Authenticatable
         } catch (\Throwable $e) {
             return false;
         }
+    }
+
+    protected function permissionToModule(string $permission): ?string
+    {
+        static $map = [
+            'view_customers' => 'Customers', 'create_customers' => 'Customers', 'edit_customers' => 'Customers', 'delete_customers' => 'Customers',
+            'view_family_groups' => 'Family Groups', 'create_family_groups' => 'Family Groups', 'edit_family_groups' => 'Family Groups', 'delete_family_groups' => 'Family Groups',
+            'view_insurance' => 'Insurance', 'create_insurance' => 'Insurance', 'edit_insurance' => 'Insurance', 'delete_insurance' => 'Insurance',
+            'view_investments' => 'Investments', 'create_investments' => 'Investments', 'edit_investments' => 'Investments', 'delete_investments' => 'Investments',
+            'view_policies' => 'Policies', 'create_policies' => 'Policies', 'edit_policies' => 'Policies', 'delete_policies' => 'Policies',
+            'view_commission_rules' => 'Commissions', 'create_commission_rules' => 'Commissions', 'edit_commission_rules' => 'Commissions', 'delete_commission_rules' => 'Commissions',
+            'view_masters' => 'Masters',
+            'view_endorsements' => 'Endorsements', 'create_endorsements' => 'Endorsements', 'edit_endorsements' => 'Endorsements', 'delete_endorsements' => 'Endorsements',
+            'view_documents' => 'Documents', 'create_documents' => 'Documents', 'edit_documents' => 'Documents', 'delete_documents' => 'Documents',
+            'view_tasks' => 'Tasks', 'create_tasks' => 'Tasks', 'edit_tasks' => 'Tasks', 'delete_tasks' => 'Tasks',
+            'view_prospects' => 'Prospects', 'create_prospects' => 'Prospects', 'edit_prospects' => 'Prospects', 'delete_prospects' => 'Prospects',
+            'view_followups' => 'Followups', 'create_followups' => 'Followups', 'edit_followups' => 'Followups', 'delete_followups' => 'Followups',
+            'view_leads' => 'Leads', 'create_leads' => 'Leads', 'edit_leads' => 'Leads', 'delete_leads' => 'Leads',
+            'view_meetings' => 'Meetings', 'create_meetings' => 'Meetings', 'edit_meetings' => 'Meetings', 'delete_meetings' => 'Meetings',
+            'view_reports' => 'Reports',
+            'view_email' => 'Marketing', 'create_email' => 'Marketing', 'edit_email' => 'Marketing', 'delete_email' => 'Marketing',
+            'view_users' => 'Staff', 'create_users' => 'Staff', 'edit_users' => 'Staff', 'delete_users' => 'Staff',
+            'view_projects' => 'Projects',
+        ];
+
+        return $map[$permission] ?? null;
     }
 
     public function assignedDeals()

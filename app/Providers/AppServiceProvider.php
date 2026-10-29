@@ -19,6 +19,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(\App\Services\Tenancy\TenantManager::class);
+
+        $tenantHelpers = app_path('Helpers/tenant_helpers.php');
+        if (file_exists($tenantHelpers)) {
+            require_once $tenantHelpers;
+        }
+
         $legacyHelpers = app_path('Support/legacy_helpers.php');
         if (file_exists($legacyHelpers)) {
             require_once $legacyHelpers;
@@ -30,6 +37,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $tenancy = $this->app->make(\App\Services\Tenancy\TenantManager::class);
+
+        if ($tenancy->enabled() && $this->app->runningInConsole() && ($tenantId = (int) getenv('TENANT_ID')) > 0) {
+            $tenancy->activateById($tenantId);
+        }
+
         \Illuminate\Pagination\Paginator::useBootstrapFive();
 
         \App\Models\Deal::observe(\App\Observers\DealObserver::class);
@@ -50,12 +63,17 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\ProductCategory::observe(\App\Observers\ProductCategoryObserver::class);
         \App\Models\Service::observe(\App\Observers\ServiceObserver::class);
 
-        View::composer(['layouts.app', 'profile.show'], function ($view): void {
+        View::composer(['layouts.app', 'profile.show', 'layouts.sidebar'], function ($view): void {
+            $currentTenant = tenant();
+            $currentClientId = tenant('client_id');
+            $tenantPlanName = tenant('plan_name');
+            $tenantModules = tenant('modules', []);
+
             $googleCalendarConnected = false;
             $googleConnectionEnabled = false;
             $isBasicPlan = false;
-            $currentPlanName = null;
-            $currentPlanDisplayName = 'No Plan';
+            $currentPlanName = $tenantPlanName;
+            $currentPlanDisplayName = $tenantPlanName ?: 'No Plan';
             $currentPlanStaffLimit = 0;
             $currentPlanStaffCount = 0;
             $currentPlanPurchasedAt = null;
@@ -160,10 +178,14 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $view->with([
+                'currentTenant' => $currentTenant,
+                'currentClientId' => $currentClientId,
+                'tenantPlanName' => $tenantPlanName,
+                'tenantModules' => $tenantModules,
                 'companyLogoUrl' => $companyLogoUrl,
                 'shortCompanyLogoUrl' => $shortCompanyLogoUrl,
                 'companyFaviconUrl' => $companyFaviconUrl,
-                'companyName' => $companyName,
+                'companyName' => $companyName ?: ($currentTenant['brand_name'] ?? ($currentTenant['client_name'] ?? null)),
                 'isBasicPlan' => $isBasicPlan,
                 'currentPlanDisplayName' => $currentPlanDisplayName,
                 'currentPlanStaffLimit' => $currentPlanStaffLimit,

@@ -24,14 +24,26 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
-        // Validate input
-        $request->validate([
-            'email' => 'required|string',
-            'password' => 'required',
-        ]);
+        $loginInput = trim((string) (
+            $request->input('username') 
+            ?? $request->input('email') 
+            ?? $request->input('login') 
+            ?? ''
+        ));
+        $password = (string) $request->input('password');
 
-        $loginInput = trim($request->string('email')->toString());
-        $password = $request->string('password')->toString();
+        if ($loginInput === '' || $password === '') {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Please provide a username/email and password.'], 422);
+            }
+            return back()->withErrors(['email' => 'Please provide a username/email and password.'])->withInput();
+        }
+
+        // When multi-tenancy is active, resolve tenant and switch DB before querying credentials
+        if ($tenantError = $this->ensureTenantResolved($request, $loginInput)) {
+            return $tenantError;
+        }
+
         $digitsOnly = preg_replace('/[^0-9]/', '', $loginInput);
 
         // Check if customer account (by email, phone or whatsapp)
@@ -77,10 +89,13 @@ class AuthController extends Controller
             }
         }
 
-        // Find active user (by email or phone)
+        // Find active user (by username, email or phone)
         $user = \App\Models\User::where('is_active', true)
             ->where(function ($query) use ($loginInput, $digitsOnly) {
-                $query->where('email', $loginInput);
+                if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'username')) {
+                    $query->where('username', $loginInput);
+                }
+                $query->orWhere('email', $loginInput);
                 if (!empty($digitsOnly)) {
                     $query->orWhere('phone', $loginInput)
                           ->orWhere('phone', 'like', '%' . $digitsOnly);
@@ -101,6 +116,12 @@ class AuthController extends Controller
         // Authenticate user (session-based)
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+
+        $tenancy = app(\App\Services\Tenancy\TenantManager::class);
+        if ($tenancy->enabled() && $tenancy->current()) {
+            $request->session()->put('tenant_id', $tenancy->current()['id']);
+            $request->session()->put('tenant', $tenancy->current());
+        }
         // The dashboard consumes this marker once. A new successful login sets it
         // again, so dismissing the renewal reminder never hides it on later logins.
         $request->session()->put('show_renewal_policies_modal', true);
@@ -166,6 +187,7 @@ class AuthController extends Controller
             return $response;
         }
 
+        $targetUrl = route('dashboard');
         $redirectUrl = session()->get('url.intended', $targetUrl);
         if (!$user->isAdmin() && (str_contains($redirectUrl, '/users') || str_contains($redirectUrl, '/roles'))) {
             $redirectUrl = $targetUrl;
@@ -201,6 +223,10 @@ class AuthController extends Controller
             }
         }
 
+        if ($request->hasSession()) {
+            $request->session()->forget(['tenant_id', 'tenant']);
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -210,5 +236,44 @@ class AuthController extends Controller
         $response->cookie(cookie()->forget('crm_auth_token'));
         
         return $response;
+    }
+
+    /**
+     * Resolve and activate tenant before credential checks during login.
+     */
+    protected function ensureTenantResolved(Request $request, string $loginInput): ?RedirectResponse
+    {
+        $tenancy = app(\App\Services\Tenancy\TenantManager::class);
+        if (!$tenancy->enabled()) {
+            return null;
+        }
+
+        try {
+            if (\App\Http\Middleware\IdentifyTenant::isCentralHost($request->getHost())) {
+                $tenant = $tenancy->resolveByEmail($loginInput, true);
+                if ($request->hasSession()) {
+                    $request->session()->put('tenant_id', $tenant['id']);
+                    $request->session()->put('tenant', $tenant);
+                }
+            } else {
+                try {
+                    $tenancy->resolveByHost($request->getHost(), true);
+                } catch (\App\Exceptions\TenantResolutionException $hostErr) {
+                    if ($hostErr->reason === 'NOT_FOUND') {
+                        $tenant = $tenancy->resolveByEmail($loginInput, true);
+                        if ($request->hasSession()) {
+                            $request->session()->put('tenant_id', $tenant['id']);
+                            $request->session()->put('tenant', $tenant);
+                        }
+                    } else {
+                        throw $hostErr;
+                    }
+                }
+            }
+        } catch (\App\Exceptions\TenantResolutionException $e) {
+            return back()->withInput($request->only('email'))->withErrors(['email' => $e->getMessage()]);
+        }
+
+        return null;
     }
 }

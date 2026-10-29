@@ -48,11 +48,11 @@
                                 @csrf
                                 <div id="loginAlert" class="alert alert-danger d-none" role="alert"></div>
 
-                                <!-- Email or Mobile Number -->
+                                <!-- Username, Email or Mobile Number -->
                                 <div class="mb-3 mb-md-3">
-                                    <label for="email" class="form-label fw-medium ps-2">Email or Mobile Number</label>
+                                    <label for="email" class="form-label fw-medium ps-2">Username or Email</label>
                                     <input id="email" type="text" class="form-control form-control-lg" name="email"
-                                        placeholder="Enter email or mobile number" required autofocus>
+                                        placeholder="Enter username or email" required autofocus>
                                 </div>
 
                                 <!-- Password -->

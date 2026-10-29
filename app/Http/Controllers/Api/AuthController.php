@@ -10,20 +10,47 @@ class AuthController extends ApiBaseController
 {
     public function login(Request $request)
     {
-        // Accept both JSON and form data
-        $request->validate([
-            'email' => 'required|string',
-            'password' => 'required',
-            'device_name' => 'nullable|string|max:255',
-        ]);
+        $loginInput = trim((string) (
+            $request->input('username') 
+            ?? $request->input('email') 
+            ?? $request->input('login') 
+            ?? ''
+        ));
+        $password = (string) $request->input('password');
 
-        $loginInput = trim($request->string('email')->toString());
-        $password = $request->string('password')->toString();
+        if ($loginInput === '' || $password === '') {
+            return $this->error('The username or email and password fields are required.', 422);
+        }
+
+        $tenancy = app(\App\Services\Tenancy\TenantManager::class);
+        if ($tenancy->enabled()) {
+            try {
+                if (\App\Http\Middleware\IdentifyTenant::isCentralHost($request->getHost())) {
+                    $tenancy->resolveByEmail($loginInput, true);
+                } else {
+                    try {
+                        $tenancy->resolveByHost($request->getHost(), true);
+                    } catch (\App\Exceptions\TenantResolutionException $hostErr) {
+                        if ($hostErr->reason === 'NOT_FOUND') {
+                            $tenancy->resolveByEmail($loginInput, true);
+                        } else {
+                            throw $hostErr;
+                        }
+                    }
+                }
+            } catch (\App\Exceptions\TenantResolutionException $e) {
+                return $this->error($e->getMessage(), in_array($e->status, [401, 403, 404, 409, 503], true) ? $e->status : 403);
+            }
+        }
+
         $digitsOnly = preg_replace('/[^0-9]/', '', $loginInput);
 
-        // First check if user exists in users table (by email or phone)
+        // First check if user exists in users table (by username, email or phone)
         $userCheck = \App\Models\User::where(function ($query) use ($loginInput, $digitsOnly) {
-            $query->where('email', $loginInput);
+            if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'username')) {
+                $query->where('username', $loginInput);
+            }
+            $query->orWhere('email', $loginInput);
             if (!empty($digitsOnly)) {
                 $query->orWhere('phone', $loginInput)
                       ->orWhere('phone', 'like', '%' . $digitsOnly);

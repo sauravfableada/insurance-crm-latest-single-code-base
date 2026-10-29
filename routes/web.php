@@ -84,6 +84,14 @@ Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/', [AuthController::class, 'login'])->name('login.root');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Tenant storage routes for isolated client uploads
+Route::get('storage/{path}', \App\Http\Controllers\TenantStorageController::class)
+    ->where('path', '.*')
+    ->name('tenant.storage');
+Route::get('public/storage/{path}', \App\Http\Controllers\TenantStorageController::class)
+    ->where('path', '.*')
+    ->name('tenant.storage.public');
 Route::get('/whatsapp-configration/webhook', [WhatsappWebhookController::class, 'verify']);
 Route::post('/whatsapp-configration/webhook', [WhatsappWebhookController::class, 'handle']);
 
@@ -797,6 +805,13 @@ Route::get('uploads/investments/{path}', function ($path) {
     }
     abort(404);
 })->where('path', '.*');
+
+Route::get('uploads/{path}', \App\Http\Controllers\TenantStorageController::class)
+    ->where('path', '.*')
+    ->name('tenant.uploads');
+Route::get('public/uploads/{path}', \App\Http\Controllers\TenantStorageController::class)
+    ->where('path', '.*')
+    ->name('tenant.uploads.public');
 
 Route::get('/manifest.json', function () {
     $companyName = \App\Models\Setting::query()->where('key', 'company_name')->value('value') ?: 'Fablead CRM';
