@@ -136,9 +136,11 @@ class CustomerPortalController extends Controller
 
         if (!empty($search)) {
             $policiesQuery->where(function ($q) use ($search) {
-                $q->where('policy_number', 'like', "%{$search}%")
-                  ->orWhere('policy_number_no', 'like', "%{$search}%")
-                  ->orWhere('vehicle_registration_number', 'like', "%{$search}%");
+                $q->where('policy_number', 'like', "%{$search}%");
+                if (\Illuminate\Support\Facades\Schema::hasColumn('policies', 'policy_number_no')) {
+                    $q->orWhere('policy_number_no', 'like', "%{$search}%");
+                }
+                $q->orWhere('vehicle_registration_number', 'like', "%{$search}%");
             });
         }
 

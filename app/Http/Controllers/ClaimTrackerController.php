@@ -14,14 +14,29 @@ use Illuminate\Validation\Rule;
 
 class ClaimTrackerController extends Controller
 {
+    private function policyNumberColumn(): string
+    {
+        return \Illuminate\Support\Facades\Schema::hasColumn('policies', 'policy_number_no')
+            ? 'policy_number_no'
+            : 'policy_number';
+    }
+
     public function index(Request $request)
     {
+        $col = $this->policyNumberColumn();
         $claims = $this->filteredClaims($request)->latest()->get();
         $filterPolicies = Policy::query()
-            ->whereNotNull('policy_number_no')
-            ->where('policy_number_no', '!=', '')
-            ->orderBy('policy_number_no')
-            ->get(['id', 'policy_number_no']);
+            ->whereNotNull($col)
+            ->where($col, '!=', '')
+            ->orderBy($col)
+            ->get(['id', $col]);
+
+        if ($col !== 'policy_number_no') {
+            $filterPolicies->each(function ($pol) {
+                $pol->policy_number_no = $pol->policy_number;
+            });
+        }
+
         $filterCustomers = Customer::query()->whereHas('policies', fn ($query) => $query->whereNull('deleted_at'))
             ->orderBy('name')->get(['id', 'name']);
         return view('claim-tracker.index', compact('claims', 'filterPolicies', 'filterCustomers'));
@@ -151,8 +166,9 @@ class ClaimTrackerController extends Controller
             ->when($request->filled('start_date'), fn ($query) => $query->whereDate('claim_file_received_date', '>=', $request->start_date))
             ->when($request->filled('end_date'), fn ($query) => $query->whereDate('claim_file_received_date', '<=', $request->end_date))
             ->when($request->filled('policy_number'), function ($query) use ($request) {
-                $query->whereHas('policy', function ($policy) use ($request) {
-                    $policy->where('policy_number_no', 'like', '%' . $request->policy_number . '%');
+                $col = $this->policyNumberColumn();
+                $query->whereHas('policy', function ($policy) use ($request, $col) {
+                    $policy->where($col, 'like', '%' . $request->policy_number . '%');
                 });
             })
             ->when($request->filled('proposer_name'), function ($query) use ($request) {
@@ -214,11 +230,20 @@ class ClaimTrackerController extends Controller
 
     public function policies(FamilyGroup $familyGroup, Customer $proposer)
     {
-        return response()->json(Policy::with('company:id,name')
+        $col = $this->policyNumberColumn();
+        $policies = Policy::with('company:id,name')
             ->where('family_group_id', $familyGroup->id)->where('holder_id', $proposer->id)
             ->whereNull('deleted_at')
-            ->whereNotNull('policy_number_no')->where('policy_number_no', '!=', '')
-            ->orderBy('policy_number_no')->get(['id', 'policy_number_no', 'company_id']));
+            ->whereNotNull($col)->where($col, '!=', '')
+            ->orderBy($col)->get(['id', $col, 'company_id']);
+
+        if ($col !== 'policy_number_no') {
+            $policies->each(function ($pol) {
+                $pol->policy_number_no = $pol->policy_number;
+            });
+        }
+
+        return response()->json($policies);
     }
 
     public function insuredMembers(FamilyGroup $familyGroup)

@@ -32,8 +32,10 @@ class SubAgentPortalController extends Controller
 
         if (!empty($search)) {
             $commissionsQuery->whereHas('policy', function ($q) use ($search) {
-                $q->where('policy_number', 'like', "%{$search}%")
-                  ->orWhere('policy_number_no', 'like', "%{$search}%");
+                $q->where('policy_number', 'like', "%{$search}%");
+                if (\Illuminate\Support\Facades\Schema::hasColumn('policies', 'policy_number_no')) {
+                    $q->orWhere('policy_number_no', 'like', "%{$search}%");
+                }
             });
         }
 

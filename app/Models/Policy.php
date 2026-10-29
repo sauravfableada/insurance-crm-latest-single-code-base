@@ -24,6 +24,11 @@ class Policy extends Model
             ->get();
     }
 
+    public function getPolicyNumberNoAttribute($value): ?string
+    {
+        return !empty($value) ? $value : ($this->attributes['policy_number'] ?? null);
+    }
+
     public function familyGroup()
     {
         return $this->belongsTo(FamilyGroup::class, 'family_group_id');
