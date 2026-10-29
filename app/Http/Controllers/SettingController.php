@@ -217,10 +217,18 @@ class SettingController extends Controller
         });
 
         // Map agents and team members (sub_agents & staff) with commission rules
-        $agentsList = \App\Models\User::whereIn('type', ['sub_agents', 'staff'])
-            ->orWhere(function ($q) {
-                $q->whereNull('type')->where('id', '!=', 1);
+        $agentsList = \App\Models\User::where(function ($query) {
+                $query->whereIn('type', ['sub_agents', 'staff'])
+                    ->orWhere(function ($q) {
+                        $q->whereNull('type')
+                            ->where('id', '!=', 1)
+                            ->whereDoesntHave('roles', function ($rq) {
+                                $rq->whereIn('name', ['admin', 'super-admin']);
+                            });
+                    });
             })
+            ->whereNotIn('type', ['admin', 'customer', 'client'])
+            ->where('id', '!=', 1)
             ->orderBy('name')
             ->get();
 

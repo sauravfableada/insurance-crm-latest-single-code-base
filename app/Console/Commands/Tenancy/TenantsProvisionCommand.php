@@ -11,9 +11,11 @@ class TenantsProvisionCommand extends Command
 
     protected $signature = 'tenants:provision
                             {tenant : Setup ID of the client in Admin-Product}
-                            {--admin-email= : Login email for the initial admin (new databases only)}
-                            {--admin-username= : Login username for the initial admin (new databases only)}
-                            {--admin-password= : Password for the initial admin (new databases only)}';
+                            {--admin-name= : Client name / organization name of the initial admin}
+                            {--admin-username= : Login username for the initial admin}
+                            {--admin-email= : Login email for the initial admin}
+                            {--admin-phone= : Phone number for the initial admin}
+                            {--admin-password= : Password for the initial admin}';
 
     protected $description = 'Provision a client database: migrate, seed initial data, configure admin user';
 
@@ -25,11 +27,17 @@ class TenantsProvisionCommand extends Command
         }
 
         $arguments = ['tenants:setup-current'];
-        if ($email = $this->option('admin-email')) {
-            $arguments[] = '--admin-email=' . $email;
+        if ($name = $this->option('admin-name')) {
+            $arguments[] = '--admin-name=' . $name;
         }
         if ($username = $this->option('admin-username')) {
             $arguments[] = '--admin-username=' . $username;
+        }
+        if ($email = $this->option('admin-email')) {
+            $arguments[] = '--admin-email=' . $email;
+        }
+        if ($phone = $this->option('admin-phone')) {
+            $arguments[] = '--admin-phone=' . $phone;
         }
         if ($password = $this->option('admin-password')) {
             $arguments[] = '--admin-password=' . $password;
@@ -38,4 +46,3 @@ class TenantsProvisionCommand extends Command
         return $this->runArtisanForTenant($tenants[0], $arguments) ? self::SUCCESS : self::FAILURE;
     }
 }
-

@@ -94,10 +94,8 @@ class RoleSeeder extends Seeder
         // Super Admin → All permissions
         $superAdmin->syncPermissions(Permission::all());
 
-        // Admin → All except delete_users + delete_roles
-        $admin->syncPermissions(
-            Permission::whereNotIn('name', ['delete_users', 'delete_roles'])->get()
-        );
+        // Admin → All permissions (gives client admin complete system access)
+        $admin->syncPermissions(Permission::all());
 
         // Manager → Limited permissions
         $manager->syncPermissions([
@@ -148,13 +146,12 @@ class RoleSeeder extends Seeder
             'view_customers',
         ]);
 
-        // Assign super-admin to the first admin user
-        $adminUser = User::where('email', 'like', 'admin%')->first()
-                      ?? User::first();
+        // Assign admin & super-admin to the primary administrator
+        $adminUser = User::find(1) ?? User::first();
 
         if ($adminUser && $adminUser->roles->isEmpty()) {
-            $adminUser->assignRole('super-admin');
-            $this->command->info("Assigned super-admin to: {$adminUser->email}");
+            $adminUser->syncRoles(['admin', 'super-admin']);
+            $this->command->info("Assigned admin roles to: {$adminUser->email}");
         }
 
         // Display summary table
