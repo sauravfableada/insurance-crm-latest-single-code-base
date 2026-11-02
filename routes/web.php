@@ -520,6 +520,13 @@ Route::middleware('auth.api')->group(function () {
     Route::post('/settings/agent-commission', [SettingController::class, 'saveAgentCommission'])->name('settings.agent-commission.save');
     Route::post('/settings/default-commission', [SettingController::class, 'saveDefaultCommission'])->name('settings.default-commission.save');
 
+    // Field Customization settings routes
+    Route::prefix('settings/field-customization')->name('settings.field-customization.')->group(function () {
+        Route::get('/{module}', [\App\Http\Controllers\FieldCustomizationController::class, 'getFields'])->name('fields');
+        Route::post('/{module}', [\App\Http\Controllers\FieldCustomizationController::class, 'update'])->name('update');
+        Route::post('/{module}/reset', [\App\Http\Controllers\FieldCustomizationController::class, 'reset'])->name('reset');
+    });
+
     Route::post('/tutorial-videos', [\App\Http\Controllers\TutorialVideoController::class, 'store'])->name('tutorial-videos.store');
     Route::put('/tutorial-videos/{id}', [\App\Http\Controllers\TutorialVideoController::class, 'update'])->name('tutorial-videos.update');
     Route::delete('/tutorial-videos/{id}', [\App\Http\Controllers\TutorialVideoController::class, 'destroy'])->name('tutorial-videos.destroy');

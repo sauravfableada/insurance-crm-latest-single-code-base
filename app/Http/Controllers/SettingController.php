@@ -258,6 +258,14 @@ class SettingController extends Controller
             ];
         });
 
+        $fieldCustomizationService = app(\App\Services\FieldCustomizationService::class);
+        $fieldCustomizationModules = $fieldCustomizationService->getModules();
+        $initialFieldCustomizationModule = request('custom_module', 'policies');
+        if (!isset($fieldCustomizationModules[$initialFieldCustomizationModule])) {
+            $initialFieldCustomizationModule = 'policies';
+        }
+        $initialFieldCustomizationFields = $fieldCustomizationService->getModuleFields($initialFieldCustomizationModule);
+
         return view('settings.index', compact(
             'settings',
             'whatsappTemplates',
@@ -271,7 +279,10 @@ class SettingController extends Controller
             'categoriesWithCommission',
             'subTypesWithCommission',
             'policiesWithCommission',
-            'agentsWithCommission'
+            'agentsWithCommission',
+            'fieldCustomizationModules',
+            'initialFieldCustomizationModule',
+            'initialFieldCustomizationFields'
         ));
     }
 

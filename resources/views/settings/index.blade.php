@@ -85,7 +85,7 @@
 
         <div class="settings-tabs-wrap">
             <ul class="nav settings-main-tabs flex-wrap" id="settingsTabs" role="tablist">
-                <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab"
+                <li class="nav-item" role="presentation"><button class="nav-link {{ request('tab') === 'field-customization' ? '' : 'active' }}" data-bs-toggle="tab"
                         data-bs-target="#commission-settings" type="button" role="tab"><i class="fa-solid fa-percent me-1 text-primary"></i> Commission Settings</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
                         data-bs-target="#bank-signature" type="button" role="tab"><i class="fa-solid fa-building-columns me-1 text-primary"></i> Bank &amp; Signature</button></li>
@@ -103,6 +103,8 @@
                 @endunless
                 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
                         data-bs-target="#google-connect" type="button" role="tab">Google Connect</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link {{ request('tab') === 'field-customization' ? 'active' : '' }}" data-bs-toggle="tab"
+                        data-bs-target="#field-customization" type="button" role="tab"><i class="fa-solid fa-sliders me-1 text-primary"></i> Field Customization</button></li>
                 @if(false /* Feature disabled: auth()->id() === 1 || auth()->user()->email === 'harsing.fablead@gmail.com' */)
                 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
                         data-bs-target="#tutorials" type="button" role="tab">Tutorials</button></li>
@@ -112,7 +114,7 @@
 
         <div class="tab-content">
             <!-- COMMISSION SETTINGS TAB -->
-            <div class="tab-pane fade show active" id="commission-settings" role="tabpanel">
+            <div class="tab-pane fade {{ request('tab') === 'field-customization' ? '' : 'show active' }}" id="commission-settings" role="tabpanel">
                 <form action="{{ route('settings.update') }}" method="POST" id="commissionSettingsForm">
                     @csrf
                     @method('PUT')
@@ -1502,6 +1504,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- FIELD CUSTOMIZATION TAB -->
+            <div class="tab-pane fade {{ request('tab') === 'field-customization' ? 'show active' : '' }}" id="field-customization" role="tabpanel">
+                @include('settings.partials.field-customization')
             </div>
 
             @if(false /* Feature disabled */)
@@ -3194,5 +3201,6 @@
         </script>
         <script src="{{ (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/assets/js/setting.js' : '/assets/js/setting.js') }}?v={{ filemtime(public_path('assets/js/setting.js')) }}"></script>
         <script src="{{ (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/js/settings-page.js' : '/js/settings-page.js') }}?v={{ filemtime(public_path('js/settings-page.js')) }}"></script>
+        <script src="{{ (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/js/field-customization.js' : '/js/field-customization.js') }}?v={{ filemtime(public_path('js/field-customization.js')) }}"></script>
     @endpush
 @endsection

@@ -930,3 +930,192 @@
 [data-theme="dark"] .settings-panel-head.dashboard-widget-head {
     background: #0f172a;
 }
+
+/* ==========================================================================
+   Module-Wise Field Customization - Horizontal Scroller & Tab Design
+   ========================================================================== */
+.field-custom-modules-wrap {
+    margin-bottom: 1.5rem;
+}
+
+.field-custom-scroller-track {
+    position: relative;
+    width: 100%;
+}
+
+.field-custom-modules-scroller {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 0.65rem;
+    padding: 4px 2px 8px 2px;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+.field-custom-modules-scroller::-webkit-scrollbar {
+    height: 5px;
+}
+
+.field-custom-modules-scroller::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.field-custom-modules-scroller::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+.field-custom-modules-scroller::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.field-custom-mod-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    border: 1px solid #dbe4f0;
+    border-radius: 0.75rem;
+    color: #334155;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.65rem 1.05rem;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    user-select: none;
+    line-height: 1.4;
+}
+
+.field-custom-mod-btn i,
+.field-custom-mod-btn .field-mod-icon {
+    font-size: 0.95rem;
+    color: var(--settings-primary, #123c73);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.field-custom-mod-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(15, 23, 42, 0.06);
+}
+
+.field-custom-mod-btn:hover i {
+    transform: scale(1.08);
+}
+
+.field-custom-mod-btn:active {
+    transform: translateY(0);
+}
+
+.field-custom-mod-btn.active {
+    background: var(--settings-primary, #123c73) !important;
+    border-color: var(--settings-primary, #123c73) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(18, 60, 115, 0.22) !important;
+    cursor: default;
+    transform: none;
+}
+
+.field-custom-mod-btn.active i,
+.field-custom-mod-btn.active .field-mod-icon {
+    color: #ffffff !important;
+}
+
+.field-custom-scroll-btn {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #64748b;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.field-custom-scroll-btn:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+}
+
+.field-custom-scroll-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+[data-theme="dark"] .field-custom-modules-scroller {
+    scrollbar-color: #475569 #1e293b;
+}
+
+[data-theme="dark"] .field-custom-modules-scroller::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+[data-theme="dark"] .field-custom-modules-scroller::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+[data-theme="dark"] .field-custom-modules-scroller::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+[data-theme="dark"] .field-custom-mod-btn {
+    background: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .field-custom-mod-btn i,
+[data-theme="dark"] .field-custom-mod-btn .field-mod-icon {
+    color: #60a5fa;
+}
+
+[data-theme="dark"] .field-custom-mod-btn:hover {
+    background: #334155;
+    border-color: #475569;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .field-custom-mod-btn.active {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35) !important;
+}
+
+[data-theme="dark"] .field-custom-mod-btn.active i,
+[data-theme="dark"] .field-custom-mod-btn.active .field-mod-icon {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .field-custom-scroll-btn {
+    background: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .field-custom-scroll-btn:hover:not(:disabled) {
+    background: #334155;
+    border-color: #475569;
+    color: #ffffff;
+}
+
