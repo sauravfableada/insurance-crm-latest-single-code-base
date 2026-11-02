@@ -54,21 +54,23 @@ class LeadController extends Controller
     public function edit(Lead $lead)
     {
         $this->authorize('update', $lead);
-        $lead->load(['statusHistories.updater']);
+        $lead->load(['statusHistories.updater', 'kycDocument']);
         $sources = LeadSource::orderBy('name')->get();
         $stages = Stage::orderBy('name')->get();
         $users = $this->selectableUsers();
         $groups = \App\Models\FamilyGroup::orderBy('group_name')->get();
+        $kyc = $lead->kycDocument;
 
-        return view('crm.leads.edit', compact('lead', 'sources', 'stages', 'users', 'groups'));
+        return view('crm.leads.edit', compact('lead', 'sources', 'stages', 'users', 'groups', 'kyc'));
     }
 
     public function show(Lead $lead)
     {
         $this->authorize('view', $lead);
-        $lead->load(['leadSource', 'stage', 'assignedUser', 'followUps.assignedUser', 'tasks.assignedUser', 'statusHistories.updater']);
+        $lead->load(['leadSource', 'stage', 'assignedUser', 'followUps.assignedUser', 'tasks.assignedUser', 'statusHistories.updater', 'kycDocument']);
+        $kyc = $lead->kycDocument;
 
-        return view('crm.leads.show', compact('lead'));
+        return view('crm.leads.show', compact('lead', 'kyc'));
     }
 
     public function image(Lead $lead)
@@ -78,6 +80,16 @@ class LeadController extends Controller
         }
 
         return response()->file(Storage::disk('public')->path($lead->image));
+    }
+
+    public function getKyc(Lead $lead)
+    {
+        return app(\App\Http\Controllers\Api\LeadController::class)->getLeadKyc($lead);
+    }
+
+    public function saveKyc(Request $request, Lead $lead)
+    {
+        return app(\App\Http\Controllers\Api\LeadController::class)->submitLeadKyc($request, $lead);
     }
 
     public function convertToCustomer(Request $request, Lead $lead)
@@ -155,6 +167,15 @@ class LeadController extends Controller
                 'converted_customer_id' => $existing->id,
             ]);
 
+            // Sync all Lead KYC documents to the converted customer
+            try {
+                \App\Models\Document::where('documentable_type', Lead::class)
+                    ->where('documentable_id', $lead->id)
+                    ->update(['customer_id' => $existing->id]);
+            } catch (\Throwable $e) {
+                \Log::warning('Sync Lead Documents to Customer failed: ' . $e->getMessage());
+            }
+
             return $existing;
         });
 
@@ -170,6 +191,81 @@ class LeadController extends Controller
         return redirect()
             ->route('masters.customers.edit', $customer->id)
             ->with('success', 'Customer created from lead.');
+    }
+
+    public function revertFromCustomer(Request $request, Lead $lead)
+    {
+        $this->authorize('update', $lead);
+
+        if (!$lead->is_converted && !$lead->converted_customer_id) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This lead is not currently marked as converted.',
+                ], 422);
+            }
+            return redirect()->back()->with('error', 'This lead is not currently marked as converted.');
+        }
+
+        $customerId = $lead->converted_customer_id;
+        $customer = $customerId ? Customer::find($customerId) : null;
+        $customerName = $customer ? $customer->name : ('#' . $customerId);
+
+        DB::transaction(function () use ($lead, $customer, $customerId, $customerName) {
+            $newStatus = ($lead->status === 'won') ? 'qualified' : ($lead->status ?: 'qualified');
+
+            $lead->update([
+                'is_converted' => false,
+                'converted_customer_id' => null,
+                'status' => $newStatus,
+            ]);
+
+            // Decouple lead's KYC & documents from the customer
+            try {
+                \App\Models\Document::where('documentable_type', Lead::class)
+                    ->where('documentable_id', $lead->id)
+                    ->update(['customer_id' => null]);
+            } catch (\Throwable $e) {
+                \Log::warning('Decouple Lead Documents from Customer failed: ' . $e->getMessage());
+            }
+
+            // Check if other leads or policies are attached to this customer
+            $otherLeads = Lead::where('converted_customer_id', $customerId)->where('id', '!=', $lead->id)->count();
+            $hasPolicies = \App\Models\Policy::where('holder_id', $customerId)->exists();
+            $hasInvoices = class_exists(\App\Models\Invoice::class) && \App\Models\Invoice::where('customer_id', $customerId)->exists();
+
+            // If the customer record was purely created from this lead and has no policies/invoices/other leads, safely delete it
+            if ($customer && !$hasPolicies && !$hasInvoices && $otherLeads === 0) {
+                $customer->delete();
+            }
+
+            // Record status history
+            if (class_exists(\App\Models\LeadStatusHistory::class)) {
+                \App\Models\LeadStatusHistory::create([
+                    'lead_id' => $lead->id,
+                    'status' => $newStatus,
+                    'comment' => "Conversion reverted back from Customer ({$customerName}). Restored to active lead.",
+                    'user_id' => auth()->id() ?: ($lead->user_id ?? 1),
+                ]);
+            }
+
+            if (class_exists(\App\Services\UserLogService::class)) {
+                app(\App\Services\UserLogService::class)->updated($lead);
+            }
+        });
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Lead converted status has been reverted back to an active lead successfully.',
+                'lead_id' => $lead->id,
+                'redirect' => route('leads.show', $lead->id),
+            ]);
+        }
+
+        return redirect()
+            ->route('leads.show', $lead->id)
+            ->with('success', 'Lead converted status has been reverted back to an active lead successfully.');
     }
 
     public function export(Request $request)

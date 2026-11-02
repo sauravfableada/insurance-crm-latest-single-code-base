@@ -113,6 +113,9 @@ Route::get('/auth/google/callback', [MeetingController::class, 'handleGoogleCall
 // Public logo routes
 Route::get('/profile/company-logo-image', [App\Http\Controllers\ProfileController::class, 'companyLogoImage'])->name('profile.company_logo.image');
 Route::get('/profile/short-company-logo-image', [App\Http\Controllers\ProfileController::class, 'shortCompanyLogoImage'])->name('profile.short_company_logo.image');
+Route::get('/profile/company-signature-image', [App\Http\Controllers\ProfileController::class, 'companySignatureImage'])->name('profile.company_signature.image');
+Route::get('/settings/signature-image', [App\Http\Controllers\SettingController::class, 'signatureImage'])->name('settings.signature.image');
+Route::get('/settings/dsc-stamp-image', [App\Http\Controllers\SettingController::class, 'dscStampImage'])->name('settings.dsc_stamp.image');
 
 Route::middleware('auth')->group(function () {
     Route::redirect('/sms-marketing', '/marketing/sms-marketing');
@@ -160,7 +163,10 @@ Route::middleware('auth.api')->group(function () {
     Route::get('leads-export', [LeadController::class, 'export'])->middleware('matrix_permission:view_leads')->name('leads.export');
     Route::get('leads-import-sample', [LeadController::class, 'downloadImportSample'])->middleware('matrix_permission:create_leads')->name('leads.import_sample');
     Route::post('leads/{lead}/convert', [LeadController::class, 'convertToCustomer'])->middleware('matrix_permission:edit_leads')->name('leads.convert');
+    Route::post('leads/{lead}/revert', [LeadController::class, 'revertFromCustomer'])->middleware('matrix_permission:edit_leads')->name('leads.revert');
     Route::get('leads/{lead}/image', [LeadController::class, 'image'])->middleware('matrix_permission:view_leads')->name('leads.image');
+    Route::get('leads/{lead}/kyc', [LeadController::class, 'getKyc'])->middleware('matrix_permission:view_leads')->name('leads.kyc.view');
+    Route::post('leads/{lead}/kyc', [LeadController::class, 'saveKyc'])->middleware('matrix_permission:edit_leads')->name('leads.kyc.save');
     
     Route::resource('deals', DealController::class)->except(['store', 'update', 'destroy'])->middleware('matrix_permission:view_deals');
     Route::get('deals-export', [DealController::class, 'export'])->middleware('matrix_permission:view_deals')->name('deals.export');
@@ -214,10 +220,13 @@ Route::middleware('auth.api')->group(function () {
     Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
 
     // Invoices web routes
+    Route::get('invoices/company-policies/{companyId}', [InvoiceController::class, 'getCompanyPolicies'])->name('invoices.company_policies');
+    Route::get('invoices/customer-policies/{customerId}', [InvoiceController::class, 'getCustomerPolicies'])->name('invoices.customer_policies');
     Route::resource('invoices', InvoiceController::class)->middleware('matrix_permission:view_invoices');
     Route::post('invoices/{invoice}/status', [InvoiceController::class, 'updateStatus'])->middleware('matrix_permission:edit_invoices')->name('invoices.status');
     Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->middleware('matrix_permission:view_invoices')->name('invoices.pdf');
     Route::get('invoices-export', [InvoiceController::class, 'export'])->middleware('matrix_permission:view_invoices')->name('invoices.export');
+    Route::get('invoices-export-pdf', [InvoiceController::class, 'exportPdf'])->middleware('matrix_permission:view_invoices')->name('invoices.export_pdf');
     Route::get('bookings/{booking}/invoice/create', [InvoiceController::class, 'createByBooking'])->name('bookings.invoice.create');
 
     // Travel Operations & Financials
@@ -501,6 +510,7 @@ Route::middleware('auth.api')->group(function () {
     Route::post('/settings/category-commission', [SettingController::class, 'saveCategoryCommission'])->name('settings.category-commission.save');
     Route::get('/settings/agent-commission/{userId}', [SettingController::class, 'getAgentCommission'])->name('settings.agent-commission.get');
     Route::post('/settings/agent-commission', [SettingController::class, 'saveAgentCommission'])->name('settings.agent-commission.save');
+    Route::post('/settings/default-commission', [SettingController::class, 'saveDefaultCommission'])->name('settings.default-commission.save');
 
     Route::post('/tutorial-videos', [\App\Http\Controllers\TutorialVideoController::class, 'store'])->name('tutorial-videos.store');
     Route::put('/tutorial-videos/{id}', [\App\Http\Controllers\TutorialVideoController::class, 'update'])->name('tutorial-videos.update');
@@ -641,8 +651,14 @@ Route::middleware('auth.api')->group(function () {
         // Sub-Agent Withdrawal Requests (embedded in standard CRM flow)
         Route::post('/commission/withdrawals', [\App\Http\Controllers\SubAgentPortalController::class, 'storeWithdrawal'])->name('subagent.withdrawals.store');
         Route::get('/admin/withdrawals', [\App\Http\Controllers\AdminWithdrawalController::class, 'index'])->name('admin.withdrawals.index');
+        Route::post('/admin/withdrawals/create-payout', [\App\Http\Controllers\AdminWithdrawalController::class, 'storePayout'])->name('admin.withdrawals.store-payout');
+        Route::get('/admin/withdrawals/user-balance/{userId}', [\App\Http\Controllers\AdminWithdrawalController::class, 'userBalance'])->name('admin.withdrawals.user-balance');
+        Route::get('/admin/withdrawals/{id}/details', [\App\Http\Controllers\AdminWithdrawalController::class, 'details'])->name('admin.withdrawals.details');
+        Route::post('/admin/withdrawals/{id}/update', [\App\Http\Controllers\AdminWithdrawalController::class, 'update'])->name('admin.withdrawals.update');
+        Route::delete('/admin/withdrawals/{id}', [\App\Http\Controllers\AdminWithdrawalController::class, 'destroy'])->name('admin.withdrawals.destroy');
         Route::post('/admin/withdrawals/{id}/approve', [\App\Http\Controllers\AdminWithdrawalController::class, 'approve'])->name('admin.withdrawals.approve');
         Route::post('/admin/withdrawals/{id}/reject', [\App\Http\Controllers\AdminWithdrawalController::class, 'reject'])->name('admin.withdrawals.reject');
+        Route::post('/admin/commissions/{id}/approve', [\App\Http\Controllers\AdminWithdrawalController::class, 'approveCommission'])->name('admin.commissions.approve');
 
         // AJAX routes for commission form
         Route::get('/commission/get-policies/{typeId}', [CommissionRulesController::class, 'getPoliciesByType'])->name('commission.get-policies');

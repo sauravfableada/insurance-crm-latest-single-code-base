@@ -132,6 +132,7 @@ Route::prefix('v1')->group(function () {
 // These routes use custom 'auth.api' middleware for proper API authentication
 Route::middleware('auth.api')->group(function () {
     // Core CRM API endpoints
+    Route::get('leads/search', [LeadController::class, 'search'])->name('api.leads.search');
     Route::post('leads/import', [LeadController::class, 'import'])->name('api.leads.import');
     Route::apiResource('leads', LeadController::class)->names([
         'index' => 'api.leads.index',
@@ -141,6 +142,9 @@ Route::middleware('auth.api')->group(function () {
         'destroy' => 'api.leads.destroy',
     ]);
     Route::post('leads/{lead}/update-status', [LeadController::class, 'updateStatus'])->name('api.leads.update_status');
+    Route::post('leads/{lead}/revert', [LeadController::class, 'revertFromCustomer'])->name('api.leads.revert');
+    Route::get('leads/{lead}/kyc', [LeadController::class, 'getLeadKyc'])->name('api.leads.kyc.view');
+    Route::post('leads/{lead}/kyc', [LeadController::class, 'submitLeadKyc'])->name('api.leads.kyc.submit');
 
     Route::apiResource('deals', DealController::class)->names([
         'index' => 'api.deals.index',
@@ -168,6 +172,8 @@ Route::middleware('auth.api')->group(function () {
         'destroy' => 'api.projects.destroy',
     ]);
 
+    Route::get('meetings/customers', [MeetingController::class, 'getCustomers']);
+    Route::get('meetings/leads', [MeetingController::class, 'getLeads']);
     Route::get('meetings/google/auth-status', [MeetingController::class, 'googleAuthStatus']);
     Route::get('meetings/google/auth-url', [MeetingController::class, 'googleAuthUrl']);
     Route::post('meetings/google/disconnect', [MeetingController::class, 'googleDisconnect']);
@@ -194,6 +200,7 @@ Route::middleware('auth.api')->group(function () {
     Route::post('tasks/{id}/update-status', [TaskController::class, 'updateStatus']);
     Route::post('tasks/{id}/update-priority', [TaskController::class, 'updatePriority']);
 
+    Route::match(['patch', 'post'], 'invoices/{invoice}/status', [InvoiceController::class, 'updateStatus'])->name('api.invoices.status');
     Route::apiResource('invoices', InvoiceController::class)->names([
         'index' => 'api.invoices.index',
         'store' => 'api.invoices.store',

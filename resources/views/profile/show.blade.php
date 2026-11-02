@@ -99,6 +99,11 @@
                                     @error('name')<div class="profile-field-error">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-md-6">
+                                    <label class="form-label fw-semibold">User Name</label>
+                                    <input type="text" name="username" value="{{ old('username', $user->username) }}" class="form-control @error('username') is-invalid @enderror" placeholder="Enter username">
+                                    @error('username')<div class="profile-field-error">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-md-6">
                                     <label class="form-label fw-semibold">Email address</label>
                                     <input type="email" name="email" value="{{ old('email', $user->email) }}" class="form-control @error('email') is-invalid @enderror">
                                     @error('email')<div class="profile-field-error">{{ $message }}</div>@enderror
@@ -108,7 +113,7 @@
                                     <input type="text" name="phone" value="{{ old('phone', $user->phone) }}" class="form-control @error('phone') is-invalid @enderror">
                                     @error('phone')<div class="profile-field-error">{{ $message }}</div>@enderror
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <label class="form-label fw-semibold">Profile Image (Upload)</label>
                                     <input type="file" name="avatar" id="avatar-input" accept="image/*" class="form-control @error('avatar') is-invalid @enderror">
                                     @error('avatar')<div class="profile-field-error">{{ $message }}</div>@enderror

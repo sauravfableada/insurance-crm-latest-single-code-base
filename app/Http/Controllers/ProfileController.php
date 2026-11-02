@@ -57,6 +57,7 @@ class ProfileController extends Controller
             'data' => [
                 'user' => [
                     'name' => $user->name,
+                    'username' => $user->username,
                     'email' => $user->email,
                     'phone' => $user->phone,
                 ],
@@ -115,23 +116,60 @@ class ProfileController extends Controller
     public function companyLogoImage()
     {
         $path = Setting::query()->where('key', 'company_logo_path')->value('value');
+        $resolved = $this->resolvePublicFilePath($path);
 
-        if (!$path || !Storage::disk('public')->exists($path)) {
+        if (!$resolved) {
             abort(404);
         }
 
-        return Response::file(Storage::disk('public')->path($path));
+        return Response::file($resolved);
     }
 
     public function shortCompanyLogoImage()
     {
         $path = Setting::query()->where('key', 'short_company_logo_path')->value('value');
+        $resolved = $this->resolvePublicFilePath($path);
 
-        if (!$path || !Storage::disk('public')->exists($path)) {
+        if (!$resolved) {
             abort(404);
         }
 
-        return Response::file(Storage::disk('public')->path($path));
+        return Response::file($resolved);
+    }
+
+    public function companySignatureImage()
+    {
+        $path = Setting::query()->where('key', 'company_signature_path')->value('value');
+        $resolved = $this->resolvePublicFilePath($path);
+
+        if (!$resolved) {
+            abort(404);
+        }
+
+        return Response::file($resolved);
+    }
+
+    private function resolvePublicFilePath(?string $path): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        $candidates = [
+            Storage::disk('public')->path($path),
+            storage_path('app/public/' . ltrim($path, '/\\')),
+            storage_path('app/' . ltrim($path, '/\\')),
+            public_path('storage/' . ltrim($path, '/\\')),
+            public_path(ltrim($path, '/\\')),
+        ];
+
+        foreach ($candidates as $cand) {
+            if ($cand && file_exists($cand) && !is_dir($cand)) {
+                return $cand;
+            }
+        }
+
+        return null;
     }
 
     private function googleConnectionEnabled(): bool
@@ -176,9 +214,18 @@ class ProfileController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+        $user->update([
             'password' => Hash::make($request->password),
         ]);
+
+        if ($user->isAdmin()) {
+            try {
+                app(\App\Services\Tenancy\AdminErpSyncService::class)->syncClientPassword($user, $request->password);
+            } catch (\Throwable $e) {
+                Log::warning('Failed syncing password to admin_erp: ' . $e->getMessage());
+            }
+        }
 
         return back()->with('success', 'Password updated successfully.');
     }
@@ -190,9 +237,18 @@ class ProfileController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+        $user->update([
             'password' => Hash::make($request->password),
         ]);
+
+        if ($user->isAdmin()) {
+            try {
+                app(\App\Services\Tenancy\AdminErpSyncService::class)->syncClientPassword($user, $request->password);
+            } catch (\Throwable $e) {
+                Log::warning('Failed syncing password to admin_erp: ' . $e->getMessage());
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -216,6 +272,7 @@ class ProfileController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'username' => ['nullable', 'string', 'max:255', 'unique:users,username,' . $user->id],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'phone' => ['required', 'string', 'max:20'],
             'job_title' => ['nullable', 'string', 'max:255'],
@@ -230,6 +287,7 @@ class ProfileController extends Controller
             'short_company_logo_path' => ['nullable', 'file', $imageFileRule, 'max:2048'],
         ], [
             'name.required' => 'Name is required!',
+            'username.unique' => 'This username is already taken.',
             'phone.required' => 'Phone number is required!',
             'company_name.required' => 'Company name is required!',
             'company_address.required' => 'Address is required!',
@@ -247,7 +305,20 @@ class ProfileController extends Controller
         }
 
         $userData = collect($data)->except(['company_name', 'company_address', 'company_tax_id', 'avatar', 'company_logo_path', 'short_company_logo_path'])->all();
+        $oldEmail = $user->getOriginal('email');
         $user->update($userData);
+
+        // Synchronize updated client details back to admin_erp database
+        if ($user->isAdmin()) {
+            try {
+                app(\App\Services\Tenancy\AdminErpSyncService::class)->syncClientProfile($user, [
+                    'company_name' => $request->input('company_name'),
+                    'company_address' => $request->input('company_address'),
+                ], $oldEmail);
+            } catch (\Throwable $e) {
+                Log::warning('Failed syncing client to admin_erp: ' . $e->getMessage());
+            }
+        }
 
         Setting::updateOrCreate(
             ['key' => 'company_name'],

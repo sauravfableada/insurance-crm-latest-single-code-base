@@ -103,24 +103,79 @@
 
             #commissionEntriesTable {
                 width: 100% !important;
-                table-layout: auto;
+                border-collapse: separate;
+                border-spacing: 0;
             }
             #commissionEntriesTable th, 
             #commissionEntriesTable td {
-                white-space: nowrap;
                 vertical-align: middle;
+                padding-top: 0.75rem;
+                padding-bottom: 0.75rem;
+            }
+            #commissionEntriesTable thead th {
+                white-space: nowrap;
+                font-weight: 700;
+                font-size: 0.76rem;
+                letter-spacing: 0.5px;
+                background-color: #f8fafc;
+            }
+            #commissionEntriesTable th:nth-child(1),
+            #commissionEntriesTable td:nth-child(1) {
+                width: 55px;
+                min-width: 55px;
+                text-align: center;
+                white-space: nowrap;
             }
             #commissionEntriesTable th:nth-child(2),
             #commissionEntriesTable td:nth-child(2) {
-                max-width: 180px;
-                white-space: normal;
-                word-break: break-word;
+                min-width: 190px;
+                white-space: nowrap;
             }
             #commissionEntriesTable th:nth-child(3),
             #commissionEntriesTable td:nth-child(3) {
-                max-width: 170px;
-                white-space: normal;
-                word-break: break-word;
+                min-width: 200px;
+                white-space: nowrap;
+            }
+            #commissionEntriesTable th:nth-child(4),
+            #commissionEntriesTable td:nth-child(4) {
+                min-width: 160px;
+                white-space: nowrap;
+            }
+            #commissionEntriesTable th:nth-child(5),
+            #commissionEntriesTable td:nth-child(5) {
+                min-width: 125px;
+                text-align: right;
+                white-space: nowrap;
+            }
+            #commissionEntriesTable th:nth-child(6),
+            #commissionEntriesTable td:nth-child(6) {
+                min-width: 130px;
+                text-align: right;
+                white-space: nowrap;
+            }
+            #commissionEntriesTable th:nth-child(7),
+            #commissionEntriesTable td:nth-child(7) {
+                min-width: 130px;
+                text-align: right;
+                white-space: nowrap;
+            }
+            #commissionEntriesTable th:nth-child(8),
+            #commissionEntriesTable td:nth-child(8) {
+                min-width: 125px;
+                text-align: right;
+                white-space: nowrap;
+            }
+            #commissionEntriesTable th:nth-child(9),
+            #commissionEntriesTable td:nth-child(9) {
+                min-width: 110px;
+                text-align: center;
+                white-space: nowrap;
+            }
+            #commissionEntriesTable th:nth-child(10),
+            #commissionEntriesTable td:nth-child(10) {
+                min-width: 120px;
+                text-align: right;
+                white-space: nowrap;
             }
 
             /* Select2 inside modal styling */
@@ -152,6 +207,99 @@
                 border-radius: 0.375rem !important;
                 border: 1px solid #cbd5e1 !important;
                 padding: 6px 10px !important;
+            }
+
+            /* Tab 2 Dedicated Filter Toolbar */
+            #commissionEntriesFilterToolbar {
+                background: #f8fafc;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            #commissionEntriesFilterToolbar .select2-container {
+                width: 100% !important;
+            }
+            #commissionEntriesFilterToolbar .select2-container .select2-selection--single {
+                height: 38px !important;
+                border: 1px solid #cbd5e1 !important;
+                border-radius: 0.375rem !important;
+                background-color: #ffffff !important;
+                padding: 4px 24px 4px 10px !important;
+                font-size: 0.84rem !important;
+                display: flex !important;
+                align-items: center !important;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+                transition: all 0.2s ease;
+            }
+            #commissionEntriesFilterToolbar .select2-container--open .select2-selection--single,
+            #commissionEntriesFilterToolbar .select2-container .select2-selection--single:hover {
+                border-color: #3b82f6 !important;
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12) !important;
+            }
+            #commissionEntriesFilterToolbar .select2-container .select2-selection--single .select2-selection__rendered {
+                line-height: 28px !important;
+                font-size: 0.84rem !important;
+                color: #1e293b !important;
+                font-weight: 500;
+                padding-left: 0 !important;
+            }
+            #commissionEntriesFilterToolbar .select2-container .select2-selection--single .select2-selection__arrow {
+                height: 36px !important;
+                right: 6px !important;
+            }
+            #commissionEntriesFilterToolbar .select2-container .select2-selection--single .select2-selection__clear {
+                margin-right: 14px !important;
+                font-size: 1rem !important;
+                line-height: 28px !important;
+                color: #94a3b8 !important;
+            }
+            #commissionEntriesFilterToolbar .select2-container .select2-selection--single .select2-selection__clear:hover {
+                color: #ef4444 !important;
+            }
+
+            #btnResetEntryFilters {
+                height: 38px;
+                padding: 0 12px;
+                font-size: 0.84rem;
+                font-weight: 600;
+                border-radius: 0.375rem;
+                border: 1px solid #cbd5e1;
+                background-color: #ffffff;
+                color: #475569;
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                white-space: nowrap;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            }
+            #btnResetEntryFilters:hover {
+                background-color: #f1f5f9;
+                color: #0f172a;
+                border-color: #94a3b8;
+            }
+
+            /* DataTables Length & Search unified styling */
+            #commissionEntriesTable_wrapper .dataTables_filter input {
+                height: 38px;
+                border: 1px solid #cbd5e1;
+                border-radius: 0.375rem;
+                padding: 6px 12px;
+                font-size: 0.84rem;
+                min-width: 250px;
+                background-color: #ffffff;
+                outline: none;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            }
+            #commissionEntriesTable_wrapper .dataTables_filter input:focus {
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            }
+            #commissionEntriesTable_wrapper .dataTables_length select {
+                height: 38px;
+                border: 1px solid #cbd5e1;
+                border-radius: 0.375rem;
+                padding: 4px 28px 4px 10px;
+                font-size: 0.84rem;
             }
 
             .commission-status {
@@ -389,19 +537,128 @@
                     </div>
                 </div>
 
+                <!-- Dedicated Filter Panel for Tab 2: Commission Entries -->
+                <div id="commissionEntriesFilterToolbar" class="px-3 py-3 border-bottom">
+                    <div class="row g-2 align-items-end">
+                        <!-- Filter 1: Company / Insurer (Select2) -->
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <label class="form-label small fw-semibold text-muted mb-1 d-flex align-items-center gap-1">
+                                <i class="fa-solid fa-building-shield text-primary"></i> Company / Insurer
+                            </label>
+                            <select id="filter_entry_company" class="form-select form-select-sm" style="width: 100%;">
+                                <option value="">All Companies</option>
+                                @php
+                                    $entryCompNames = $commissionEntries->map(function($e) {
+                                        return $e->commissionRule?->company?->name ?? $e->policy?->company?->name;
+                                    })->filter()->unique()->values();
+                                    $allComps = ($companies ?? collect());
+                                @endphp
+                                @foreach($allComps as $comp)
+                                    <option value="{{ $comp->id }}" data-name="{{ strtolower($comp->name) }}">{{ $comp->name }}</option>
+                                @endforeach
+                                @foreach($entryCompNames as $cname)
+                                    @if(!$allComps->contains('name', $cname))
+                                        <option value="{{ $cname }}" data-name="{{ strtolower($cname) }}">{{ $cname }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Filter 2: Staff / Sub Agent (Select2) -->
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <label class="form-label small fw-semibold text-muted mb-1 d-flex align-items-center gap-1">
+                                <i class="fa-solid fa-user-tie text-success"></i> Staff / Sub-Agent
+                            </label>
+                            <select id="filter_entry_user" class="form-select form-select-sm" style="width: 100%;">
+                                <option value="">All Staff / Sub-Agents</option>
+                                @php
+                                    $entryUsers = $commissionEntries->map(function($e) {
+                                        $u = $e->user ?? $e->policy?->user;
+                                        return $u ? [
+                                            'id' => $u->id,
+                                            'name' => $u->name,
+                                            'type' => ($u->type === 'sub_agents') ? 'Sub-Agent' : 'Staff'
+                                        ] : null;
+                                    })->filter()->unique('id')->values();
+
+                                    $allStaffSub = ($allMembers ?? collect())->map(function($u) {
+                                        return [
+                                            'id' => $u->id,
+                                            'name' => $u->name,
+                                            'type' => ($u->type === 'sub_agents') ? 'Sub-Agent' : 'Staff'
+                                        ];
+                                    });
+
+                                    $combinedUsers = $entryUsers->concat($allStaffSub)->unique('id')->sortBy('name');
+                                @endphp
+                                @foreach($combinedUsers as $u)
+                                    <option value="{{ $u['id'] }}">
+                                        {{ $u['name'] }} ({{ $u['type'] }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Filter 3: Policy Number (Select2) -->
+                        <div class="col-12 col-md-6 col-xl-3">
+                            <label class="form-label small fw-semibold text-muted mb-1 d-flex align-items-center gap-1">
+                                <i class="fa-solid fa-file-contract text-info"></i> Policy Number
+                            </label>
+                            <select id="filter_entry_policy" class="form-select form-select-sm" style="width: 100%;">
+                                <option value="">All Policies</option>
+                                @php
+                                    $entryPolicies = $commissionEntries->map(function($e) {
+                                        return [
+                                            'id' => $e->policy_id,
+                                            'number' => $e->policy?->policy_number ?? ('#' . $e->policy_id),
+                                            'holder' => $e->policy?->holder?->name ?? ''
+                                        ];
+                                    })->unique('number')->values();
+                                @endphp
+                                @foreach($entryPolicies as $pol)
+                                    <option value="{{ $pol['id'] }}" data-number="{{ strtolower($pol['number']) }}">
+                                        {{ $pol['number'] }}{{ $pol['holder'] ? ' (' . \Illuminate\Support\Str::limit($pol['holder'], 12) . ')' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Filter 4: Status (Select2) -->
+                        <div class="col-8 col-md-4 col-xl-2">
+                            <label class="form-label small fw-semibold text-muted mb-1 d-flex align-items-center gap-1">
+                                <i class="fa-solid fa-clock text-warning"></i> Payment Status
+                            </label>
+                            <select id="filter_entry_status" class="form-select form-select-sm" style="width: 100%;">
+                                <option value="">All Statuses</option>
+                                <option value="paid">Paid</option>
+                                <option value="pending">Pending</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+
+                        <!-- Reset Filters Button -->
+                        <div class="col-4 col-md-2 col-xl-1">
+                            <button type="button" class="btn btn-sm w-100 d-flex align-items-center justify-content-center gap-1" id="btnResetEntryFilters" title="Reset All Filters">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                <span>Reset</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table id="commissionEntriesTable" class="table table-hover align-middle mb-0" style="width:100%">
                         <thead class="table-light text-uppercase text-secondary" style="font-size: 0.76rem; letter-spacing: 0.5px;">
                             <tr>
-                                <th class="ps-4 py-3" style="width: 50px;">SR.NO</th>
+                                <th class="ps-4 py-3 text-center" style="width: 55px;">#</th>
                                 <th class="py-3">Rule / Insurer</th>
                                 <th class="py-3">Staff / Sub Agent</th>
                                 <th class="py-3">Policy Number</th>
-                                <th class="py-3">Gross Premium</th>
-                                <th class="py-3 text-primary">Pay-In (Admin)</th>
-                                <th class="py-3 text-warning">Pay-Out (Agent)</th>
-                                <th class="py-3 text-success">Net Profit</th>
-                                <th class="py-3">Date</th>
+                                <th class="py-3 text-end">Gross Premium</th>
+                                <th class="py-3 text-end text-primary">Pay-In (Admin)</th>
+                                <th class="py-3 text-end text-warning">Pay-Out (Agent)</th>
+                                <th class="py-3 text-end text-success">Net Profit</th>
+                                <th class="py-3 text-center">Date</th>
                                 <th class="pe-4 py-3 text-end" style="width: 120px;">Action</th>
                             </tr>
                         </thead>
@@ -411,45 +668,91 @@
                                     $inAmt = (float) ($entry->pay_in_amount > 0 ? $entry->pay_in_amount : $entry->commission_amount);
                                     $outAmt = (float) ($entry->pay_out_amount > 0 ? $entry->pay_out_amount : $entry->commission_amount);
                                     $profit = (float) ($entry->net_admin_profit > 0 ? $entry->net_admin_profit : max(0, $inAmt - $outAmt));
-                                    $status = $entry->payment_status ?: 'pending';
+                                    $status = strtolower($entry->payment_status ?: 'pending');
+
+                                    $entryCompId = $entry->commissionRule?->company_id ?? $entry->policy?->company_id ?? '';
+                                    $entryCompName = strtolower($entry->commissionRule?->company?->name ?? $entry->policy?->company?->name ?? 'Direct Insurance');
+                                    $entryUserId = $entry->user_id ?? $entry->agent_id ?? $entry->policy?->user_id ?? '';
+                                    $entryUserName = strtolower($entry->user?->name ?? $entry->policy?->user?->name ?? '');
+                                    $entryPolicyId = $entry->policy_id ?? '';
+                                    $entryPolicyNumber = strtolower($entry->policy?->policy_number ?? ('#' . $entry->policy_id));
                                 @endphp
                                 <tr id="entry_row_{{ $entry->id }}" 
                                     data-status="{{ $status }}" 
+                                    data-company-id="{{ $entryCompId }}"
+                                    data-company-name="{{ $entryCompName }}"
+                                    data-user-id="{{ $entryUserId }}"
+                                    data-user-name="{{ $entryUserName }}"
+                                    data-policy-id="{{ $entryPolicyId }}"
+                                    data-policy-number="{{ $entryPolicyNumber }}"
                                     data-payout="{{ $outAmt }}" 
                                     data-payin="{{ $inAmt }}" 
                                     data-profit="{{ $profit }}" 
                                     data-premium="{{ (float)$entry->premium_amount }}">
-                                    <td class="ps-4 text-muted fw-semibold">{{ $index + 1 }}</td>
+                                    <td class="ps-4 text-center text-muted fw-semibold">{{ $index + 1 }}</td>
                                     <td>
                                         @php
-                                            $ruleName = $entry->commissionRule->rule_name ?? 'Policy Commission';
-                                            // If rule name is something like "Policy #POL-xxx Custom Commission", show clean "Custom Commission"
-                                            if (preg_match('/Policy\s*#[^\s]+\s*(.*)/i', $ruleName, $m)) {
+                                            $rawUserName = $entry->user?->name ?? $entry->policy?->user?->name ?? '';
+                                            $rawRule = $entry->commissionRule->rule_name ?? '';
+                                            
+                                            if (!empty($rawUserName) && !empty($rawRule)) {
+                                                $cleanedRule = trim(preg_replace('/' . preg_quote($rawUserName, '/') . '\s*/i', '', $rawRule));
+                                            } else {
+                                                $cleanedRule = $rawRule;
+                                            }
+
+                                            if (preg_match('/Policy\s*#[^\s]+\s*(.*)/i', $cleanedRule, $m)) {
                                                 $displayRuleName = trim($m[1]) ?: 'Custom Commission';
                                             } else {
-                                                $displayRuleName = $ruleName;
+                                                $displayRuleName = !empty($cleanedRule) ? $cleanedRule : 'Agent Commission';
                                             }
+
+                                            $compName = $entry->commissionRule?->company?->name 
+                                                ?? $entry->policy?->company?->name 
+                                                ?? 'Direct Insurance';
                                         @endphp
-                                        <strong class="text-dark d-block">{{ $displayRuleName }}</strong>
-                                        <small class="text-muted">{{ $entry->commissionRule?->company?->name ?? 'Direct Insurance' }}</small>
+                                        <div class="lh-sm">
+                                            <span class="fw-bold text-dark d-block">{{ $displayRuleName }}</span>
+                                            <small class="text-secondary d-flex align-items-center gap-1 mt-1" style="font-size: 0.74rem;">
+                                                <i class="fa-solid fa-building-shield text-primary" style="font-size: 0.7rem;"></i>
+                                                <span>{{ $compName }}</span>
+                                            </small>
+                                        </div>
                                     </td>
                                     <td>
-                                        <strong class="text-dark d-block">{{ $entry->user?->name ?? $entry->policy?->user?->name ?? '—' }}</strong>
-                                        <small class="text-muted">{{ $entry->user?->email ?? '' }}</small>
+                                        @php
+                                            $userObj = $entry->user ?? $entry->policy?->user;
+                                            $agentName = $userObj?->name ?? '—';
+                                            $agentEmail = $userObj?->email ?? '';
+                                            $initials = strtoupper(substr(trim($agentName), 0, 2));
+                                        @endphp
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="member-avatar bg-primary-subtle text-primary border border-primary border-opacity-25" style="width: 32px; height: 32px; font-size: 0.75rem; flex-shrink: 0;">
+                                                {{ $initials ?: 'AG' }}
+                                            </div>
+                                            <div class="lh-sm">
+                                                <span class="fw-bold text-dark d-block" style="font-size: 0.86rem;">{{ $agentName }}</span>
+                                                @if(!empty($agentEmail))
+                                                    <small class="text-muted d-block" style="font-size: 0.74rem;">{{ $agentEmail }}</small>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark border">
+                                        <span class="badge bg-light text-dark border font-monospace fw-semibold px-2 py-1" style="font-size: 0.78rem;">
                                             {{ $entry->policy?->policy_number ?? ('#' . $entry->policy_id) }}
                                         </span>
                                         @if($entry->policy?->holder)
-                                             <small class="text-muted d-block">{{ $entry->policy->holder->name }}</small>
+                                            <small class="text-muted d-block mt-1" style="font-size: 0.74rem;">
+                                                <i class="fa-regular fa-user me-1 text-secondary opacity-75"></i>{{ $entry->policy->holder->name }}
+                                            </small>
                                         @endif
                                     </td>
-                                    <td class="fw-semibold text-dark">₹{{ number_format($entry->premium_amount, 2) }}</td>
-                                    <td class="fw-bold text-primary">₹{{ number_format($inAmt, 2) }}</td>
-                                    <td class="fw-bold text-dark">₹{{ number_format($outAmt, 2) }}</td>
-                                    <td class="fw-bold text-success">₹{{ number_format($profit, 2) }}</td>
-                                    <td class="text-muted small">
+                                    <td class="text-end fw-semibold text-dark">₹{{ number_format($entry->premium_amount, 2) }}</td>
+                                    <td class="text-end fw-bold text-primary">₹{{ number_format($inAmt, 2) }}</td>
+                                    <td class="text-end fw-bold text-warning" style="color: #d97706 !important;">₹{{ number_format($outAmt, 2) }}</td>
+                                    <td class="text-end fw-bold text-success">₹{{ number_format($profit, 2) }}</td>
+                                    <td class="text-center text-muted small">
                                         {{ $entry->entry_date ? $entry->entry_date->format('d M Y') : ($entry->created_at ? $entry->created_at->format('d M Y') : '—') }}
                                     </td>
                                     <td class="pe-4 text-end">
@@ -513,7 +816,7 @@
                             <div class="col-md-6">
                                 <div class="card h-100 border-primary border-opacity-25 rounded-4 shadow-sm" style="background: #ffffff;">
                                     <div class="card-header bg-primary text-white py-2 px-3 rounded-top-4 d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold"><i class="fa-solid fa-arrow-down-left me-1"></i> PAY-IN (Admin Share)</span>
+                                        <span class="fw-bold"><i class="fa-solid fa-hand-holding-dollar me-1"></i> PAY-IN (Admin Share)</span>
                                         <span class="badge bg-white text-primary">From Company</span>
                                     </div>
                                     <div class="card-body p-3">
@@ -728,7 +1031,7 @@
                                         <div class="p-3 rounded-4 border bg-white shadow-sm h-100">
                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                 <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
-                                                    <i class="fa-solid fa-arrow-down-left me-1"></i> Pay-In (Admin Share)
+                                                    <i class="fa-solid fa-hand-holding-dollar me-1"></i> Pay-In (Admin Share)
                                                 </span>
                                                 <small class="text-muted">From Insurer</small>
                                             </div>
@@ -1045,7 +1348,7 @@
                                         <div class="p-3 rounded-4 border bg-white shadow-sm h-100">
                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                 <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
-                                                    <i class="fa-solid fa-arrow-down-left me-1"></i> Pay-In (Admin Share)
+                                                    <i class="fa-solid fa-hand-holding-dollar me-1"></i> Pay-In (Admin Share)
                                                 </span>
                                                 <small class="text-muted">From Insurer</small>
                                             </div>
@@ -1173,7 +1476,8 @@
             const tableEntries = $('#commissionEntriesTable').DataTable({
                 "pageLength": 10,
                 "lengthMenu": [5, 10, 20, 50, 100],
-                "dom": "<'d-flex justify-content-between align-items-center p-3 border-bottom'<'d-flex align-items-center'l><'d-flex'f>>t<'d-flex justify-content-between align-items-center p-3 border-top'ip>",
+                "autoWidth": false,
+                "dom": "<'d-flex flex-wrap justify-content-between align-items-center p-3 border-bottom gap-2'<'d-flex align-items-center'l><'d-flex align-items-center'f>>t<'d-flex justify-content-between align-items-center p-3 border-top'ip>",
                 "language": {
                     "search": "",
                     "searchPlaceholder": "Search entries by rule, insurer, policy...",
@@ -1187,6 +1491,115 @@
                     }
                 },
                 "ordering": false
+            });
+
+            // Initialize Select2 on the 4 filters
+            function initCommissionEntriesFilters() {
+                $('#filter_entry_company').select2({
+                    placeholder: 'All Companies',
+                    allowClear: true,
+                    width: '100%'
+                });
+
+                $('#filter_entry_user').select2({
+                    placeholder: 'All Staff / Sub-Agents',
+                    allowClear: true,
+                    width: '100%'
+                });
+
+                $('#filter_entry_policy').select2({
+                    placeholder: 'All Policies',
+                    allowClear: true,
+                    width: '100%'
+                });
+
+                $('#filter_entry_status').select2({
+                    placeholder: 'All Statuses',
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+            initCommissionEntriesFilters();
+
+            // DataTables custom filtering for Commission Entries
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                if (!settings.nTable || settings.nTable.id !== 'commissionEntriesTable') {
+                    return true;
+                }
+
+                const rowNode = settings.aoData[dataIndex]?.nTr;
+                if (!rowNode) return true;
+
+                const rowCompanyId = ($(rowNode).attr('data-company-id') || '').trim();
+                const rowCompanyName = ($(rowNode).attr('data-company-name') || '').trim();
+                const rowUserId = ($(rowNode).attr('data-user-id') || '').trim();
+                const rowPolicyId = ($(rowNode).attr('data-policy-id') || '').trim();
+                const rowPolicyNumber = ($(rowNode).attr('data-policy-number') || '').trim();
+                const rowStatus = ($(rowNode).attr('data-status') || '').trim().toLowerCase();
+
+                const selectedCompany = ($('#filter_entry_company').val() || '').trim();
+                const selectedUser = ($('#filter_entry_user').val() || '').trim();
+                const selectedPolicy = ($('#filter_entry_policy').val() || '').trim();
+                const selectedStatus = ($('#filter_entry_status').val() || '').trim().toLowerCase();
+
+                // 1. Company Filter
+                if (selectedCompany) {
+                    const compOpt = $('#filter_entry_company option:selected');
+                    const compNameAttr = (compOpt.attr('data-name') || '').toLowerCase().trim();
+                    const matchId = rowCompanyId && (rowCompanyId === selectedCompany);
+                    const matchName = rowCompanyName && (
+                        rowCompanyName === selectedCompany.toLowerCase() ||
+                        (compNameAttr && rowCompanyName.includes(compNameAttr)) ||
+                        (compNameAttr && compNameAttr.includes(rowCompanyName))
+                    );
+                    if (!matchId && !matchName) {
+                        return false;
+                    }
+                }
+
+                // 2. Staff / Sub Agent Filter
+                if (selectedUser) {
+                    if (rowUserId !== selectedUser) {
+                        return false;
+                    }
+                }
+
+                // 3. Policy Filter
+                if (selectedPolicy) {
+                    const polOpt = $('#filter_entry_policy option:selected');
+                    const polNumAttr = (polOpt.attr('data-number') || '').toLowerCase().trim();
+                    const matchPolId = rowPolicyId && (rowPolicyId === selectedPolicy);
+                    const matchPolNum = rowPolicyNumber && (
+                        rowPolicyNumber === selectedPolicy.toLowerCase() ||
+                        (polNumAttr && rowPolicyNumber.includes(polNumAttr))
+                    );
+                    if (!matchPolId && !matchPolNum) {
+                        return false;
+                    }
+                }
+
+                // 4. Status Filter
+                if (selectedStatus && selectedStatus !== 'all') {
+                    if (rowStatus !== selectedStatus) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            // Filter trigger events
+            $('#filter_entry_company, #filter_entry_user, #filter_entry_policy, #filter_entry_status').on('change', function() {
+                tableEntries.draw();
+            });
+
+            // Reset filters button
+            $('#btnResetEntryFilters').on('click', function() {
+                $('#filter_entry_company').val(null).trigger('change');
+                $('#filter_entry_user').val(null).trigger('change');
+                $('#filter_entry_policy').val(null).trigger('change');
+                $('#filter_entry_status').val(null).trigger('change');
+                tableEntries.search('').draw();
             });
 
             // Initialize Select2 on modals
@@ -1210,9 +1623,6 @@
                 dropdownParent: $('#editCommissionEntryModal'),
                 width: '100%',
                 placeholder: '-- Search or Select Staff / Sub-Agent --'
-            });
-                width: '100%',
-                placeholder: '-- Search or Select Member --'
             });
 
             // Function to update Paid & Pending badges dynamically based on filtered rows
@@ -1244,7 +1654,14 @@
             });
 
             // Adjust columns on tab switch
-            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $('button[data-bs-toggle="tab"], a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                const target = $(e.target).attr('data-bs-target') || $(e.target).attr('href');
+                if (target === '#tab-entries' || $(e.target).attr('id') === 'entries-tab') {
+                    $('#commissionEntriesFilterToolbar .select2-container').css('width', '100%');
+                    setTimeout(() => {
+                        tableEntries.columns.adjust().draw(false);
+                    }, 50);
+                }
                 $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
             });
 
@@ -1557,13 +1974,13 @@
                             `;
 
                             const rowNode = tableEntries.row.add([
-                                '<span class="ps-4 text-muted fw-semibold">New</span>',
-                                `<strong class="text-dark d-block">${e.rule_name}</strong><small class="text-muted">${e.company_name}</small>`,
-                                `<strong class="text-dark d-block">${e.member_name}</strong><small class="text-muted">${e.member_email}</small>`,
-                                `<span class="badge bg-light text-dark border">${e.policy_number}</span><small class="text-muted d-block">${e.holder_name}</small>`,
+                                '<span class="ps-4 text-center text-muted fw-semibold">New</span>',
+                                `<div class="lh-sm"><span class="fw-bold text-dark d-block">${e.rule_name || 'Agent Commission'}</span><small class="text-secondary d-flex align-items-center gap-1 mt-1" style="font-size: 0.74rem;"><i class="fa-solid fa-building-shield text-primary" style="font-size: 0.7rem;"></i><span>${e.company_name || 'Direct Insurance'}</span></small></div>`,
+                                `<div class="d-flex align-items-center gap-2"><div class="member-avatar bg-primary-subtle text-primary border border-primary border-opacity-25" style="width: 32px; height: 32px; font-size: 0.75rem; flex-shrink: 0;">${(e.member_name || 'AG').substring(0, 2).toUpperCase()}</div><div class="lh-sm"><span class="fw-bold text-dark d-block" style="font-size: 0.86rem;">${e.member_name || '—'}</span><small class="text-muted d-block" style="font-size: 0.74rem;">${e.member_email || ''}</small></div></div>`,
+                                `<span class="badge bg-light text-dark border font-monospace fw-semibold px-2 py-1" style="font-size: 0.78rem;">${e.policy_number}</span><small class="text-muted d-block mt-1" style="font-size: 0.74rem;"><i class="fa-regular fa-user me-1 text-secondary opacity-75"></i>${e.holder_name || ''}</small>`,
                                 `<span class="fw-semibold text-dark">₹${e.premium_amount}</span>`,
                                 `<span class="fw-bold text-primary">₹${e.pay_in_amount}</span>`,
-                                `<span class="fw-bold text-dark">₹${e.pay_out_amount}</span>`,
+                                `<span class="fw-bold text-warning" style="color: #d97706 !important;">₹${e.pay_out_amount}</span>`,
                                 `<span class="fw-bold text-success">₹${e.net_admin_profit}</span>`,
                                 `<span class="text-muted small">${e.entry_date}</span>`,
                                 `<span class="pe-4 text-end">${actionsHtml}</span>`
@@ -1826,18 +2243,23 @@
                             if (tr.length) {
                                 tableEntries.row(tr).data([
                                     tr.find('td:eq(0)').html(),
-                                    `<strong class="text-dark d-block">${e.rule_name}</strong><small class="text-muted">${e.company_name}</small>`,
-                                    `<strong class="text-dark d-block">${e.member_name}</strong><small class="text-muted">${e.member_email}</small>`,
-                                    `<span class="badge bg-light text-dark border">${e.policy_number}</span><small class="text-muted d-block">${e.holder_name}</small>`,
+                                    `<div class="lh-sm"><span class="fw-bold text-dark d-block">${e.rule_name || 'Agent Commission'}</span><small class="text-secondary d-flex align-items-center gap-1 mt-1" style="font-size: 0.74rem;"><i class="fa-solid fa-building-shield text-primary" style="font-size: 0.7rem;"></i><span>${e.company_name || 'Direct Insurance'}</span></small></div>`,
+                                    `<div class="d-flex align-items-center gap-2"><div class="member-avatar bg-primary-subtle text-primary border border-primary border-opacity-25" style="width: 32px; height: 32px; font-size: 0.75rem; flex-shrink: 0;">${(e.member_name || 'AG').substring(0, 2).toUpperCase()}</div><div class="lh-sm"><span class="fw-bold text-dark d-block" style="font-size: 0.86rem;">${e.member_name || '—'}</span><small class="text-muted d-block" style="font-size: 0.74rem;">${e.member_email || ''}</small></div></div>`,
+                                    `<span class="badge bg-light text-dark border font-monospace fw-semibold px-2 py-1" style="font-size: 0.78rem;">${e.policy_number}</span><small class="text-muted d-block mt-1" style="font-size: 0.74rem;"><i class="fa-regular fa-user me-1 text-secondary opacity-75"></i>${e.holder_name || ''}</small>`,
                                     `<span class="fw-semibold text-dark">₹${e.premium_amount}</span>`,
                                     `<span class="fw-bold text-primary">₹${e.pay_in_amount}</span>`,
-                                    `<span class="fw-bold text-dark">₹${e.pay_out_amount}</span>`,
+                                    `<span class="fw-bold text-warning" style="color: #d97706 !important;">₹${e.pay_out_amount}</span>`,
                                     `<span class="fw-bold text-success">₹${e.net_admin_profit}</span>`,
                                     `<span class="text-muted small">${e.entry_date}</span>`,
                                     `<span class="pe-4 text-end">${actionsHtml}</span>`
                                 ]).draw(false);
 
                                 tr.attr('data-status', (e.payment_status || 'pending').toLowerCase());
+                                if (e.company_id) tr.attr('data-company-id', e.company_id);
+                                if (e.company_name) tr.attr('data-company-name', e.company_name.toLowerCase());
+                                if (e.user_id) tr.attr('data-user-id', e.user_id);
+                                if (e.policy_id) tr.attr('data-policy-id', e.policy_id);
+                                if (e.policy_number) tr.attr('data-policy-number', e.policy_number.toLowerCase());
                                 tr.attr('data-payout', parseFloat(e.pay_out_amount) || 0);
                                 tr.attr('data-payin', parseFloat(e.pay_in_amount) || 0);
                                 tr.attr('data-profit', parseFloat(e.net_admin_profit) || 0);

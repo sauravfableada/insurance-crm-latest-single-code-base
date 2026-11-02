@@ -45,6 +45,34 @@
         $googleConnectionEnabled = ($settings['google_connection_enabled']->value ?? '0') === '1';
         $commissionMethod = $settings['commission_calculation_method']->value ?? 'company_wise';
         $commissionAllowManual = ($settings['commission_allow_manual_override']->value ?? '1') === '1';
+
+        $defaultPayInType = $settings['default_pay_in_type']->value ?? 'percentage';
+        $defaultPayInVal = (float) ($settings['default_pay_in_percentage']->value ?? ($settings['default_pay_in_value']->value ?? 20));
+        $defaultPayOutType = $settings['default_pay_out_type']->value ?? 'percentage';
+        $defaultPayOutVal = (float) ($settings['default_pay_out_percentage']->value ?? ($settings['default_pay_out_value']->value ?? 10));
+        $defaultPayOutBasedOn = $settings['default_pay_out_based_on']->value ?? 'admin_commission';
+
+        $bankName = $settings['company_bank_name']->value ?? 'ICICI Bank (Tagore Garden)';
+        $bankAccountNo = $settings['company_bank_account_no']->value ?? '335905001025';
+        $bankIfsc = $settings['company_bank_ifsc']->value ?? 'ICIC0003359';
+        $bankBranch = $settings['company_bank_branch']->value ?? 'Tagore Garden';
+        $signaturePath = $settings['company_signature_path']->value ?? null;
+        $signatureUrl = !empty($signaturePath)
+            ? route('settings.signature.image') . '?v=' . time()
+            : null;
+
+        $dscEnabled = in_array(strval($settings['dsc_signature_enabled']->value ?? '0'), ['1', 'true', 'on'], true);
+        $dscSignatoryName = $settings['dsc_signatory_name']->value ?? ($settings['company_name']->value ?? 'Authorized Signatory');
+        $dscDesignation = $settings['dsc_designation']->value ?? 'Authorized Signatory';
+        $dscOrganization = $settings['dsc_organization']->value ?? ($settings['company_name']->value ?? 'Riskon Insurance Broking');
+        $dscIssuer = $settings['dsc_issuer']->value ?? 'eMudhra Sub-CA / Class 3 DSC';
+        $dscLocation = $settings['dsc_location']->value ?? 'Delhi, India';
+        $dscReason = $settings['dsc_reason']->value ?? 'Tax Invoice Verification & Authorization';
+        $dscDisplayMode = $settings['dsc_display_mode']->value ?? 'both';
+        $dscStampPath = $settings['dsc_stamp_path']->value ?? null;
+        $dscStampUrl = !empty($dscStampPath)
+            ? route('settings.dsc_stamp.image') . '?v=' . time()
+            : null;
     @endphp
 
     <div class="container-fluid px-0 settings-shell">
@@ -60,6 +88,9 @@
                 <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab"
                         data-bs-target="#commission-settings" type="button" role="tab"><i class="fa-solid fa-percent me-1 text-primary"></i> Commission Settings</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
+                        data-bs-target="#bank-signature" type="button" role="tab"><i class="fa-solid fa-building-columns me-1 text-primary"></i> Bank &amp; Signature</button></li>
+                <li class="nav-
+                item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
                         data-bs-target="#smtp" type="button" role="tab">Email SMTP</button></li>
                 {{-- WhatsApp configuration is intentionally hidden.
                 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
@@ -188,7 +219,46 @@
                                         </div>
                                     </label>
                                 </div>
+
+                                <!-- Option 6: Default Global Commission Set (Admin & Staff/Sub-Agent Default Set) -->
+                                <div class="col-md-6">
+                                    <label class="commission-opt-card card h-100 p-3 border rounded-4 cursor-pointer position-relative shadow-sm {{ $commissionMethod === 'default_commission' ? 'border-primary bg-light-primary' : 'border-light-subtle' }}" style="cursor: pointer; transition: all 0.2s ease;">
+                                        <div class="d-flex align-items-start gap-3">
+                                            <input type="radio" name="commission_calculation_method" value="default_commission" class="form-check-input mt-1" {{ $commissionMethod === 'default_commission' ? 'checked' : '' }}>
+                                            <div class="w-100">
+                                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <h6 class="mb-0 fw-bold text-dark">6. Default Commission Set</h6>
+                                                        <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 small">Global System Default</span>
+                                                    </div>
+                                                </div>
+                                                <p class="text-muted small mb-2">
+                                                    Standard default rates for <strong>Admin (Pay-In)</strong> and <strong>Staff / Sub-Agents (Pay-Out)</strong> across all policies.
+                                                </p>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                    <span class="badge bg-white text-primary border small font-monospace">
+                                                        <i class="fa-solid fa-hand-holding-dollar me-1"></i>Admin: <strong id="card_preview_default_payin">{{ $defaultPayInVal }}{{ $defaultPayInType === 'percentage' ? '%' : '₹' }}</strong>
+                                                    </span>
+                                                    <span class="badge bg-white text-dark border small font-monospace">
+                                                        <i class="fa-solid fa-users me-1 text-warning"></i>Staff/Agent: <strong id="card_preview_default_payout">{{ $defaultPayOutVal }}{{ $defaultPayOutType === 'percentage' ? '%' : '₹' }}</strong>
+                                                    </span>
+                                                    <span class="badge bg-light text-secondary border small" id="card_preview_default_basis">
+                                                        {{ $defaultPayOutBasedOn === 'premium' ? '% of Premium' : '% of Admin Share' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
+
+                            <input type="hidden" name="default_pay_in_type" id="main_default_pay_in_type" value="{{ $defaultPayInType }}">
+                            <input type="hidden" name="default_pay_in_percentage" id="main_default_pay_in_val" value="{{ $defaultPayInVal }}">
+                            <input type="hidden" name="default_pay_in_value" id="main_default_pay_in_val2" value="{{ $defaultPayInVal }}">
+                            <input type="hidden" name="default_pay_out_type" id="main_default_pay_out_type" value="{{ $defaultPayOutType }}">
+                            <input type="hidden" name="default_pay_out_percentage" id="main_default_pay_out_val" value="{{ $defaultPayOutVal }}">
+                            <input type="hidden" name="default_pay_out_value" id="main_default_pay_out_val2" value="{{ $defaultPayOutVal }}">
+                            <input type="hidden" name="default_pay_out_based_on" id="main_default_pay_out_based_on" value="{{ $defaultPayOutBasedOn }}">
 
                             <hr class="my-4">
 
@@ -211,6 +281,132 @@
                         </div>
                     </div>
                 </form>
+
+                <!-- DEFAULT COMMISSION MASTER MANAGER -->
+                <div class="settings-panel mt-4 commission-method-section" id="section_default_commission" style="{{ $commissionMethod === 'default_commission' ? '' : 'display: none;' }}">
+                    <div class="settings-panel-head d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <i class="fa-solid fa-sliders me-2 text-primary"></i>
+                            <strong>Default Commission Master (Admin &amp; Staff / Sub-Agent)</strong>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-2">Global System Engine</span>
+                        </div>
+                        <div>
+                            <span class="text-muted small">Standard rates automatically applied when no specific rule exists or when Default is selected</span>
+                        </div>
+                    </div>
+                    <div class="settings-panel-body p-4">
+                        <form id="defaultCommissionForm" method="POST" action="{{ route('settings.default-commission.save') }}">
+                            @csrf
+                            <input type="hidden" name="commission_calculation_method" value="default_commission">
+
+                            <div class="row g-4">
+                                <!-- CARD 1: ADMIN SHARE (PAY-IN FROM INSURER) -->
+                                <div class="col-lg-6">
+                                    <div class="card h-100 border-primary border-opacity-25 rounded-4 shadow-sm bg-white">
+                                        <div class="card-header bg-primary text-white py-2 px-3 rounded-top-4 d-flex justify-content-between align-items-center">
+                                            <span class="fw-bold"><i class="fa-solid fa-hand-holding-dollar me-1"></i> PAY-IN (Admin Share)</span>
+                                            <span class="badge bg-white text-primary">From Insurer</span>
+                                        </div>
+                                        <div class="card-body p-3">
+                                            <p class="text-muted small mb-3">
+                                                Standard commission percentage or fixed fee the company / admin receives from the insurance provider.
+                                            </p>
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-semibold text-dark">Commission Type</label>
+                                                    <select name="default_pay_in_type" id="def_pay_in_type" class="form-select form-select-sm">
+                                                        <option value="percentage" {{ $defaultPayInType === 'percentage' ? 'selected' : '' }}>Percentage (%)</option>
+                                                        <option value="fixed" {{ $defaultPayInType === 'fixed' ? 'selected' : '' }}>Fixed Amount (₹)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-semibold text-dark">Pay-In Rate <span class="text-danger">*</span></label>
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text bg-light def-payin-unit">{{ $defaultPayInType === 'percentage' ? '%' : '₹' }}</span>
+                                                        <input type="number" step="0.01" min="0" max="1000000" name="default_pay_in_value" id="def_pay_in_val" class="form-control form-control-sm fw-bold" value="{{ $defaultPayInVal }}" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="p-2 bg-light rounded-3 text-center border">
+                                                <small class="text-muted fw-semibold">Effective Admin Pay-In on ₹100,000</small>
+                                                <div class="h5 fw-bold mb-0 text-primary" id="preview_def_payin_amount">₹20,000.00</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- CARD 2: STAFF / SUB-AGENT SHARE (PAY-OUT TO MEMBER) -->
+                                <div class="col-lg-6">
+                                    <div class="card h-100 border-warning border-opacity-50 rounded-4 shadow-sm bg-white">
+                                        <div class="card-header bg-warning text-dark py-2 px-3 rounded-top-4 d-flex justify-content-between align-items-center">
+                                            <span class="fw-bold"><i class="fa-solid fa-users me-1"></i> PAY-OUT (Staff / Sub-Agent Share)</span>
+                                            <span class="badge bg-dark text-white">Disbursed to Member</span>
+                                        </div>
+                                        <div class="card-body p-3">
+                                            <p class="text-muted small mb-3">
+                                                Standard commission disbursed to the Sub-Agent or Staff member booking the policy.
+                                            </p>
+                                            <div class="row g-2 mb-2">
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-semibold text-dark">Commission Type</label>
+                                                    <select name="default_pay_out_type" id="def_pay_out_type" class="form-select form-select-sm">
+                                                        <option value="percentage" {{ $defaultPayOutType === 'percentage' ? 'selected' : '' }}>Percentage (%)</option>
+                                                        <option value="fixed" {{ $defaultPayOutType === 'fixed' ? 'selected' : '' }}>Fixed Amount (₹)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-semibold text-dark">Pay-Out Rate <span class="text-danger">*</span></label>
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text bg-light def-payout-unit">{{ $defaultPayOutType === 'percentage' ? '%' : '₹' }}</span>
+                                                        <input type="number" step="0.01" min="0" max="1000000" name="default_pay_out_value" id="def_pay_out_val" class="form-control form-control-sm fw-bold" value="{{ $defaultPayOutVal }}" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-semibold text-dark">Pay-Out Calculation Basis</label>
+                                                <select name="default_pay_out_based_on" id="def_pay_out_based_on" class="form-select form-select-sm">
+                                                    <option value="admin_commission" {{ $defaultPayOutBasedOn === 'admin_commission' ? 'selected' : '' }}>
+                                                        % of Admin Commission (Pay-In) — Standard &amp; Recommended
+                                                    </option>
+                                                    <option value="premium" {{ $defaultPayOutBasedOn === 'premium' ? 'selected' : '' }}>
+                                                        % of Gross Premium
+                                                    </option>
+                                                </select>
+                                            </div>
+                                            <div class="p-2 bg-light rounded-3 text-center border">
+                                                <small class="text-muted fw-semibold">Effective Member Pay-Out on ₹100,000</small>
+                                                <div class="h5 fw-bold mb-0 text-warning" style="color: #d97706 !important;" id="preview_def_payout_amount">₹2,000.00</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- LIVE PROFIT SUMMARY CARD -->
+                                <div class="col-12">
+                                    <div class="p-3 rounded-4 d-flex justify-content-between align-items-center flex-wrap gap-3 border border-success border-2 shadow-sm" style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);">
+                                        <div>
+                                            <h6 class="mb-0 fw-bold" style="color: #064e3b !important;">
+                                                <i class="fa-solid fa-calculator text-success me-2"></i>Admin Net Retained Earnings (Example ₹100,000 Booking)
+                                            </h6>
+                                            <small class="text-secondary fw-semibold">Admin Pay-In minus Member Pay-Out</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="text-muted small d-block">Admin Retains:</span>
+                                            <div class="h3 fw-bold mb-0 text-success" id="preview_def_profit_amount">₹18,000.00</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2">
+                                    <span id="defaultCommissionStatus" class="small"></span>
+                                    <button type="submit" class="btn btn-primary px-4 ms-auto" id="btnSaveDefaultCommission">
+                                        <i class="fa-solid fa-floppy-disk me-1"></i> Save Default Commission Rates
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
                 <!-- COMPANY-WISE COMMISSION MASTER MANAGER -->
                 <div class="settings-panel mt-4 commission-method-section" id="section_company_wise" style="{{ $commissionMethod === 'company_wise' ? '' : 'display: none;' }}">
@@ -698,6 +894,236 @@
                     </div>
                 </div>
 
+            </div>
+
+            <!-- BANK & SIGNATURE TAB -->
+            <div class="tab-pane fade" id="bank-signature" role="tabpanel">
+                <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data" id="bankSignatureSettingsForm">
+                    @csrf
+                    @method('PUT')
+                    <div class="settings-panel">
+                        <div class="settings-panel-head d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-building-columns me-2 text-primary"></i> Company Bank Details &amp; Authorized Signature</span>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2">Invoice Auto-Fill</span>
+                        </div>
+                        <div class="settings-panel-body">
+                            <p class="text-muted small mb-4">
+                                Configure the official company banking details and authorized signatory image. These details are automatically included in generated Tax Invoices, Terms &amp; Conditions, and downloadable PDF invoices.
+                            </p>
+
+                            <div class="row g-4 mb-4">
+                                <!-- Bank Details Section -->
+                                <div class="col-lg-7">
+                                    <div class="card border rounded-3 p-3 bg-light bg-opacity-25 h-100">
+                                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                                            <i class="fa-solid fa-landmark text-primary"></i> Company Bank Details
+                                        </h6>
+
+                                        <div class="row g-3">
+                                            <div class="col-md-12">
+                                                <label class="form-label fw-semibold small">Bank Name <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-white"><i class="fa-solid fa-building text-muted"></i></span>
+                                                    <input type="text" name="company_bank_name" class="form-control" 
+                                                        value="{{ old('company_bank_name', $bankName) }}" 
+                                                        placeholder="e.g. ICICI Bank (Tagore Garden)" required>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-semibold small">A/C No <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-white"><i class="fa-solid fa-credit-card text-muted"></i></span>
+                                                    <input type="text" name="company_bank_account_no" class="form-control font-monospace" 
+                                                        value="{{ old('company_bank_account_no', $bankAccountNo) }}" 
+                                                        placeholder="e.g. 335905001025" required>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-semibold small">IFSC CODE <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-white"><i class="fa-solid fa-shield-halved text-muted"></i></span>
+                                                    <input type="text" name="company_bank_ifsc" class="form-control font-monospace text-uppercase" 
+                                                        value="{{ old('company_bank_ifsc', $bankIfsc) }}" 
+                                                        placeholder="e.g. ICIC0003359" required>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-12">
+                                                <label class="form-label fw-semibold small">Branch Name / Remarks</label>
+                                                <input type="text" name="company_bank_branch" class="form-control" 
+                                                    value="{{ old('company_bank_branch', $bankBranch) }}" 
+                                                    placeholder="e.g. Tagore Garden, New Delhi">
+                                                <div class="form-text text-muted small">These banking particulars populate the Remittance / Bank Details block in PDF invoices.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Signature Image Section -->
+                                <div class="col-lg-5">
+                                    <div class="card border rounded-3 p-3 bg-light bg-opacity-25 h-100 d-flex flex-column">
+                                        <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center gap-2">
+                                            <i class="fa-solid fa-signature text-primary"></i> Authorized Signatory
+                                        </h6>
+
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold small">Signature Image File Select</label>
+                                            <input type="file" name="company_signature_path" id="signatureFileInput" class="form-control" accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml">
+                                            <div class="form-text text-muted small">PNG/JPG with transparent/white background. Displays on invoice PDF above Authorized Signatory.</div>
+                                        </div>
+
+                                        <div class="mt-2 text-center p-3 border rounded bg-white flex-grow-1 d-flex flex-column align-items-center justify-content-center" style="min-height: 140px;">
+                                            <div id="signaturePreviewWrapper" class="w-100 text-center">
+                                                <div id="signaturePlaceholder" class="text-muted small {{ $signatureUrl ? 'd-none' : '' }}">
+                                                    <i class="fa-solid fa-signature fs-1 opacity-25 d-block mb-2"></i>
+                                                    No signature uploaded yet.
+                                                </div>
+                                                <img id="signaturePreview" src="{{ $signatureUrl ?? '' }}" alt="Authorized Signature" class="img-fluid {{ $signatureUrl ? '' : 'd-none' }}" style="max-height: 90px; object-fit: contain;" onerror="this.classList.add('d-none'); document.getElementById('signaturePlaceholder')?.classList.remove('d-none'); document.getElementById('signatureStatusText')?.classList.add('d-none');">
+                                                <div id="signatureStatusText" class="text-muted small mt-2 {{ $signatureUrl ? '' : 'd-none' }}">
+                                                    <i class="fa-solid fa-circle-check text-success me-1"></i>Current Signature Preview
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Digital Signature Certificate (DSC) / e-Sign Section -->
+                                <div class="col-12">
+                                    <div class="card border rounded-3 p-3 bg-light bg-opacity-25">
+                                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center pb-2 border-bottom mb-3 gap-2">
+                                            <div>
+                                                <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                                    <i class="fa-solid fa-file-signature text-success fs-5"></i> Digital Signature Certificate (DSC) &amp; e-Sign
+                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 small">GST Compliant</span>
+                                                </h6>
+                                                <small class="text-muted">Configure official DSC Digital Signature metadata and verification box for PDF Invoices</small>
+                                            </div>
+                                            <div class="form-check form-switch fs-6 mb-0 d-flex align-items-center gap-2">
+                                                <input type="hidden" name="dsc_signature_enabled" value="0">
+                                                <input class="form-check-input" type="checkbox" name="dsc_signature_enabled" id="dscSignatureEnabled" value="1" {{ $dscEnabled ? 'checked' : '' }} style="cursor: pointer; width: 2.5em; height: 1.25em;">
+                                                <label class="form-check-label fw-bold small text-dark mb-0" for="dscSignatureEnabled">
+                                                    <span id="dscStatusBadge" class="badge {{ $dscEnabled ? 'bg-success text-white' : 'bg-secondary text-white' }}">
+                                                        {{ $dscEnabled ? 'DSC Active' : 'DSC Disabled' }}
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-semibold small">Invoice Signature Display Mode</label>
+                                                <select name="dsc_display_mode" id="dscDisplayMode" class="form-select">
+                                                    <option value="both" {{ $dscDisplayMode === 'both' ? 'selected' : '' }}>Both (Handwritten Signature + DSC Badge)</option>
+                                                    <option value="dsc_only" {{ $dscDisplayMode === 'dsc_only' ? 'selected' : '' }}>DSC Digital Certificate Only</option>
+                                                    <option value="image_only" {{ $dscDisplayMode === 'image_only' ? 'selected' : '' }}>Handwritten Signature Only</option>
+                                                </select>
+                                                <div class="form-text text-muted small">Choose how the signature block appears on generated PDF invoices.</div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-semibold small">Signatory Person Name</label>
+                                                <input type="text" name="dsc_signatory_name" id="dscSignatoryName" class="form-control" 
+                                                    value="{{ old('dsc_signatory_name', $dscSignatoryName) }}" 
+                                                    placeholder="e.g. Saurav Chaudhari">
+                                                <div class="form-text text-muted small">Full name of the DSC token holder / authorized signatory.</div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-semibold small">Designation / Role</label>
+                                                <input type="text" name="dsc_designation" id="dscDesignation" class="form-control" 
+                                                    value="{{ old('dsc_designation', $dscDesignation) }}" 
+                                                    placeholder="e.g. Director / Authorized Signatory">
+                                                <div class="form-text text-muted small">Official title of the signing authority.</div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-semibold small">Organization / Entity Name</label>
+                                                <input type="text" name="dsc_organization" id="dscOrganization" class="form-control" 
+                                                    value="{{ old('dsc_organization', $dscOrganization) }}" 
+                                                    placeholder="e.g. Riskon Insurance Broking Pvt. Ltd.">
+                                                <div class="form-text text-muted small">Company / Organization name appearing on certificate.</div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-semibold small">Certifying Authority (CA) / Token Issuer</label>
+                                                <input type="text" name="dsc_issuer" id="dscIssuer" class="form-control" 
+                                                    value="{{ old('dsc_issuer', $dscIssuer) }}" 
+                                                    placeholder="e.g. eMudhra Sub-CA / Class 3 DSC">
+                                                <div class="form-text text-muted small">Name of DSC Certifying Authority / Token type.</div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-semibold small">Location / City</label>
+                                                <input type="text" name="dsc_location" id="dscLocation" class="form-control" 
+                                                    value="{{ old('dsc_location', $dscLocation) }}" 
+                                                    placeholder="e.g. New Delhi, India">
+                                                <div class="form-text text-muted small">Signing jurisdiction or business location.</div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-semibold small">Signing Reason</label>
+                                                <input type="text" name="dsc_reason" id="dscReason" class="form-control" 
+                                                    value="{{ old('dsc_reason', $dscReason) }}" 
+                                                    placeholder="e.g. Tax Invoice Verification & Authorization">
+                                                <div class="form-text text-muted small">Stated purpose for electronic signing of invoice.</div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-semibold small">Custom DSC Stamp / Seal Image (Optional)</label>
+                                                <input type="file" name="dsc_stamp_path" id="dscStampFileInput" class="form-control" accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml">
+                                                <div class="form-text text-muted small">Optional custom emblem or green DSC seal. If none uploaded, default green verified badge renders.</div>
+                                            </div>
+
+                                            <!-- Live Preview Box -->
+                                            <div class="col-12 mt-2">
+                                                <div class="border rounded-3 p-3 bg-white">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                                                        <span class="fw-bold small text-uppercase text-muted" style="letter-spacing: 0.05em;">
+                                                            <i class="fa-solid fa-eye text-primary me-1"></i> Live Invoice DSC Box Preview
+                                                        </span>
+                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 small">
+                                                            <i class="fa-solid fa-check-circle me-1"></i>Official Preview
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 p-2 bg-light bg-opacity-50 rounded">
+                                                        <div class="text-muted small">
+                                                            This preview demonstrates how the official signature block will appear on downloaded PDF invoices:
+                                                        </div>
+
+                                                        <!-- Live Rendered Box -->
+                                                        <div class="border border-success rounded p-2 bg-white text-start shadow-sm" style="min-width: 250px; max-width: 320px; font-size: 11px; border-left: 3px solid #198754 !important;">
+                                                            <div class="d-flex align-items-center gap-1 text-success fw-bold pb-1 border-bottom border-success border-opacity-25 mb-1" style="font-size: 11.5px;">
+                                                                <i class="fa-solid fa-circle-check text-success"></i> Digitally Signed by
+                                                            </div>
+                                                            <div class="fw-bold text-dark" id="liveDscSigner">{{ $dscSignatoryName }}</div>
+                                                            <div class="text-muted" style="font-size: 10px; line-height: 1.35;">
+                                                                <div><strong>Desg:</strong> <span id="liveDscDesg">{{ $dscDesignation }}</span></div>
+                                                                <div><strong>Org:</strong> <span id="liveDscOrg">{{ $dscOrganization }}</span></div>
+                                                                <div><strong>Date:</strong> <span>{{ now()->timezone('Asia/Kolkata')->format('d M Y, h:i A') }} IST</span></div>
+                                                                <div><strong>CA:</strong> <span id="liveDscIssuer">{{ $dscIssuer }}</span></div>
+                                                                <div><strong>Loc:</strong> <span id="liveDscLoc">{{ $dscLocation }}</span></div>
+                                                                <div><strong>Reason:</strong> <span id="liveDscReason">{{ $dscReason }}</span></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-dark-blue px-4">
+                                    <i class="fa-solid fa-floppy-disk me-1"></i> Save Bank &amp; Signature Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
 
             <!-- EMAIL SMTP TAB -->
@@ -1249,7 +1675,7 @@
                             <div class="col-md-6">
                                 <div class="card h-100 border-primary border-opacity-25 rounded-4 shadow-sm" style="background: #ffffff;">
                                     <div class="card-header bg-primary text-white py-2 px-3 rounded-top-4 d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold"><i class="fa-solid fa-arrow-down-left me-1"></i> PAY-IN (Admin Share)</span>
+                                        <span class="fw-bold"><i class="fa-solid fa-hand-holding-dollar me-1"></i> PAY-IN (Admin Share)</span>
                                         <span class="badge bg-white text-primary">From Company</span>
                                     </div>
                                     <div class="card-body p-3">
@@ -1391,7 +1817,7 @@
                             <div class="col-md-6">
                                 <div class="card h-100 border-primary border-opacity-25 rounded-4 shadow-sm" style="background: #ffffff;">
                                     <div class="card-header bg-primary text-white py-2 px-3 rounded-top-4 d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold"><i class="fa-solid fa-arrow-down-left me-1"></i> PAY-IN (Admin Share)</span>
+                                        <span class="fw-bold"><i class="fa-solid fa-hand-holding-dollar me-1"></i> PAY-IN (Admin Share)</span>
                                         <span class="badge bg-white text-primary">From Company</span>
                                     </div>
                                     <div class="card-body p-3">
@@ -1524,7 +1950,7 @@
                             <div class="col-md-6">
                                 <div class="card h-100 border-primary border-opacity-25 rounded-4 shadow-sm" style="background: #ffffff;">
                                     <div class="card-header bg-primary text-white py-2 px-3 rounded-top-4 d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold"><i class="fa-solid fa-arrow-down-left me-1"></i> PAY-IN (Admin Share)</span>
+                                        <span class="fw-bold"><i class="fa-solid fa-hand-holding-dollar me-1"></i> PAY-IN (Admin Share)</span>
                                         <span class="badge bg-white text-primary">From Company</span>
                                     </div>
                                     <div class="card-body p-3">
@@ -1669,7 +2095,7 @@
                                 <div class="card h-100 border-2 rounded-4 shadow-sm" style="border-color: #10b981;">
                                     <div class="card-header bg-white border-0 pt-3 pb-0">
                                         <div class="d-flex align-items-center gap-2">
-                                            <span class="badge bg-success text-white rounded-pill px-2 py-1"><i class="fa-solid fa-arrow-down-left"></i> Pay-In</span>
+                                            <span class="badge bg-success text-white rounded-pill px-2 py-1"><i class="fa-solid fa-hand-holding-dollar"></i> Pay-In</span>
                                             <h6 class="mb-0 fw-bold text-dark">Admin Earnings</h6>
                                         </div>
                                         <small class="text-muted d-block mt-1">Admin's commission received from insurer.</small>
@@ -1965,6 +2391,92 @@
                         error: function(xhr) {
                             btn.prop('disabled', false).html(origHtml);
                             const msg = xhr.responseJSON?.message || 'Failed to save settings.';
+                            statusEl.removeClass('text-muted text-success').addClass('text-danger').html('<i class="fa fa-circle-exclamation me-1"></i> ' + msg);
+                        }
+                    });
+                });
+
+                // ==========================================
+                // DEFAULT COMMISSION RECALCULATION & SUBMIT
+                // ==========================================
+                function recalculateDefaultCommissionSummary() {
+                    const inType = $('#def_pay_in_type').val() || 'percentage';
+                    const inVal = parseFloat($('#def_pay_in_val').val()) || 0;
+                    const outType = $('#def_pay_out_type').val() || 'percentage';
+                    const outVal = parseFloat($('#def_pay_out_val').val()) || 0;
+                    const outBase = $('#def_pay_out_based_on').val() || 'admin_commission';
+
+                    $('.def-payin-unit').text(inType === 'percentage' ? '%' : '₹');
+                    $('.def-payout-unit').text(outType === 'percentage' ? '%' : '₹');
+
+                    // Standard calculation based on ₹100,000 example
+                    const examplePremium = 100000;
+                    let payInAmt = 0;
+                    if (inType === 'percentage') {
+                        payInAmt = (examplePremium * inVal) / 100;
+                    } else {
+                        payInAmt = inVal;
+                    }
+
+                    let payOutAmt = 0;
+                    if (outType === 'percentage') {
+                        const baseAmt = (outBase === 'premium') ? examplePremium : payInAmt;
+                        payOutAmt = (baseAmt * outVal) / 100;
+                    } else {
+                        payOutAmt = outVal;
+                    }
+
+                    const netProfit = Math.max(0, payInAmt - payOutAmt);
+
+                    $('#preview_def_payin_amount').text('₹' + payInAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                    $('#preview_def_payout_amount').text('₹' + payOutAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                    $('#preview_def_profit_amount').text('₹' + netProfit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+                    // Update Card Preview Badges
+                    $('#card_preview_default_payin').text(inVal + (inType === 'percentage' ? '%' : '₹'));
+                    $('#card_preview_default_payout').text(outVal + (outType === 'percentage' ? '%' : '₹'));
+                    $('#card_preview_default_basis').text(outBase === 'premium' ? '% of Premium' : '% of Admin Share');
+
+                    // Sync into main settings form hidden fields
+                    $('#main_default_pay_in_type').val(inType);
+                    $('#main_default_pay_in_val, #main_default_pay_in_val2').val(inVal);
+                    $('#main_default_pay_out_type').val(outType);
+                    $('#main_default_pay_out_val, #main_default_pay_out_val2').val(outVal);
+                    $('#main_default_pay_out_based_on').val(outBase);
+                }
+
+                $('#def_pay_in_type, #def_pay_out_type, #def_pay_out_based_on').on('change', recalculateDefaultCommissionSummary);
+                $('#def_pay_in_val, #def_pay_out_val').on('input', recalculateDefaultCommissionSummary);
+                recalculateDefaultCommissionSummary();
+
+                // Submit Default Commission Form via AJAX
+                $('#defaultCommissionForm').on('submit', function(e) {
+                    e.preventDefault();
+                    const btn = $('#btnSaveDefaultCommission');
+                    const origHtml = btn.html();
+                    const statusEl = $('#defaultCommissionStatus');
+                    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Saving Default Rates...');
+                    statusEl.removeClass('text-danger text-success').addClass('text-muted').html('<span class="spinner-border spinner-border-sm me-1"></span> Saving...');
+
+                    $.ajax({
+                        url: $(this).attr('action'),
+                        type: 'POST',
+                        data: $(this).serialize(),
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        success: function(res) {
+                            btn.prop('disabled', false).html(origHtml);
+                            statusEl.removeClass('text-muted text-danger').addClass('text-success').html('<i class="fa fa-circle-check me-1"></i> ' + (res.message || 'Default commission rates saved successfully.'));
+                            if (typeof toastr !== 'undefined') {
+                                toastr.success('Default commission rates updated!');
+                            }
+                            recalculateDefaultCommissionSummary();
+                            setTimeout(function() {
+                                statusEl.fadeOut(500, function() { $(this).text('').show(); });
+                            }, 3500);
+                        },
+                        error: function(xhr) {
+                            btn.prop('disabled', false).html(origHtml);
+                            const msg = xhr.responseJSON?.message || 'Failed to save default commission.';
                             statusEl.removeClass('text-muted text-success').addClass('text-danger').html('<i class="fa fa-circle-exclamation me-1"></i> ' + msg);
                         }
                     });
@@ -2582,6 +3094,92 @@
                             submitBtn.prop('disabled', false).html(origHtml);
                             const msg = xhr.responseJSON?.message || 'Failed to save policy commission.';
                             alert(msg);
+                        }
+                    });
+                });
+
+                // Instant signature preview on file select
+                $('#signatureFileInput').on('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(evt) {
+                            $('#signaturePlaceholder').addClass('d-none');
+                            $('#signaturePreview').attr('src', evt.target.result).removeClass('d-none');
+                            $('#signatureStatusText').removeClass('d-none').html('<i class="fa-solid fa-circle-check text-success me-1"></i>New Signature Selected (Click Save below)');
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                // Live DSC preview updating
+                $('#dscSignatoryName').on('input', function() {
+                    $('#liveDscSigner').text($(this).val().trim() || 'Authorized Signatory');
+                });
+                $('#dscDesignation').on('input', function() {
+                    $('#liveDscDesg').text($(this).val().trim() || 'Authorized Signatory');
+                });
+                $('#dscOrganization').on('input', function() {
+                    $('#liveDscOrg').text($(this).val().trim() || 'Riskon Insurance Broking');
+                });
+                $('#dscIssuer').on('input', function() {
+                    $('#liveDscIssuer').text($(this).val().trim() || 'eMudhra CA');
+                });
+                $('#dscLocation').on('input', function() {
+                    $('#liveDscLoc').text($(this).val().trim() || 'Delhi, India');
+                });
+                $('#dscReason').on('input', function() {
+                    $('#liveDscReason').text($(this).val().trim() || 'Tax Invoice Verification');
+                });
+                $('#dscSignatureEnabled').on('change', function() {
+                    const isChecked = $(this).is(':checked');
+                    const badge = $('#dscStatusBadge');
+
+                    badge.removeClass('bg-success bg-secondary text-white')
+                         .addClass('bg-warning text-dark')
+                         .html('<i class="fa-solid fa-spinner fa-spin me-1"></i>Saving...');
+
+                    $.ajax({
+                        url: window.settingsPageConfig?.settingsUpdate || '{{ route("settings.update") }}',
+                        type: 'POST',
+                        dataType: 'json',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            _method: 'PUT',
+                            dsc_signature_enabled: isChecked ? 1 : 0
+                        },
+                        success: function(res) {
+                            if (isChecked) {
+                                badge.removeClass('bg-warning text-dark bg-secondary')
+                                     .addClass('bg-success text-white')
+                                     .text('DSC Active');
+                                if (typeof toastr !== 'undefined') {
+                                    toastr.success('DSC Digital Signature enabled successfully!');
+                                }
+                            } else {
+                                badge.removeClass('bg-warning text-dark bg-success')
+                                     .addClass('bg-secondary text-white')
+                                     .text('DSC Disabled');
+                                if (typeof toastr !== 'undefined') {
+                                    toastr.info('DSC Digital Signature disabled.');
+                                }
+                            }
+                        },
+                        error: function(xhr) {
+                            console.error('Failed to update DSC status:', xhr);
+                            $('#dscSignatureEnabled').prop('checked', !isChecked);
+                            badge.removeClass('bg-warning text-dark')
+                                 .addClass(!isChecked ? 'bg-success text-white' : 'bg-secondary text-white')
+                                 .text(!isChecked ? 'DSC Active' : 'DSC Disabled');
+                            if (typeof toastr !== 'undefined') {
+                                toastr.error('Failed to update DSC status. Please try again.');
+                            } else {
+                                alert('Failed to update DSC status. Please try again.');
+                            }
                         }
                     });
                 });

@@ -22,7 +22,7 @@ class SettingController extends Controller
                 abort(403, 'Unauthorized access to settings.');
             }
             return $next($request);
-        });
+        })->except(['signatureImage', 'dscStampImage']);
     }
 
     public function index()
@@ -545,6 +545,51 @@ class SettingController extends Controller
         ]);
     }
 
+    /**
+     * Save/Update default global commission rates directly from Settings
+     */
+    public function saveDefaultCommission(Request $request)
+    {
+        $validated = $request->validate([
+            'default_pay_in_type'           => 'required|in:percentage,fixed',
+            'default_pay_in_value'          => 'required|numeric|min:0',
+            'default_pay_out_type'          => 'required|in:percentage,fixed',
+            'default_pay_out_value'         => 'required|numeric|min:0',
+            'default_pay_out_based_on'      => 'required|in:admin_commission,premium',
+            'commission_calculation_method' => 'nullable|string|in:company_wise,category_wise,sub_type_wise,agent_wise,policy_wise,manual_override,default_commission',
+        ]);
+
+        $inVal = (float) $validated['default_pay_in_value'];
+        $outVal = (float) $validated['default_pay_out_value'];
+
+        Setting::updateOrCreate(['key' => 'default_pay_in_type'], ['value' => $validated['default_pay_in_type'], 'group' => 'commission', 'type' => 'string']);
+        Setting::updateOrCreate(['key' => 'default_pay_in_percentage'], ['value' => (string) $inVal, 'group' => 'commission', 'type' => 'string']);
+        Setting::updateOrCreate(['key' => 'default_pay_in_value'], ['value' => (string) $inVal, 'group' => 'commission', 'type' => 'string']);
+
+        Setting::updateOrCreate(['key' => 'default_pay_out_type'], ['value' => $validated['default_pay_out_type'], 'group' => 'commission', 'type' => 'string']);
+        Setting::updateOrCreate(['key' => 'default_pay_out_percentage'], ['value' => (string) $outVal, 'group' => 'commission', 'type' => 'string']);
+        Setting::updateOrCreate(['key' => 'default_pay_out_value'], ['value' => (string) $outVal, 'group' => 'commission', 'type' => 'string']);
+
+        Setting::updateOrCreate(['key' => 'default_pay_out_based_on'], ['value' => $validated['default_pay_out_based_on'], 'group' => 'commission', 'type' => 'string']);
+
+        if (!empty($validated['commission_calculation_method'])) {
+            Setting::updateOrCreate(['key' => 'commission_calculation_method'], ['value' => $validated['commission_calculation_method'], 'group' => 'commission', 'type' => 'string']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Default commission rates saved successfully.',
+            'data' => [
+                'pay_in_type' => $validated['default_pay_in_type'],
+                'pay_in_value' => $inVal,
+                'pay_out_type' => $validated['default_pay_out_type'],
+                'pay_out_value' => $outVal,
+                'pay_out_based_on' => $validated['default_pay_out_based_on'],
+                'method' => $validated['commission_calculation_method'] ?? null,
+            ]
+        ]);
+    }
+
     public function update(Request $request)
     {
         try {
@@ -663,9 +708,34 @@ class SettingController extends Controller
             'whatsapp_integration_enabled' => ['sometimes', 'required', 'boolean'],
             'social_integrations_enabled' => ['sometimes', 'required', 'boolean'],
             'google_connection_enabled' => ['sometimes', 'required', 'boolean'],
-            'commission_calculation_method' => ['sometimes', 'required', 'in:company_wise,category_wise,sub_type_wise,agent_wise,policy_wise,manual_override'],
+            'commission_calculation_method' => ['sometimes', 'required', 'in:company_wise,category_wise,sub_type_wise,agent_wise,policy_wise,manual_override,default_commission'],
             'commission_allow_manual_override' => ['sometimes', 'nullable', 'boolean'],
+            'default_pay_in_type' => ['sometimes', 'nullable', 'in:percentage,fixed'],
+            'default_pay_in_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'default_pay_in_value' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'default_pay_out_type' => ['sometimes', 'nullable', 'in:percentage,fixed'],
+            'default_pay_out_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'default_pay_out_value' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'default_pay_out_based_on' => ['sometimes', 'nullable', 'in:admin_commission,premium'],
+            'company_bank_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_bank_account_no' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_bank_ifsc' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_bank_branch' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_signature_path' => ['sometimes', 'nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:4096'],
+            'dsc_signature_enabled' => ['sometimes', 'nullable'],
+            'dsc_signatory_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'dsc_designation' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'dsc_organization' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'dsc_issuer' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'dsc_location' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'dsc_reason' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'dsc_display_mode' => ['sometimes', 'nullable', 'in:image_only,dsc_only,both'],
+            'dsc_stamp_path' => ['sometimes', 'nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:4096'],
         ]);
+
+        if ($request->has('company_bank_name') || $request->has('dsc_signatory_name') || $request->exists('dsc_signature_enabled')) {
+            $validated['dsc_signature_enabled'] = $request->boolean('dsc_signature_enabled') ? '1' : '0';
+        }
 
         foreach ($validated as $key => $value) {
             // Passwords are never sent back to the settings form. An empty value
@@ -673,6 +743,9 @@ class SettingController extends Controller
             if ($key === 'mail_password' && ($value === null || $value === '')) {
                 continue;
             }
+
+            $fileKeys = ['company_signature_path', 'dsc_stamp_path', 'firebase_key_file', 'company_logo', 'company_stamp'];
+            $isPotentialFileField = in_array($key, $fileKeys, true) || str_ends_with($key, '_path') || str_ends_with($key, '_file');
 
             if ($request->hasFile($key)) {
                 $oldSetting = Setting::where('key', $key)->first();
@@ -682,7 +755,7 @@ class SettingController extends Controller
 
                 $path = $request->file($key)->store('company', 'public');
                 $value = $path;
-            } elseif ($request->exists($key) && $request->file($key) === null && str_contains($key, 'logo')) {
+            } elseif ($isPotentialFileField && !$request->hasFile($key)) {
                 continue;
             }
 
@@ -691,8 +764,10 @@ class SettingController extends Controller
             // Some live databases may still be on an older schema; avoid writing
             // columns that do not exist there.
             if (Schema::hasColumn('settings', 'group')) {
-                if (str_starts_with($key, 'commission_')) {
+                if (str_starts_with($key, 'commission_') || str_starts_with($key, 'default_pay_')) {
                     $attributes['group'] = 'commission';
+                } elseif (str_starts_with($key, 'company_bank_') || str_contains($key, 'signature') || str_starts_with($key, 'dsc_')) {
+                    $attributes['group'] = 'bank_signature';
                 } elseif (str_starts_with($key, 'mail_')) {
                     $attributes['group'] = 'smtp';
                 } elseif (in_array($key, ['whatsapp_integration_enabled', 'social_integrations_enabled', 'google_connection_enabled', 'google_client_id', 'google_client_secret', 'firebase_key_file'])) {
@@ -703,7 +778,7 @@ class SettingController extends Controller
             }
 
             if (Schema::hasColumn('settings', 'type')) {
-                $attributes['type'] = $request->hasFile($key) ? 'file' : (is_bool($value) || in_array($key, ['commission_allow_manual_override', 'whatsapp_integration_enabled', 'social_integrations_enabled', 'google_connection_enabled']) ? 'boolean' : 'string');
+                $attributes['type'] = $request->hasFile($key) ? 'file' : (is_bool($value) || in_array($key, ['dsc_signature_enabled', 'commission_allow_manual_override', 'whatsapp_integration_enabled', 'social_integrations_enabled', 'google_connection_enabled']) ? 'boolean' : 'string');
             }
 
             Setting::updateOrCreate(['key' => $key], $attributes);
@@ -743,5 +818,59 @@ class SettingController extends Controller
             'customer_welcome_message' => 'Customer Welcome Message',
             'customer_profile_updated' => 'Customer Profile Updated',
         ];
+    }
+
+    public function signatureImage()
+    {
+        $path = Setting::query()->where('key', 'company_signature_path')->value('value');
+
+        if (!$path) {
+            abort(404, 'Signature image not configured.');
+        }
+
+        $candidates = [
+            Storage::disk('public')->path($path),
+            storage_path('app/public/' . ltrim($path, '/\\')),
+            storage_path('app/' . ltrim($path, '/\\')),
+            public_path('storage/' . ltrim($path, '/\\')),
+            public_path(ltrim($path, '/\\')),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($candidate && file_exists($candidate) && !is_dir($candidate)) {
+                return response()->file($candidate, [
+                    'Cache-Control' => 'public, max-age=86400',
+                ]);
+            }
+        }
+
+        abort(404, 'Signature image file not found on disk.');
+    }
+
+    public function dscStampImage()
+    {
+        $path = Setting::query()->where('key', 'dsc_stamp_path')->value('value');
+
+        if (!$path) {
+            abort(404, 'DSC stamp image not configured.');
+        }
+
+        $candidates = [
+            Storage::disk('public')->path($path),
+            storage_path('app/public/' . ltrim($path, '/\\')),
+            storage_path('app/' . ltrim($path, '/\\')),
+            public_path('storage/' . ltrim($path, '/\\')),
+            public_path(ltrim($path, '/\\')),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($candidate && file_exists($candidate) && !is_dir($candidate)) {
+                return response()->file($candidate, [
+                    'Cache-Control' => 'public, max-age=86400',
+                ]);
+            }
+        }
+
+        abort(404, 'DSC stamp image file not found on disk.');
     }
 }

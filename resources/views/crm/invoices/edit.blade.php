@@ -1,109 +1,401 @@
 @extends('layouts.app')
 
-@section('page_title', 'Edit Invoice')
+@section('page_title', 'Edit Invoice #' . $invoice->number)
+
+@push('styles')
+    <style>
+        .invoice-type-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+        .invoice-type-card.active {
+            border-color: #0d6efd;
+            background-color: #f0f7ff;
+        }
+        .billing-account-box {
+            background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+        }
+    </style>
+@endpush
 
 @section('content')
-    <div class="container-fluid p-0">
-        <div class="card shadow-sm border-0 rounded-4 overflow-hidden invoice-form-card">
-            <div class="card-body p-0">
-                {{-- Header Section --}}
-                <div class="p-4 border-bottom bg-light bg-opacity-50">
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 w-100">
-                        <div class="flex-grow-1 w-100">
-                            <h1 class="h4 mb-1 fw-bold">Edit Invoice</h1>
-                            <p class="text-muted small mb-0">Update invoice details and line items.</p>
-                        </div>
-                        <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-lg-end justify-content-md-end">
-                            <a href="{{ route('invoices.show', $invoice->id) }}" class="btn btn-outline-dark-blue flex-grow-1 flex-md-grow-0">
-                                <i class="bi bi-eye me-1"></i>View
-                            </a>
-                            <a href="{{ route('invoices.index') }}" class="btn btn-dark-blue flex-grow-1 flex-md-grow-0">
-                                <i class="fa-solid fa-angle-left pe-2"></i>Back
-                            </a>
-                        </div>
-                    </div>
+<div class="container-fluid p-0">
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden invoice-form-card mb-4">
+        {{-- Card Header --}}
+        <div class="card-header bg-white border-bottom py-3 px-3 px-md-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h1 class="h4 mb-1 fw-bold text-dark">
+                        <i class="fa-solid fa-pen-to-square text-primary me-2"></i>Edit Invoice {{ $invoice->number }}
+                    </h1>
+                    <p class="text-muted small mb-0">Update invoice information, line items, and payment status.</p>
                 </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('invoices.show', $invoice->id) }}" class="btn btn-outline-dark-blue">
+                        <i class="bi bi-eye me-1"></i>View
+                    </a>
+                    <a href="{{ route('invoices.index') }}" class="btn btn-dark-blue invoice-back-btn">
+                        <i class="fa-solid fa-angle-left pe-1"></i>
+                        <span>Back</span>
+                    </a>
+                </div>
+            </div>
+        </div>
 
-                <div class="p-4">
-            <form action="/api/invoices/{{ $invoice->id }}" method="POST" class="ajax-invoice-form needs-validation" novalidate>
+        <div class="card-body p-3 p-md-4">
+            <form action="{{ route('invoices.update', $invoice->id) }}" method="POST" id="editInvoiceForm" class="ajax-invoice-form needs-validation" novalidate>
                 @csrf
                 @method('PUT')
 
-                <div class="row gy-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Customer <span class="text-danger">*</span></label>
-                        <select name="customer_id" id="customer_id" class="form-select" data-search-url="{{ route('api.customers.search') }}" data-search-type="customer" data-search-placeholder="-- Search Customer --" required>
+                @php
+                    $isCompanyPayIn = ($invoice->invoice_type === 'company_pay_in' || !empty($invoice->company_id));
+                @endphp
+
+                {{-- 1. Invoice Type Selector --}}
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-uppercase small text-muted mb-2">Invoice Type</label>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="invoice-type-card {{ $isCompanyPayIn ? 'active' : '' }}" id="cardCompanyPayIn" onclick="switchInvoiceType('company_pay_in')">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="form-check mt-1">
+                                        <input class="form-check-input" type="radio" name="invoice_type" id="type_company_pay_in" value="company_pay_in" @checked($isCompanyPayIn)>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-dark">
+                                            <i class="fa-solid fa-building-columns text-primary me-2"></i>Company Pay-In Invoice
+                                        </h6>
+                                        <p class="text-muted small mb-0">
+                                            Invoiced to Insurance Company for policy Pay-In commissions.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="invoice-type-card {{ !$isCompanyPayIn ? 'active' : '' }}" id="cardCustomer" onclick="switchInvoiceType('customer')">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="form-check mt-1">
+                                        <input class="form-check-input" type="radio" name="invoice_type" id="type_customer" value="customer" @checked(!$isCompanyPayIn)>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-dark">
+                                            <i class="fa-solid fa-user-tag text-secondary me-2"></i>Customer Invoice
+                                        </h6>
+                                        <p class="text-muted small mb-0">
+                                            Direct client billing for policy or service fees.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 2. Remittance Billing Account Details --}}
+                <div id="billingAccountSection" class="billing-account-box p-3 p-md-4 mb-4 {{ $isCompanyPayIn ? '' : 'd-none' }}">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <span class="badge bg-success text-white px-2 py-1">
+                            <i class="fa-solid fa-shield-check me-1"></i>Remittance Billing Account (Accounts.csv)
+                        </span>
+                        <span class="badge bg-white text-success border border-success-subtle px-2 py-1">
+                            <i class="fa-solid fa-circle-check text-success me-1"></i>Active Account
+                        </span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label text-muted small fw-semibold text-uppercase mb-1">Account Name</label>
+                            <input type="text" name="account_name" class="form-control form-control-sm bg-white" 
+                                value="{{ old('account_name', $invoice->account_name ?? 'My Billing Account') }}" required>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label text-muted small fw-semibold text-uppercase mb-1">Account ID Code</label>
+                            <input type="text" name="account_id_code" class="form-control form-control-sm font-monospace bg-white fw-bold text-primary" 
+                                value="{{ old('account_id_code', $invoice->account_id_code ?? '01E2F9-74AFE8-B222F4') }}" required>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label text-muted small fw-semibold text-uppercase mb-1">Account Type</label>
+                            <input type="text" name="account_type" class="form-control form-control-sm bg-white" 
+                                value="{{ old('account_type', $invoice->account_type ?? 'Direct') }}" required>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label text-muted small fw-semibold text-uppercase mb-1">Organization</label>
+                            <input type="text" name="organization" class="form-control form-control-sm bg-white fw-semibold" 
+                                value="{{ old('organization', $invoice->organization ?? 'Riskon Insurance') }}" required>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 3. Invoice Target & Meta Information --}}
+                <div class="row gy-3 mb-4">
+                    {{-- Company Pay-In Target --}}
+                    <div class="col-md-6 {{ $isCompanyPayIn ? '' : 'd-none' }}" id="fieldCompany">
+                        <label class="form-label fw-bold">Insurance Company <span class="text-danger">*</span></label>
+                        <select name="company_id" id="company_id" class="form-select select2" {{ $isCompanyPayIn ? 'required' : '' }}>
+                            <option value="">-- Select Insurance Company --</option>
+                            @foreach($companies as $company)
+                                <option value="{{ $company->id }}" @selected((string) old('company_id', $invoice->company_id) === (string) $company->id)>
+                                    {{ $company->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Customer Target --}}
+                    <div class="col-md-6 {{ !$isCompanyPayIn ? '' : 'd-none' }}" id="fieldCustomer">
+                        <label class="form-label fw-bold">Customer <span class="text-danger">*</span></label>
+                        <select name="customer_id" id="customer_id" class="form-select select2" {{ !$isCompanyPayIn ? 'required' : '' }}>
                             <option value="">-- Search Customer --</option>
                             @foreach($customers as $customer)
-                                <option value="{{ $customer->id }}" data-email="{{ $customer->email }}" data-phone="{{ $customer->phone }}" @selected($invoice->customer_id == $customer->id)>{{ $customer->name }}</option>
+                                <option value="{{ $customer->id }}" @selected((string) old('customer_id', $invoice->customer_id) === (string) $customer->id)>
+                                    {{ $customer->name }} ({{ $customer->email ?? 'No Email' }})
+                                </option>
                             @endforeach
                         </select>
                     </div>
+
+                    {{-- Invoice Number --}}
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Invoice Date <span class="text-danger">*</span></label>
-                        <input type="date" name="invoice_date" class="form-control" value="{{ optional($invoice->invoice_date)->format('Y-m-d') }}" required>
+                        <label class="form-label fw-bold">Invoice Number <span class="text-danger">*</span></label>
+                        <input type="text" name="number" id="invoiceNumberInput" class="form-control font-monospace" 
+                            value="{{ old('number', $invoice->number) }}" required>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Due Date <span class="text-danger">*</span></label>
-                        <input type="date" name="due_date" class="form-control" value="{{ optional($invoice->due_date)->format('Y-m-d') }}" required>
+
+                    {{-- Invoice Date --}}
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Invoice Date <span class="text-danger">*</span></label>
+                        <input type="date" name="invoice_date" class="form-control" 
+                            value="{{ old('invoice_date', optional($invoice->invoice_date)->format('Y-m-d')) }}" required>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Currency <span class="text-danger">*</span></label>
-                        <select name="currency_id" class="form-select" required>
-                            <option value="">Select currency</option>
-                            @foreach($currencies as $currency)
-                                <option value="{{ $currency->id }}" @selected($invoice->currency_id == $currency->id)>{{ $currency->symbol }} - {{ $currency->name }}</option>
-                            @endforeach
+
+                    {{-- Due Date --}}
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Due Date</label>
+                        <input type="date" name="due_date" class="form-control" 
+                            value="{{ old('due_date', optional($invoice->due_date)->format('Y-m-d')) }}">
+                    </div>
+
+                    {{-- Status --}}
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Payment Status <span class="text-danger">*</span></label>
+                        <select name="status" class="form-select" required>
+                            <option value="unpaid" @selected($invoice->status === 'unpaid')>Unpaid (Pending Remittance)</option>
+                            <option value="paid" @selected($invoice->status === 'paid')>Paid (Remitted)</option>
+                            <option value="cancelled" @selected($invoice->status === 'cancelled')>Cancelled</option>
                         </select>
-                    </div>
-                    <div class="col-md-12">
-                        <label class="form-label fw-semibold">Comment</label>
-                        <textarea name="comment" class="form-control" rows="2">{{ $invoice->comment }}</textarea>
                     </div>
                 </div>
 
-                <div class="mt-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0">Line Items</h5>
-                        <button type="button" id="addItemBtn" class="btn btn-sm crm-action-btn">Add Item</button>
+                {{-- 4. Line Items Table --}}
+                <div class="card border rounded-3 mb-4 shadow-none">
+                    <div class="card-header bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold text-dark">
+                            <i class="fa-solid fa-receipt text-primary me-2"></i>Invoice Line Items
+                        </h6>
+                        <button type="button" id="addCustomItemBtn" class="btn btn-sm btn-outline-dark-blue">
+                            <i class="fa-solid fa-plus me-1"></i>Add Line Item
+                        </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 35%;">Product Name</th>
-                                    <th style="width: 20%;">Amount</th>
-                                    <th style="width: 15%;">Quantity</th>
-                                    <th style="width: 20%;">Total</th>
-                                    <th style="width: 10%;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="invoiceItemsBody">
-                                @foreach($invoice->items as $index => $item)
+
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle mb-0" id="invoiceItemsTable">
+                                <thead class="table-light">
                                     <tr>
-                                        <td>
-                                            <select name="items[{{ $index }}][product_id]" class="form-select product-select" required>
-                                                <option value="">Select product</option>
-                                                @foreach($products as $product)
-                                                    <option value="{{ $product->id }}" data-name="{{ $product->name }}" data-price="{{ $product->price }}" @selected($product->id == $item->product_id)>{{ $product->name }}</option>
-                                                @endforeach
-                                            </select>
-                                            <input type="hidden" name="items[{{ $index }}][product_name]" value="{{ $item->product_name }}">
-                                        </td>
-                                        <td><input type="number" step="0.01" min="0" name="items[{{ $index }}][amount]" class="form-control item-amount" value="{{ $item->amount }}" required></td>
-                                        <td><input type="number" min="1" name="items[{{ $index }}][quantity]" class="form-control item-quantity" value="{{ $item->quantity }}" required></td>
-                                        <td><input type="text" class="form-control item-total" readonly value="{{ number_format($item->amount * $item->quantity, 2) }}"></td>
-                                        <td><button type="button" class="btn btn-danger btn-sm remove-item">Delete</button></td>
+                                        <th style="min-width: 250px;">Item / Policy Description <span class="text-danger">*</span></th>
+                                        <th style="width: 110px;" class="text-center">HSN/SAC</th>
+                                        <th style="width: 140px;" class="text-end col-payin {{ $isCompanyPayIn ? '' : 'd-none' }}">Gross Premium (₹)</th>
+                                        <th style="width: 110px;" class="text-center col-payin {{ $isCompanyPayIn ? '' : 'd-none' }}">Pay-In %</th>
+                                        <th style="width: 140px;" class="text-end" id="thAmount">{{ $isCompanyPayIn ? 'Pay-In Amount (₹) *' : 'Rate / Amount (₹) *' }}</th>
+                                        <th style="width: 90px;" class="text-center">Qty <span class="text-danger">*</span></th>
+                                        <th style="width: 150px;" class="text-end">Total (₹)</th>
+                                        <th style="width: 60px;" class="text-center">Action</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody id="invoiceItemsBody">
+                                    @foreach($invoice->items as $idx => $item)
+                                        @php
+                                            $premium = (float) ($item->gross_premium ?? 0);
+                                            $pct = (float) ($item->pay_in_percentage ?? 0);
+                                            $amt = (float) ($item->pay_in_amount ?? $item->amount);
+                                            $qty = max(1, (int) $item->quantity);
+                                            $tot = (float) ($item->total_price ?: ($amt * $qty));
+                                        @endphp
+                                        <tr id="itemRow_{{ $idx }}" data-policy-id="{{ $item->policy_id }}">
+                                            <td>
+                                                <input type="text" name="items[{{ $idx }}][product_name]" class="form-control form-control-sm item-desc" 
+                                                    value="{{ $item->product_name }}" required>
+                                                @if($item->policy_id)
+                                                    <input type="hidden" name="items[{{ $idx }}][policy_id]" value="{{ $item->policy_id }}">
+                                                @endif
+                                                @if($item->policy_number)
+                                                    <input type="hidden" name="items[{{ $idx }}][policy_number]" value="{{ $item->policy_number }}">
+                                                @endif
+                                                @if($item->holder_name)
+                                                    <input type="hidden" name="items[{{ $idx }}][holder_name]" value="{{ $item->holder_name }}">
+                                                @endif
+                                                @if($item->policy_type_name)
+                                                    <input type="hidden" name="items[{{ $idx }}][policy_type_name]" value="{{ $item->policy_type_name }}">
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <input type="text" name="items[{{ $idx }}][hsn_sac]" class="form-control form-control-sm text-center font-monospace item-hsn" 
+                                                    value="{{ $item->hsn_sac ?: '997161' }}" placeholder="997161">
+                                            </td>
+                                            <td class="col-payin {{ $isCompanyPayIn ? '' : 'd-none' }}">
+                                                <input type="number" step="0.01" min="0" name="items[{{ $idx }}][gross_premium]" class="form-control form-control-sm text-end item-premium" 
+                                                    value="{{ $premium > 0 ? number_format($premium, 2, '.', '') : '' }}" placeholder="0.00">
+                                            </td>
+                                            <td class="col-payin {{ $isCompanyPayIn ? '' : 'd-none' }}">
+                                                <input type="number" step="0.01" min="0" max="100" name="items[{{ $idx }}][pay_in_percentage]" class="form-control form-control-sm text-center item-pct" 
+                                                    value="{{ $pct > 0 ? number_format($pct, 2, '.', '') : '' }}" placeholder="%">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.01" min="0" name="items[{{ $idx }}][amount]" class="form-control form-control-sm text-end item-amount" 
+                                                    value="{{ number_format($amt, 2, '.', '') }}" required>
+                                            </td>
+                                            <td>
+                                                <input type="number" min="1" name="items[{{ $idx }}][quantity]" class="form-control form-control-sm text-center item-qty" 
+                                                    value="{{ $qty }}" required>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm text-end item-total fw-bold text-dark" readonly value="{{ number_format($tot, 2, '.', '') }}">
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm text-danger remove-item-btn" title="Remove Item">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <div class="mt-4 pt-4 border-top d-flex flex-sm-row justify-content-end gap-2 form-actions">
-                    <a href="{{ route('invoices.index') }}" class="btn btn-outline-dark-blue">Cancel</a>
-                    <button type="submit" class="btn btn-dark-blue">Update</button>
+                {{-- 5. Summary & Notes Calculation --}}
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        @php
+                            $defBank = \App\Models\Setting::query()->where('key', 'company_bank_name')->value('value') ?: 'ICICI Bank (Tagore Garden)';
+                            $defAcc = \App\Models\Setting::query()->where('key', 'company_bank_account_no')->value('value') ?: '335905001025';
+                            $defIfsc = \App\Models\Setting::query()->where('key', 'company_bank_ifsc')->value('value') ?: 'ICIC0003359';
+                            
+                            $defaultTermsText = "1. We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.\n2. Subject to 'Delhi' Jurisdiction Only";
+                            $existingTerms = !empty(trim($invoice->terms_and_conditions ?? '')) ? trim($invoice->terms_and_conditions) : $defaultTermsText;
+                            if (preg_match('/3\.\s*Bank Details/i', $existingTerms)) {
+                                $existingTerms = trim(preg_replace('/3\.\s*Bank Details[\s\S]*$/i', '', $existingTerms));
+                            }
+                        @endphp
+                        <div class="mb-3">
+                            <label class="form-label fw-bold d-flex align-items-center justify-content-between mb-1">
+                                <span><i class="fa-solid fa-file-contract text-primary me-1"></i> Terms and Conditions</span>
+                                <span class="badge bg-light text-muted border fw-normal small">Appears on PDF</span>
+                            </label>
+                            <textarea name="terms_and_conditions" class="form-control font-monospace small" rows="4" 
+                                placeholder="Enter terms, declarations...">{{ old('terms_and_conditions', $existingTerms) }}</textarea>
+                            <div class="form-text text-muted small">Standard declarations and legal jurisdiction.</div>
+
+                            <div class="mt-2 p-2 bg-light border rounded small font-monospace">
+                                <div class="fw-bold text-dark d-flex align-items-center justify-content-between">
+                                    <span><i class="fa-solid fa-building-columns text-primary me-1"></i> 3. Bank Details (Auto-attached to PDF)</span>
+                                    <a href="{{ route('settings.index') }}" target="_blank" class="text-primary text-decoration-none fw-normal"><i class="fa-solid fa-gear me-1"></i>Settings</a>
+                                </div>
+                                <div class="text-secondary ps-3 mt-1">
+                                    Bank Name: <strong class="text-dark">{{ $defBank }}</strong><br>
+                                    A/C No: <strong class="text-dark">{{ $defAcc }}</strong><br>
+                                    IFSC CODE: <strong class="text-dark">{{ $defIfsc }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label fw-bold mb-1"><i class="fa-solid fa-comment-dots text-secondary me-1"></i> Comments / Remittance Instructions</label>
+                            <textarea name="comment" class="form-control" rows="3">{{ old('comment', $invoice->comment) }}</textarea>
+                            <div class="form-text text-muted small">Optional remittance notes or reference instructions.</div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card border bg-light bg-opacity-50 rounded-3">
+                            <div class="card-body p-3">
+                                <h6 class="fw-bold mb-3 border-bottom pb-2">Financial Summary</h6>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted" id="subtotalLabel">{{ $isCompanyPayIn ? 'Subtotal (Commission):' : 'Subtotal:' }}</span>
+                                    <span class="fw-semibold">₹ <span id="displaySubtotal">{{ number_format($invoice->subtotal ?? 0, 2) }}</span></span>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-muted">GST / Tax:</span>
+                                        <div class="input-group input-group-sm" style="width: 100px;">
+                                            <input type="number" step="0.01" min="0" max="100" name="tax_percentage" id="taxPercentageInput" 
+                                                class="form-control form-control-sm text-end" value="{{ old('tax_percentage', $invoice->tax_percentage ?? 18) }}">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <span class="fw-semibold">₹ <span id="displayTaxAmount">{{ number_format($invoice->tax_amount ?? 0, 2) }}</span></span>
+                                </div>
+
+                                {{-- CGST & SGST Input Breakdown --}}
+                                @php
+                                    $editTaxPct = (float) old('tax_percentage', $invoice->tax_percentage ?? 18);
+                                    $editCgstRate = (float) old('cgst_percentage', $invoice->cgst_percentage ?? round($editTaxPct / 2, 2));
+                                    $editSgstRate = (float) old('sgst_percentage', $invoice->sgst_percentage ?? round($editTaxPct - $editCgstRate, 2));
+                                    $editSubtotal = (float) ($invoice->subtotal ?? 0);
+                                    $editCgstAmt = (float) ($invoice->cgst_amount ?? round(($editSubtotal * $editCgstRate) / 100, 2));
+                                    $editSgstAmt = (float) ($invoice->sgst_amount ?? round(($editSubtotal * $editSgstRate) / 100, 2));
+                                @endphp
+                                <div class="ps-3 border-start border-2 border-primary-subtle my-2 bg-light bg-opacity-50 py-1 rounded-end">
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="text-secondary small fw-semibold"><i class="fa-solid fa-angle-right me-1 text-primary"></i>CGST:</span>
+                                            <div class="input-group input-group-sm" style="width: 85px;">
+                                                <input type="number" step="0.01" min="0" max="100" name="cgst_percentage" id="cgstPercentageInput" 
+                                                    class="form-control form-control-sm text-end" value="{{ $editCgstRate }}">
+                                                <span class="input-group-text p-1">%</span>
+                                            </div>
+                                        </div>
+                                        <span class="text-dark fw-medium small">₹ <span id="displayCgstAmount">{{ number_format($editCgstAmt, 2) }}</span></span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="text-secondary small fw-semibold"><i class="fa-solid fa-angle-right me-1 text-primary"></i>SGST:</span>
+                                            <div class="input-group input-group-sm" style="width: 85px;">
+                                                <input type="number" step="0.01" min="0" max="100" name="sgst_percentage" id="sgstPercentageInput" 
+                                                    class="form-control form-control-sm text-end" value="{{ $editSgstRate }}">
+                                                <span class="input-group-text p-1">%</span>
+                                            </div>
+                                        </div>
+                                        <span class="text-dark fw-medium small">₹ <span id="displaySgstAmount">{{ number_format($editSgstAmt, 2) }}</span></span>
+                                    </div>
+                                </div>
+
+                                <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold fs-5 text-dark">Grand Total:</span>
+                                    <span class="fw-bold fs-4 text-primary">₹ <span id="displayGrandTotal">{{ number_format($invoice->grand_total ?: $invoice->total_amount, 2) }}</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 6. Form Action Buttons --}}
+                <div class="pt-3 border-top d-flex justify-content-end gap-2 form-actions">
+                    <a href="{{ route('invoices.show', $invoice->id) }}" class="btn btn-outline-dark-blue px-4">Cancel</a>
+                    <button type="submit" id="submitInvoiceBtn" class="btn btn-dark-blue px-4">
+                        <i class="fa-solid fa-check me-1"></i>Update Invoice
+                    </button>
                 </div>
             </form>
         </div>
@@ -111,14 +403,208 @@
 </div>
 @endsection
 
-@push('styles')
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
-@endpush
-
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <script>
-    window.invoiceProducts = @json($products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'price' => $p->price]));
+    let itemRowCounter = {{ $invoice->items->count() + 10 }};
+
+    function switchInvoiceType(type) {
+        const isCompanyPayIn = (type === 'company_pay_in');
+        
+        document.getElementById('type_company_pay_in').checked = isCompanyPayIn;
+        document.getElementById('type_customer').checked = !isCompanyPayIn;
+
+        document.getElementById('cardCompanyPayIn').classList.toggle('active', isCompanyPayIn);
+        document.getElementById('cardCustomer').classList.toggle('active', !isCompanyPayIn);
+
+        document.getElementById('fieldCompany').classList.toggle('d-none', !isCompanyPayIn);
+        document.getElementById('fieldCustomer').classList.toggle('d-none', isCompanyPayIn);
+        document.getElementById('billingAccountSection').classList.toggle('d-none', !isCompanyPayIn);
+
+        // Toggle table header & row Pay-In columns
+        document.querySelectorAll('.col-payin').forEach(el => {
+            el.classList.toggle('d-none', !isCompanyPayIn);
+        });
+
+        const thAmount = document.getElementById('thAmount');
+        if (thAmount) {
+            thAmount.innerHTML = isCompanyPayIn 
+                ? 'Pay-In Amount (₹) <span class="text-danger">*</span>' 
+                : 'Rate / Amount (₹) <span class="text-danger">*</span>';
+        }
+
+        const subtotalLabel = document.getElementById('subtotalLabel');
+        if (subtotalLabel) {
+            subtotalLabel.textContent = isCompanyPayIn ? 'Subtotal (Commission):' : 'Subtotal:';
+        }
+
+        const companySelect = document.getElementById('company_id');
+        const customerSelect = document.getElementById('customer_id');
+        if (companySelect) companySelect.required = isCompanyPayIn;
+        if (customerSelect) customerSelect.required = !isCompanyPayIn;
+    }
+
+    function addLineItem(item = {}) {
+        const tbody = document.getElementById('invoiceItemsBody');
+        const idx = itemRowCounter++;
+
+        const tr = document.createElement('tr');
+        tr.id = `itemRow_${idx}`;
+        tr.dataset.policyId = item.policy_id || '';
+
+        const isCustomer = document.getElementById('type_customer')?.checked;
+        const grossPremium = item.gross_premium !== undefined ? parseFloat(item.gross_premium) : 0;
+        const payInPct = item.pay_in_percentage !== undefined ? parseFloat(item.pay_in_percentage) : (isCustomer ? 0 : 20);
+        let unitAmount = 0;
+        if (item.amount !== undefined) {
+            unitAmount = parseFloat(item.amount);
+        } else if (isCustomer) {
+            unitAmount = grossPremium > 0 ? grossPremium : 0;
+        } else {
+            unitAmount = grossPremium > 0 ? (grossPremium * payInPct / 100) : 0;
+        }
+        const qty = item.quantity || 1;
+        const total = (unitAmount * qty).toFixed(2);
+
+        let defaultDesc = isCustomer ? 'Insurance Policy Premium / Service Fee' : 'Brokerage Pay-In Commission';
+        if (item.product_name) {
+            defaultDesc = item.product_name;
+        } else if (item.policy_number) {
+            defaultDesc = isCustomer 
+                ? `Insurance Policy Premium (${item.policy_number})`
+                : `Pay-In Commission for Policy ${item.policy_number}`;
+        }
+
+        tr.innerHTML = `
+            <td>
+                <input type="text" name="items[${idx}][product_name]" class="form-control form-control-sm item-desc" 
+                    value="${defaultDesc}" required>
+            </td>
+            <td>
+                <input type="text" name="items[${idx}][hsn_sac]" class="form-control form-control-sm text-center font-monospace item-hsn" 
+                    value="${item.hsn_sac || '997161'}" placeholder="997161">
+            </td>
+            <td class="col-payin ${isCustomer ? 'd-none' : ''}">
+                <input type="number" step="0.01" min="0" name="items[${idx}][gross_premium]" class="form-control form-control-sm text-end item-premium" 
+                    value="${grossPremium > 0 ? grossPremium.toFixed(2) : ''}" placeholder="0.00">
+            </td>
+            <td class="col-payin ${isCustomer ? 'd-none' : ''}">
+                <input type="number" step="0.01" min="0" max="100" name="items[${idx}][pay_in_percentage]" class="form-control form-control-sm text-center item-pct" 
+                    value="${payInPct > 0 ? payInPct.toFixed(2) : ''}" placeholder="%">
+            </td>
+            <td>
+                <input type="number" step="0.01" min="0" name="items[${idx}][amount]" class="form-control form-control-sm text-end item-amount" 
+                    value="${unitAmount.toFixed(2)}" required>
+            </td>
+            <td>
+                <input type="number" min="1" name="items[${idx}][quantity]" class="form-control form-control-sm text-center item-qty" 
+                    value="${qty}" required>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm text-end item-total fw-bold text-dark" readonly value="${total}">
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm text-danger remove-item-btn" title="Remove Item">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+        recalcTotals();
+    }
+
+    function recalcTotals() {
+        let subtotal = 0;
+        document.querySelectorAll('#invoiceItemsBody tr').forEach(tr => {
+            const amountInput = tr.querySelector('.item-amount');
+            const qtyInput = tr.querySelector('.item-qty');
+            const totalInput = tr.querySelector('.item-total');
+
+            const amt = parseFloat(amountInput?.value) || 0;
+            const qty = parseInt(qtyInput?.value, 10) || 1;
+            const lineTot = Math.round(amt * qty * 100) / 100;
+
+            if (totalInput) totalInput.value = lineTot.toFixed(2);
+            subtotal += lineTot;
+        });
+
+        const cgstPct = parseFloat(document.getElementById('cgstPercentageInput')?.value) || 0;
+        const sgstPct = parseFloat(document.getElementById('sgstPercentageInput')?.value) || 0;
+        const cgstAmount = Math.round((subtotal * cgstPct / 100) * 100) / 100;
+        const sgstAmount = Math.round((subtotal * sgstPct / 100) * 100) / 100;
+        const taxAmount = Math.round((cgstAmount + sgstAmount) * 100) / 100;
+        const grandTotal = Math.round((subtotal + taxAmount) * 100) / 100;
+
+        const cgstAmountEl = document.getElementById('displayCgstAmount');
+        const sgstAmountEl = document.getElementById('displaySgstAmount');
+
+        if (cgstAmountEl) cgstAmountEl.textContent = cgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        if (sgstAmountEl) sgstAmountEl.textContent = sgstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        document.getElementById('displaySubtotal').textContent = subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('displayTaxAmount').textContent = taxAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('displayGrandTotal').textContent = grandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    $(document).ready(function () {
+        $('#addCustomItemBtn').on('click', function () {
+            addLineItem({
+                product_name: 'Custom Line Item',
+                amount: 0,
+                quantity: 1
+            });
+        });
+
+        $(document).on('click', '.remove-item-btn', function () {
+            $(this).closest('tr').remove();
+            recalcTotals();
+        });
+
+        $(document).on('input', '.item-premium, .item-pct', function () {
+            const tr = $(this).closest('tr');
+            const premium = parseFloat(tr.find('.item-premium').val()) || 0;
+            const pct = parseFloat(tr.find('.item-pct').val()) || 0;
+            if (premium > 0 && pct > 0) {
+                const calculated = Math.round((premium * pct / 100) * 100) / 100;
+                tr.find('.item-amount').val(calculated.toFixed(2));
+            }
+            recalcTotals();
+        });
+
+        // When main GST changes, split evenly into CGST & SGST
+        $(document).on('input', '#taxPercentageInput', function () {
+            const totalTax = parseFloat($(this).val()) || 0;
+            const half = Math.round((totalTax / 2) * 100) / 100;
+            $('#cgstPercentageInput').val(half);
+            $('#sgstPercentageInput').val(Math.round((totalTax - half) * 100) / 100);
+            recalcTotals();
+        });
+
+        // When CGST or SGST changes, update main GST percentage
+        $(document).on('input', '#cgstPercentageInput, #sgstPercentageInput', function () {
+            const cgst = parseFloat($('#cgstPercentageInput').val()) || 0;
+            const sgst = parseFloat($('#sgstPercentageInput').val()) || 0;
+            $('#taxPercentageInput').val(Math.round((cgst + sgst) * 100) / 100);
+            recalcTotals();
+        });
+
+        $(document).on('input', '.item-amount, .item-qty', function () {
+            recalcTotals();
+        });
+
+        // Auto-sync HSN/SAC across rows if first row is changed
+        $(document).on('input', '.item-hsn', function () {
+            const val = $(this).val();
+            if ($(this).closest('tr').index() === 0) {
+                $('.item-hsn').each(function (i) {
+                    if (i > 0 && (!$(this).val() || $(this).val() === '997161')) {
+                        $(this).val(val);
+                    }
+                });
+            }
+        });
+
+        recalcTotals();
+    });
 </script>
-<script src="{{ (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/js/invoice.js' : '/js/invoice.js') }}"></script>
 @endpush

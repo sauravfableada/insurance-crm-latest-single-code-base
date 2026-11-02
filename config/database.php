@@ -63,6 +63,20 @@ return [
             ]) : [],
         ],
 
+        'admin_erp' => [
+            'driver' => 'mysql',
+            'host' => env('ADMIN_ERP_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('ADMIN_ERP_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('ADMIN_ERP_DB_DATABASE', 'admin_erp'),
+            'username' => env('ADMIN_ERP_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('ADMIN_ERP_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('ADMIN_ERP_DB_SOCKET', env('DB_SOCKET', '')),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => false,
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL'),

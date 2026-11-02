@@ -16,17 +16,32 @@ class Invoice extends Model
 
     protected $fillable = [
         'number',
+        'invoice_type',
+        'company_id',
         'customer_id',
+        'account_name',
+        'account_id_code',
+        'account_type',
+        'organization',
         'project_id',
         'currency_id',
         'invoice_date',
         'due_date',
-        'total_amount',
+        'subtotal',
+        'tax_percentage',
         'tax_amount',
+        'cgst_percentage',
+        'sgst_percentage',
+        'igst_percentage',
+        'cgst_amount',
+        'sgst_amount',
+        'igst_amount',
+        'total_amount',
         'grand_total',
         'status',
         'notes',
         'comment',
+        'terms_and_conditions',
         'created_by',
         'updated_by',
         'user_id',
@@ -35,10 +50,23 @@ class Invoice extends Model
     protected $casts = [
         'invoice_date' => 'date',
         'due_date' => 'date',
-        'total_amount' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'tax_percentage' => 'decimal:2',
         'tax_amount' => 'decimal:2',
+        'cgst_percentage' => 'decimal:2',
+        'sgst_percentage' => 'decimal:2',
+        'igst_percentage' => 'decimal:2',
+        'cgst_amount' => 'decimal:2',
+        'sgst_amount' => 'decimal:2',
+        'igst_amount' => 'decimal:2',
+        'total_amount' => 'decimal:2',
         'grand_total' => 'decimal:2',
     ];
+
+    public function company()
+    {
+        return $this->belongsTo(CompanyMaster::class, 'company_id');
+    }
 
     public function customer()
     {

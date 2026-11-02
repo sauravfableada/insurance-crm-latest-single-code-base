@@ -2,362 +2,594 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Invoice {{ $invoice->number }}</title>
+    <title>Tax Invoice {{ $invoice->number }}</title>
     <style>
         @page {
             size: A4 portrait;
-            margin: 18mm 16mm 18mm;
+            margin: 8mm 10mm 8mm 10mm;
         }
 
         body {
-            font-family: DejaVu Sans, Arial, sans-serif;
-            font-size: 11px;
-            color: #0f172a;
+            font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
+            font-size: 9px;
+            color: #000000;
             margin: 0;
-            line-height: 1.45;
+            padding: 0;
+            line-height: 1.3;
             background: #ffffff;
         }
 
-        .invoice-shell {
+        .invoice-box {
             width: 100%;
+            border: 1.5px solid #000000;
+            box-sizing: border-box;
         }
 
-        .top-band {
-            height: 8px;
-            background: #f59e0b;
-            border-radius: 10px 10px 0 0;
-        }
-
-        .hero {
-            border: 1px solid #e2e8f0;
-            border-top: 0;
-            border-radius: 0 0 12px 12px;
-            padding: 16px 18px 14px;
-            background: #f8fbff;
-            margin-bottom: 14px;
-        }
-
-        .table-layout {
+        table {
             width: 100%;
             border-collapse: collapse;
-        }
-
-        .brand-logo {
-            height: 26px;
-            width: auto;
-        }
-
-        .brand-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: #0f172a;
-            margin: 0 0 3px;
-        }
-
-        .brand-copy,
-        .muted {
-            color: #475569;
-            font-size: 10px;
-        }
-
-        .invoice-kicker {
-            text-align: right;
-        }
-
-        .invoice-label {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: #f59e0b;
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-
-        .invoice-number {
-            font-size: 16px;
-            font-weight: 800;
-            color: #0f172a;
-            margin: 0 0 5px;
-        }
-
-        .section-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 14px 14px 10px;
-            background: #ffffff;
-            margin-bottom: 12px;
-        }
-
-        .section-title {
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: #64748b;
-            text-transform: uppercase;
-            margin: 0 0 8px;
-        }
-
-        .block-title {
-            font-size: 13px;
-            font-weight: 700;
-            margin: 0 0 6px;
-            color: #0f172a;
-        }
-
-        .meta-grid td {
-            vertical-align: top;
-        }
-
-        .meta-box {
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 12px;
-            background: #ffffff;
-        }
-
-        .meta-line {
-            margin-bottom: 4px;
-        }
-
-        .meta-line strong {
-            color: #1e293b;
-        }
-
-        .invoice-items {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 2px;
-        }
-
-        .invoice-items thead th {
-            background: #0f172a;
-            color: #ffffff;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 9px 10px;
-            text-align: left;
-            border-right: 1px solid #1e293b;
-        }
-
-        .invoice-items thead th:last-child {
-            border-right: none;
-        }
-
-        .invoice-items tbody td {
-            padding: 9px 10px;
-            border-bottom: 1px solid #e2e8f0;
-            color: #1e293b;
-            vertical-align: top;
-        }
-
-        .invoice-items tbody tr:nth-child(even) td {
-            background: #f8fafc;
-        }
-
-        .text-right {
-            text-align: right;
         }
 
         .text-center {
             text-align: center;
         }
 
-        .summary-wrap {
-            margin-top: 10px;
+        .text-right {
+            text-align: right;
         }
 
-        .summary-box {
-            width: 240px;
-            margin-left: auto;
-            border: 1px solid #dbe4ef;
-            border-radius: 12px;
-            overflow: hidden;
+        .text-left {
+            text-align: left;
         }
 
-        .summary-row {
-            width: 100%;
-            border-collapse: collapse;
+        .fw-bold {
+            font-weight: bold;
         }
 
-        .summary-row td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #e2e8f0;
-            background: #ffffff;
+        .border-bottom {
+            border-bottom: 1px solid #000000;
         }
 
-        .summary-row tr:last-child td {
-            border-bottom: none;
+        .border-top {
+            border-top: 1px solid #000000;
         }
 
-        .summary-total td {
-            background: #eff6ff;
-            font-size: 13px;
-            font-weight: 800;
-            color: #0f172a;
+        .border-right {
+            border-right: 1px solid #000000;
         }
 
-        .note-box,
-        .terms-box {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 12px 14px;
-            background: #ffffff;
-            margin-top: 12px;
+        .border-left {
+            border-left: 1px solid #000000;
         }
 
-        .terms-list {
-            margin: 8px 0 0;
-            padding-left: 16px;
-            color: #334155;
+        /* Header Elements */
+        .company-name {
+            font-size: 15px;
+            font-weight: bold;
+            color: #000000;
+            text-align: right;
+            letter-spacing: 0.5px;
+            margin: 0 0 3px 0;
         }
 
-        .terms-list li {
-            margin-bottom: 4px;
+        .company-address {
+            font-size: 8.5px;
+            text-align: right;
+            line-height: 1.35;
+            color: #111111;
         }
 
-        .footer-bar {
-            margin-top: 12px;
-            padding-top: 10px;
-            border-top: 1px solid #e2e8f0;
-            font-size: 10px;
-            color: #64748b;
+        .company-contacts {
+            font-size: 8px;
+            font-weight: bold;
+            text-align: right;
+            padding: 3px 0 0 0;
+            color: #111111;
         }
 
-        .avoid-break {
-            page-break-inside: avoid;
+        /* Meta Section */
+        .meta-table td {
+            padding: 5px 8px;
+            font-size: 9.5px;
+        }
+
+        /* Bill To / Consignee */
+        .party-table td {
+            padding: 2px 4px;
+            font-size: 8.5px;
+            vertical-align: top;
+        }
+
+        /* Line Items */
+        .items-table th {
+            padding: 5px 4px;
+            font-size: 8.5px;
+            font-weight: bold;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #000000;
+            border-right: 1px solid #000000;
+        }
+
+        .items-table th:last-child {
+            border-right: none;
+        }
+
+        .items-table td {
+            padding: 4px 5px;
+            font-size: 8.5px;
+            vertical-align: top;
+            border-right: 1px solid #000000;
+        }
+
+        .items-table td:last-child {
+            border-right: none;
+        }
+
+        /* Totals section */
+        .totals-table td {
+            padding: 3.5px 8px;
+            font-size: 8.5px;
+        }
+
+        /* Footer */
+        .terms-table td {
+            padding: 5px 8px;
+            font-size: 8.5px;
+            vertical-align: top;
         }
     </style>
 </head>
 <body>
     @php
-        $logoPath = public_path('logo/fableadcrmLogo.png');
-        $currencyCode = $invoice->currency?->code ?: 'INR';
-        $customer = $invoice->customer;
-        $invoiceDate = optional($invoice->invoice_date)->format('d M Y');
-        $dueDate = optional($invoice->due_date)->format('d M Y');
-        $subTotal = collect($invoice->items)->sum(fn ($item) => (float) $item->total_price);
+        // Number to words helper
+        if (!function_exists('indianAmountToWords')) {
+            function indianAmountToWords($amount) {
+                $amount = (int) round($amount);
+                if ($amount == 0) return 'Zero Only';
+                
+                $ones = [
+                    0 => '', 1 => 'One', 2 => 'Two', 3 => 'Three', 4 => 'Four',
+                    5 => 'Five', 6 => 'Six', 7 => 'Seven', 8 => 'Eight', 9 => 'Nine',
+                    10 => 'Ten', 11 => 'Eleven', 12 => 'Twelve', 13 => 'Thirteen',
+                    14 => 'Fourteen', 15 => 'Fifteen', 16 => 'Sixteen', 17 => 'Seventeen',
+                    18 => 'Eighteen', 19 => 'Nineteen'
+                ];
+                $tens = [
+                    2 => 'Twenty', 3 => 'Thirty', 4 => 'Forty', 5 => 'Fifty',
+                    6 => 'Sixty', 7 => 'Seventy', 8 => 'Eighty', 9 => 'Ninety'
+                ];
+                
+                $convertBelowThousand = function($n) use ($ones, $tens) {
+                    $word = '';
+                    if ($n >= 100) {
+                        $h = floor($n / 100);
+                        $word .= $ones[$h] . ' Hundred ';
+                        $n %= 100;
+                    }
+                    if ($n >= 20) {
+                        $t = floor($n / 10);
+                        $word .= $tens[$t] . ' ';
+                        $n %= 10;
+                    }
+                    if ($n > 0) {
+                        $word .= $ones[$n] . ' ';
+                    }
+                    return trim($word);
+                };
+
+                $crore = floor($amount / 10000000);
+                $amount %= 10000000;
+                $lakh = floor($amount / 100000);
+                $amount %= 100000;
+                $thousand = floor($amount / 1000);
+                $amount %= 1000;
+                $remainder = $amount;
+
+                $parts = [];
+                if ($crore > 0) {
+                    $parts[] = $convertBelowThousand($crore) . ' Crore';
+                }
+                if ($lakh > 0) {
+                    $parts[] = $convertBelowThousand($lakh) . ' Lakh';
+                }
+                if ($thousand > 0) {
+                    $parts[] = $convertBelowThousand($thousand) . ' Thousand';
+                }
+                if ($remainder > 0) {
+                    $parts[] = $convertBelowThousand($remainder);
+                }
+
+                return trim(implode(' ', $parts)) . ' Only';
+            }
+        }
+
+        // Determine buyer entity
+        $isCompany = !empty($invoice->company_id) || $invoice->invoice_type === 'company_pay_in';
+        $buyerName = $isCompany ? ($invoice->company?->name ?: 'IndusInd General Insurance Co. Ltd') : ($invoice->customer?->name ?: 'Customer');
+        $buyerAddress = $isCompany 
+            ? ($invoice->company?->address ?: ($invoice->company?->description ?: '—')) 
+            : ($invoice->customer?->address ?: '—');
+        $buyerState = $isCompany ? ($invoice->company?->state ?: 'Delhi') : ($invoice->customer?->state ?: 'Delhi');
+        $buyerGstin = $isCompany ? ($invoice->company?->gstin ?: ($invoice->company?->tax_number ?: '—')) : ($invoice->customer?->tax_number ?: '—');
+
+        // Dynamic Company Profile Details (from /profile settings and Admin User)
+        $companySettings = \App\Models\Setting::query()
+            ->whereIn('key', [
+                'company_name',
+                'company_address',
+                'company_tax_id',
+                'company_logo_path',
+                'company_phone',
+                'company_email'
+            ])->pluck('value', 'key');
+
+        $adminUser = \App\Models\User::where('id', 1)->first() 
+            ?? \App\Models\User::whereIn('type', ['admin', 'super_admin'])->first() 
+            ?? $invoice->creator 
+            ?? auth()->user();
+
+        $companyName = !empty($companySettings['company_name']) 
+            ? trim($companySettings['company_name']) 
+            : 'RISKON IMF PRIVATE LIMITED';
+
+        $companyAddress = !empty($companySettings['company_address']) 
+            ? trim($companySettings['company_address']) 
+            : 'BG-513, Sanjay Gandhi, Transport Nagar, Pehlad Pur, North West Delhi, New Delhi-110042';
+
+        $companyTaxNo = !empty($companySettings['company_tax_id']) 
+            ? trim($companySettings['company_tax_id']) 
+            : '07AANCR6912L1ZU';
+
+        $companyPhone = !empty($companySettings['company_phone']) 
+            ? trim($companySettings['company_phone']) 
+            : ($adminUser?->phone ?: '+91 9650800804');
+
+        $companyEmail = !empty($companySettings['company_email']) 
+            ? trim($companySettings['company_email']) 
+            : ($adminUser?->email ?: 'Info.riskoninsurance@gmail.com');
+
+        // Calculation
+        $taxableValue = (float) ($invoice->subtotal ?: $invoice->items->sum('total_price'));
+        $taxRate = (float) ($invoice->tax_percentage ?? 18);
+        $totalTax = (float) ($invoice->tax_amount ?: round(($taxableValue * $taxRate) / 100, 2));
+        $grandTotal = (float) ($invoice->grand_total ?: ($taxableValue + $totalTax));
+        $grandTotalRounded = round($grandTotal);
+
+        // Tax Rates & Amounts
+        $cgstRate = (float) ($invoice->cgst_percentage ?? round($taxRate / 2, 2));
+        $sgstRate = (float) ($invoice->sgst_percentage ?? round($taxRate - $cgstRate, 2));
+        $igstRate = (float) ($invoice->igst_percentage ?? 0);
+
+        if (!empty($invoice->cgst_amount) || !empty($invoice->sgst_amount) || !empty($invoice->igst_amount)) {
+            $cgst = (float) ($invoice->cgst_amount ?? 0);
+            $sgst = (float) ($invoice->sgst_amount ?? 0);
+            $igst = (float) ($invoice->igst_amount ?? 0);
+        } else {
+            // Check if Delhi (intra-state)
+            $isDelhi = str_contains(strtolower($buyerState), 'delhi') || str_starts_with(strtoupper(trim($buyerGstin)), '07') || empty($buyerGstin) || $buyerGstin === '—';
+            $cgst = $isDelhi ? round(($taxableValue * $cgstRate) / 100, 2) : 0.00;
+            $sgst = $isDelhi ? round(($taxableValue * $sgstRate) / 100, 2) : 0.00;
+            $igst = $isDelhi ? 0.00 : $totalTax;
+
+            // If not Delhi but no IGST, default to standard CGST & SGST
+            if ($cgst == 0 && $sgst == 0 && $igst == 0 && $totalTax > 0) {
+                $cgst = round(($taxableValue * $cgstRate) / 100, 2);
+                $sgst = round(($taxableValue * $sgstRate) / 100, 2);
+            }
+        }
+
+        // Resolve logo dynamically
+        if (!isset($logoBase64) || empty($logoBase64)) {
+            $logoBase64 = null;
+            $logoSettingPath = $companySettings['company_logo_path'] ?? null;
+            if ($logoSettingPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($logoSettingPath)) {
+                $p = \Illuminate\Support\Facades\Storage::disk('public')->path($logoSettingPath);
+                $ext = strtolower(pathinfo($p, PATHINFO_EXTENSION));
+                $mime = ($ext === 'svg') ? 'image/svg+xml' : (($ext === 'png') ? 'image/png' : 'image/jpeg');
+                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($p));
+            } elseif (file_exists(public_path('logo/riskon_logo.png'))) {
+                $p = public_path('logo/riskon_logo.png');
+                $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($p));
+            }
+        }
     @endphp
 
-    <div class="invoice-shell">
-        <div class="top-band"></div>
-
-        <div class="hero avoid-break">
-            <table class="table-layout">
-                <tr>
-                    <td style="width: 56%; vertical-align: top;">
-                        @if(file_exists($logoPath))
-                            <img src="{{ $logoPath }}" alt="Fablead CRM" class="brand-logo">
-                        @endif
-                        <div class="brand-name">Fablead CRM</div>
-                        <div class="brand-copy">Smart travel CRM for sales, invoicing, meetings, and customer operations.</div>
-                        <div class="brand-copy">support@fablead.com</div>
-                    </td>
-                    <td class="invoice-kicker" style="width: 44%; vertical-align: top;">
-                        <div class="invoice-label">Tax Invoice</div>
-                        <div class="invoice-number">{{ $invoice->number ?: ('INV-' . $invoice->id) }}</div>
-                    </td>
-                </tr>
-            </table>
-        </div>
-
-        <table class="table-layout meta-grid avoid-break" style="margin-bottom: 12px;">
+    <div class="invoice-box">
+        <!-- 1. Top Header (Logo Left, Dynamic Company Details Right) -->
+        <table class="border-bottom" style="width: 100%;">
             <tr>
-                <td style="width: 52%; padding-right: 10px;">
-                    <div class="meta-box">
-                        <div class="section-title">Bill To</div>
-                        <div class="block-title">{{ $customer?->name ?: 'Walk-in Customer' }}</div>
-                        <div class="meta-line"><strong>Email:</strong> {{ $customer?->email ?: 'Not available' }}</div>
-                        <div class="meta-line"><strong>Phone:</strong> {{ $customer?->phone ?: 'Not available' }}</div>
-                        <div class="meta-line"><strong>Address:</strong> {{ $customer?->address ?: 'Not available' }}</div>
-                    </div>
+                <td style="width: 32%; vertical-align: middle; padding: 8px 12px;">
+                    @if(!empty($logoBase64))
+                        <img src="{{ $logoBase64 }}" alt="{{ $companyName }}" style="height: 52px; width: auto; max-width: 180px;">
+                    @endif
                 </td>
-                <td style="width: 48%; padding-left: 10px;">
-                    <div class="meta-box">
-                        <div class="section-title">Invoice Details</div>
-                        <div class="meta-line"><strong>Invoice Date:</strong> {{ $invoiceDate ?: '--' }}</div>
-                        <div class="meta-line"><strong>Due Date:</strong> {{ $dueDate ?: '--' }}</div>
-                        <div class="meta-line"><strong>Currency:</strong> {{ $currencyCode }}</div>
-                        <div class="meta-line"><strong>Prepared By:</strong> {{ $invoice->creator?->name ?: 'Administrator' }}</div>
+                <td style="width: 68%; text-align: right; vertical-align: middle; padding: 8px 12px;">
+                    <div class="company-name" style="text-align: right; font-size: 15px; font-weight: bold; color: #000000; margin: 0 0 3px 0; letter-spacing: 0.5px;">{{ strtoupper($companyName) }}</div>
+                    <div class="company-address" style="text-align: right; font-size: 8.5px; line-height: 1.35; color: #111111;">
+                        {!! nl2br(e($companyAddress)) !!}
+                    </div>
+                    <div class="company-contacts" style="text-align: right; font-size: 8px; font-weight: bold; padding: 3px 0 0 0; color: #111111;">
+                        @if($companyTaxNo)
+                            <span class="fw-bold">GSTIN/Tax No:</span> {{ $companyTaxNo }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                        @endif
+                        @if($companyPhone)
+                            <span class="fw-bold">Mob:</span> {{ $companyPhone }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                        @endif
+                        @if($companyEmail)
+                            <span class="fw-bold">Email:</span> {{ $companyEmail }}
+                        @endif
                     </div>
                 </td>
             </tr>
         </table>
 
-        <div class="section-card">
-            <div class="section-title">Invoice Items</div>
-            <table class="invoice-items">
-                <thead>
-                    <tr>
-                        <th style="width: 6%;">#</th>
-                        <th style="width: 42%;">Description</th>
-                        <th style="width: 16%;" class="text-right">Unit Price</th>
-                        <th style="width: 12%;" class="text-center">Qty</th>
-                        <th style="width: 24%;" class="text-right">Line Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($invoice->items as $index => $item)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>
-                                <strong>{{ $item->product_name ?: 'Invoice Item' }}</strong>
-                                <div class="muted">Professional CRM service line item</div>
-                            </td>
-                            <td class="text-right">{{ number_format((float) $item->amount, 2) }}</td>
-                            <td class="text-center">{{ $item->quantity }}</td>
-                            <td class="text-right">{{ number_format((float) $item->total_price, 2) }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="text-center muted">No invoice items available.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <!-- 2. Invoice Number & Date -->
+        <table class="meta-table border-bottom">
+            <tr>
+                <td style="width: 50%;" class="border-right">
+                    <span class="fw-bold">Invoice No.:</span> {{ $invoice->number }}
+                </td>
+                <td style="width: 50%;">
+                    <span class="fw-bold">Invoice Date :</span> {{ optional($invoice->invoice_date)->format('d-m-Y') ?: date('d-m-Y') }}
+                </td>
+            </tr>
+        </table>
 
-            <div class="summary-wrap avoid-break">
-                <div class="summary-box">
-                    <table class="summary-row">
+        <!-- 3. Buyer (Bill to) & Consignee (Ship to) -->
+        <table class="border-bottom">
+            <tr>
+                <!-- Buyer (Bill to) -->
+                <td style="width: 50%; vertical-align: top; padding: 6px 8px;" class="border-right">
+                    <div class="fw-bold" style="text-decoration: underline; margin-bottom: 5px; font-size: 9.5px;">Buyer (Bill to)</div>
+                    <table class="party-table">
                         <tr>
-                            <td>Subtotal</td>
-                            <td class="text-right">{{ $currencyCode }} {{ number_format($subTotal, 2) }}</td>
+                            <td style="width: 26%;" class="fw-bold">Name</td>
+                            <td style="width: 74%;" class="fw-bold">{{ $buyerName }}</td>
                         </tr>
                         <tr>
-                            <td>Tax</td>
-                            <td class="text-right">{{ $currencyCode }} 0.00</td>
+                            <td class="fw-bold">Address</td>
+                            <td>{{ $buyerAddress }}</td>
                         </tr>
                         <tr>
-                            <td>Discount</td>
-                            <td class="text-right">{{ $currencyCode }} 0.00</td>
+                            <td class="fw-bold">State</td>
+                            <td>{{ $buyerState }}</td>
                         </tr>
-                        <tr class="summary-total">
-                            <td>Total Due</td>
-                            <td class="text-right">{{ $currencyCode }} {{ number_format((float) $invoice->total_amount, 2) }}</td>
+                        <tr>
+                            <td class="fw-bold">GSTIN/UIN</td>
+                            <td class="fw-bold" style="font-family: monospace;">{{ $buyerGstin }}</td>
                         </tr>
                     </table>
-                </div>
-            </div>
-        </div>
+                </td>
 
-        <div class="note-box avoid-break">
-            <div class="section-title">Notes</div>
-            <div>{{ $invoice->comment ?: 'Thank you for choosing Fablead CRM. Please review the invoice details and contact us if any clarification is required.' }}</div>
-        </div>
+                <!-- Consignee (Ship to) -->
+                <td style="width: 50%; vertical-align: top; padding: 6px 8px;">
+                    <div class="fw-bold" style="text-decoration: underline; margin-bottom: 5px; font-size: 9.5px;">Consignee(Ship to)</div>
+                    <table class="party-table">
+                        <tr>
+                            <td style="width: 26%;" class="fw-bold">Name</td>
+                            <td style="width: 74%;" class="fw-bold">{{ $buyerName }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Address</td>
+                            <td>{{ $buyerAddress }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">State</td>
+                            <td>{{ $buyerState }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">GSTIN/UIN</td>
+                            <td class="fw-bold" style="font-family: monospace;">{{ $buyerGstin }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
 
-        <div class="terms-box avoid-break">
-            <div class="section-title">Terms & Conditions</div>
-            <ol class="terms-list">
-                <li>Payment is due on or before the due date mentioned on this invoice unless otherwise agreed in writing.</li>
-                <li>Services and deliverables will be considered accepted unless discrepancies are reported within 3 business days.</li>
-                <li>Late payments may be subject to additional charges as per the applicable commercial agreement.</li>
-                <li>This invoice is system generated and valid without physical signature or stamp.</li>
-            </ol>
-        </div>
+        <!-- 4. Line Items Table -->
+        <table class="items-table border-bottom">
+            <thead>
+                <tr>
+                    <th style="width: 6%; text-align: center;">S.No</th>
+                    <th style="width: 48%; text-align: left; padding-left: 8px;">Description of Goods</th>
+                    <th style="width: 12%; text-align: center;">HSN/SAC</th>
+                    <th style="width: 10%; text-align: center;">Rate</th>
+                    <th style="width: 11%; text-align: right;">Qty/Unit</th>
+                    <th style="width: 13%; text-align: right; padding-right: 8px;">Total Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                    $lastHsn = null;
+                @endphp
+                @forelse($invoice->items as $idx => $item)
+                    @php
+                        $itemTotal = (float) ($item->total_price ?: (($item->pay_in_amount ?? $item->amount) * $item->quantity));
+                        $itemRate = $isCompany 
+                            ? ($item->pay_in_percentage ? number_format($item->pay_in_percentage, 0) . '%' : '1')
+                            : number_format($itemTotal / max(1, $item->quantity), 2);
+                        $currentHsn = !empty($item->hsn_sac) ? trim($item->hsn_sac) : '997161';
+                        // "same two time no need": Only print HSN/SAC if first row or different from previous
+                        $displayHsn = ($idx === 0 || $currentHsn !== $lastHsn) ? $currentHsn : '';
+                        $lastHsn = $currentHsn;
+                    @endphp
+                    <tr>
+                        <td class="text-center">{{ $idx + 1 }}</td>
+                        <td>
+                            @if($isCompany)
+                                <div class="fw-bold">IRDA Commission</div>
+                                @if($item->policy_number)
+                                    <div style="font-size: 8px; color: #222;">({{ $item->policy_number }})</div>
+                                @elseif($item->product_name && !str_starts_with($item->product_name, 'Pay-In Commission'))
+                                    <div style="font-size: 8px; color: #222;">({{ $item->product_name }})</div>
+                                @endif
+                                @if($item->holder_name && $item->holder_name !== '—')
+                                    <div style="font-size: 7.5px; color: #555;">Holder: {{ $item->holder_name }}</div>
+                                @endif
+                            @else
+                                <div class="fw-bold">{{ $item->product_name ?: 'Insurance Policy Premium' }}</div>
+                                @if($item->policy_number)
+                                    <div style="font-size: 8px; color: #222;">Policy No: {{ $item->policy_number }}</div>
+                                @endif
+                                @if($item->policy_type_name)
+                                    <div style="font-size: 7.5px; color: #555;">Type: {{ $item->policy_type_name }}</div>
+                                @endif
+                            @endif
+                        </td>
+                        <td class="text-center">{{ $displayHsn }}</td>
+                        <td class="text-center">{{ $itemRate }}</td>
+                        <td class="text-right">{{ $item->quantity ?: 1 }}</td>
+                        <td class="text-right fw-bold" style="padding-right: 8px;">{{ number_format($itemTotal, 2) }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td class="text-center">1</td>
+                        <td>
+                            <div class="fw-bold">{{ $isCompany ? 'IRDA Commission' : 'Insurance Policy Premium / Service Fee' }}</div>
+                        </td>
+                        <td class="text-center">997161</td>
+                        <td class="text-center">1</td>
+                        <td class="text-right">1</td>
+                        <td class="text-right fw-bold" style="padding-right: 8px;">{{ number_format($taxableValue, 2) }}</td>
+                    </tr>
+                @endforelse
 
-        <div class="footer-bar avoid-break">
-            <strong>Fablead CRM</strong> | Generated on {{ now()->format('d M Y, h:i A') }} | This is a computer-generated invoice document.
-        </div>
+                <!-- Blank spacer rows to keep consistent layout height without showing 0s -->
+                @php $renderedRows = max(1, count($invoice->items)); @endphp
+                @for($i = $renderedRows; $i < 6; $i++)
+                    <tr style="height: 18px;">
+                        <td class="text-center">&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td class="text-center">&nbsp;</td>
+                        <td class="text-center">&nbsp;</td>
+                        <td class="text-right">&nbsp;</td>
+                        <td class="text-right" style="padding-right: 8px;">&nbsp;</td>
+                    </tr>
+                @endfor
+            </tbody>
+        </table>
+
+        <!-- 5. Totals & Tax Calculation Breakdown -->
+        <table class="totals-table border-bottom">
+            <tr>
+                <td style="width: 75%;" class="border-right fw-bold">Total Value of Goods / Services</td>
+                <td style="width: 25%; text-align: right; padding-right: 8px;" class="fw-bold">{{ number_format($taxableValue, 2) }}</td>
+            </tr>
+            @if(!empty($invoice->freight_amount) && (float)$invoice->freight_amount > 0)
+            <tr>
+                <td class="border-right">Add: Freight/Cartage</td>
+                <td style="text-align: right; padding-right: 8px;">{{ number_format((float)$invoice->freight_amount, 2) }}</td>
+            </tr>
+            @endif
+            <tr class="border-top border-bottom" style="background-color: #fafafa;">
+                <td class="border-right fw-bold">Total Taxable Value of Goods &amp; Services</td>
+                <td style="text-align: right; padding-right: 8px;" class="fw-bold">{{ number_format($taxableValue, 2) }}</td>
+            </tr>
+            @if($igst > 0)
+            <tr>
+                <td class="border-right">IGST @ {{ $igstRate ?: $taxRate }}%</td>
+                <td style="text-align: right; padding-right: 8px;">{{ number_format($igst, 2) }}</td>
+            </tr>
+            @endif
+            @if($cgst > 0 || $igst == 0)
+            <tr>
+                <td class="border-right">CGST @ {{ $cgstRate }}%</td>
+                <td style="text-align: right; padding-right: 8px;">{{ number_format($cgst, 2) }}</td>
+            </tr>
+            <tr>
+                <td class="border-right">SGST @ {{ $sgstRate }}%</td>
+                <td style="text-align: right; padding-right: 8px;">{{ number_format($sgst, 2) }}</td>
+            </tr>
+            @endif
+            <tr class="border-top border-bottom" style="background-color: #f1f5f9;">
+                <td class="border-right fw-bold" style="font-size: 10.5px;">Amount Chargeable (r/o)</td>
+                <td style="text-align: right; padding-right: 8px; font-size: 11px;" class="fw-bold">₹{{ number_format($grandTotalRounded, 2) }}</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="padding: 6px 8px;" class="fw-bold">
+                    Rupees in Words : <span style="font-weight: bold;">{{ indianAmountToWords($grandTotalRounded) }}</span>
+                </td>
+            </tr>
+        </table>
+
+        <!-- 6. Terms and Conditions, Bank Details, and Signatures -->
+        @php
+            $settingBankName = \App\Models\Setting::query()->where('key', 'company_bank_name')->value('value') ?: 'ICICI Bank (Tagore Garden)';
+            $settingAccNo = \App\Models\Setting::query()->where('key', 'company_bank_account_no')->value('value') ?: '335905001025';
+            $settingIfsc = \App\Models\Setting::query()->where('key', 'company_bank_ifsc')->value('value') ?: 'ICIC0003359';
+
+            $defaultTerms = "1. We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.\n2. Subject to 'Delhi' Jurisdiction Only";
+            $rawTerms = !empty(trim($invoice->terms_and_conditions ?? '')) ? trim($invoice->terms_and_conditions) : $defaultTerms;
+
+            // If the custom terms text already includes "3. Bank Details", strip it so we render the official configured bank details cleanly
+            if (preg_match('/3\.\s*Bank Details/i', $rawTerms)) {
+                $rawTerms = trim(preg_replace('/3\.\s*Bank Details[\s\S]*$/i', '', $rawTerms));
+            }
+
+            $formattedTerms = nl2br(str_replace('  ', '&nbsp;&nbsp;', e($rawTerms)));
+        @endphp
+        <table class="terms-table">
+            <tr>
+                <td style="width: 58%; padding: 6px 8px;" class="border-right">
+                    <div class="fw-bold" style="text-decoration: underline; margin-bottom: 2px;">Terms and Conditions</div>
+                    <div class="fw-bold" style="margin-bottom: 3px;">E. &amp; O.E.</div>
+                    <div style="line-height: 1.35; color: #111; font-size: 8px;">
+                        {!! $formattedTerms !!}
+                    </div>
+                    <div style="margin-top: 4px; line-height: 1.35; color: #111; font-size: 8px;">
+                        <div class="fw-bold">3. Bank Details :</div>
+                        <div style="padding-left: 12px;">Bank Name: <strong>{{ $settingBankName }}</strong></div>
+                        <div style="padding-left: 12px;">A/C No: <strong>{{ $settingAccNo }}</strong></div>
+                        <div style="padding-left: 12px;">IFSC CODE: <strong>{{ $settingIfsc }}</strong></div>
+                    </div>
+                </td>
+                <td style="width: 42%; padding: 6px 8px; text-align: right; vertical-align: top;">
+                    <div class="fw-bold" style="font-size: 9.5px; color: #000; text-align: right;">
+                        For {{ strtoupper($companyName) }}
+                    </div>
+
+                    @php
+                        $showImageSig = (!empty($signatureBase64)) && (!isset($dscEnabled) || !$dscEnabled || in_array($dscDisplayMode ?? 'both', ['both', 'image_only']));
+                        $showDscBox = (!empty($dscEnabled) && in_array($dscDisplayMode ?? 'both', ['both', 'dsc_only']));
+                    @endphp
+
+                    @if($showImageSig)
+                        <div style="height: 44px; text-align: right; padding-top: 3px;">
+                            <img src="{{ $signatureBase64 }}" style="max-height: 40px; max-width: 140px; object-fit: contain;">
+                        </div>
+                    @endif
+
+                    @if($showDscBox)
+                        <div style="text-align: right; margin-top: 3px; margin-bottom: 3px;">
+                            <div style="display: inline-block; text-align: left; border: 1px solid #198754; border-left: 3px solid #198754; background-color: #f8fff9; padding: 3px 6px; border-radius: 3px; max-width: 200px; font-size: 7.5px; line-height: 1.25; color: #212529;">
+                                <div style="font-size: 8px; font-weight: bold; color: #198754; border-bottom: 1px solid #d1e7dd; padding-bottom: 1px; margin-bottom: 2px;">
+                                    <span style="font-size: 9.5px; font-weight: bold;">&#10003;</span> Digitally Signed by
+                                </div>
+                                <div style="font-weight: bold; color: #000;">{{ $dscSignatoryName ?? 'Authorized Signatory' }}</div>
+                                <div><strong>Desg:</strong> {{ $dscDesignation ?? 'Authorized Signatory' }}</div>
+                                <div><strong>Date:</strong> {{ $invoice->invoice_date ? \Carbon\Carbon::parse($invoice->invoice_date)->format('d-m-Y H:i') : now()->format('d-m-Y H:i') }} IST</div>
+                                <div><strong>Reason:</strong> {{ $dscReason ?? 'Tax Invoice Verification' }}</div>
+                                <div><strong>Loc:</strong> {{ $dscLocation ?? 'Delhi, India' }}</div>
+                            </div>
+                        </div>
+                    @elseif(!$showImageSig)
+                        <div style="height: 44px;"></div>
+                    @endif
+
+                    <div style="font-weight: bold; font-size: 9.5px; text-align: right; display: inline-block; border-top: 1px solid #333; padding-top: 3px; min-width: 140px;">
+                        Authorized Signatory
+                    </div>
+                </td>
+            </tr>
+            <tr class="border-top">
+                <td style="padding: 16px 8px 6px; font-weight: bold; vertical-align: bottom;">
+                    Customer's/Receiver's Signature.
+                </td>
+                <td style="padding: 16px 8px 6px; text-align: right; vertical-align: bottom;">
+                    &nbsp;
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>
