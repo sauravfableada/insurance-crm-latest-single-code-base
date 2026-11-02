@@ -336,16 +336,15 @@
                         @endphp
                         <div class="crm-top-actions">
                             @if(!$isCustomerUser)
-                            <button type="button"
-                                class="btn top-action-btn premium-btn d-none d-lg-inline-flex flex-column align-items-center justify-content-center text-center lh-sm px-3 py-1"
-                                data-bs-toggle="modal" data-bs-target="#subscriptionPlanModal"
+                            <a href="{{ route('plans.myplan') }}"
+                                class="btn top-action-btn premium-btn d-none d-lg-inline-flex flex-column align-items-center justify-content-center text-center lh-sm px-3 py-1 text-decoration-none"
                                 aria-label="View subscription plan details">
                                 <div class="d-inline-flex align-items-center gap-1">
                                     <i class="fa-solid fa-crown" style="font-size: 0.85rem;"></i>
-                                    <span class="fw-semibold" style="font-size: 0.85rem;">{{ $currentPlanDisplayName ?? 'Basic Plan' }}</span>
+                                    <span class="fw-semibold" style="font-size: 0.85rem;">{{ $currentPlanDisplayName ?? 'Starter Plan' }}</span>
                                 </div>
                                 <span class="text-white-50" style="font-size: 0.65rem;">Expires: {{ $currentPlanExpiresAt?->format('d-m-Y') ?? '31-12-2026' }}</span>
-                            </button>
+                            </a>
 
                             @if($authUser?->hasMatrixPermission('view_policies'))
                             <a class="btn top-action-btn header-menu-btn d-none d-lg-inline-flex align-items-center gap-2 {{ request()->routeIs('policies.*') ? 'active' : '' }}"
@@ -659,6 +658,11 @@
                             <a href="mailto:info@fableadtechnolabs.com" class="btn btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 text-decoration-none" style="background: #e2e8f0; color: #1e293b; border-radius: 8px; font-weight: 500; font-size: 0.85rem;">
                                 <i class="fa-solid fa-envelope" style="color: #475569;"></i>
                                 <span>info@fableadtechnolabs.com</span>
+                            </a>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <a href="{{ route('plans.myplan') }}" class="btn text-white fw-bold px-4 py-2 w-100" style="background: linear-gradient(135deg, #11223b, #d27936); border-radius: 8px;">
+                                <i class="fa-solid fa-crown text-warning me-2"></i> View Full Plan Details & Renew Online
                             </a>
                         </div>
                     </div>

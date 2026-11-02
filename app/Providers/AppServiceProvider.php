@@ -109,21 +109,38 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
 
+                $activeModelPlan = \App\Models\Plan::where('is_active', 1)->latest('id')->first();
                 $currentUserPlan = \App\Models\SubscriptionUserPlan::with('plan')
                     ->where('user_id', $planUserId)
                     ->latest('id')
                     ->first();
-                $currentPlanName = $currentUserPlan?->plan?->name ?? 'Basic Plan';
-                $currentPlanStaffLimit = (int) ($currentUserPlan?->plan?->staff_limit ?? 15);
+
+                if ($tenantPlanName) {
+                    $currentPlanName = $tenantPlanName;
+                } elseif ($activeModelPlan) {
+                    $currentPlanName = $activeModelPlan->name;
+                } else {
+                    $currentPlanName = $currentUserPlan?->plan?->name ?? 'Starter Plan';
+                }
+
+                $currentPlanStaffLimit = (int) ($activeModelPlan?->user_limit ?? ($currentUserPlan?->plan?->staff_limit ?? (tenant('max_user') ?? 15)));
                 $currentPlanStaffCount = \App\Models\User::query()->where('type', 'staff')->count();
 
-                if ($currentUserPlan?->start_date) {
+                if (tenant('start_date')) {
+                    $currentPlanPurchasedAt = \Illuminate\Support\Carbon::parse(tenant('start_date'))->startOfDay();
+                } elseif ($activeModelPlan?->start_date) {
+                    $currentPlanPurchasedAt = \Illuminate\Support\Carbon::parse($activeModelPlan->start_date)->startOfDay();
+                } elseif ($currentUserPlan?->start_date) {
                     $currentPlanPurchasedAt = \Illuminate\Support\Carbon::parse($currentUserPlan->start_date)->startOfDay();
                 } else {
                     $currentPlanPurchasedAt = \Illuminate\Support\Carbon::create(2026, 1, 31)->startOfDay();
                 }
 
-                if ($currentUserPlan?->end_date) {
+                if (tenant('expiry_date')) {
+                    $currentPlanExpiresAt = \Illuminate\Support\Carbon::parse(tenant('expiry_date'))->endOfDay();
+                } elseif ($activeModelPlan?->end_date) {
+                    $currentPlanExpiresAt = \Illuminate\Support\Carbon::parse($activeModelPlan->end_date)->endOfDay();
+                } elseif ($currentUserPlan?->end_date) {
                     $currentPlanExpiresAt = \Illuminate\Support\Carbon::parse($currentUserPlan->end_date)->endOfDay();
                 } else {
                     $currentPlanExpiresAt = \Illuminate\Support\Carbon::create(2026, 12, 31)->endOfDay();

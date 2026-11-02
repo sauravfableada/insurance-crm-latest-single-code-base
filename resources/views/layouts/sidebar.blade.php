@@ -485,6 +485,16 @@
         </li>
         @endif
 
+        <!-- Subscription Plan -->
+        @if(!$isCustomerUser)
+        <li class="nav-item mt-2 sidebar-module">
+            <a class="nav-link ccc ddd @if(request()->routeIs('plans.*')) active @endif" href="{{ route('plans.myplan') }}">
+                <i class="fa-solid fa-crown me-2 text-warning"></i>
+                <span>My Subscription</span>
+            </a>
+        </li>
+        @endif
+
     </nav>
 </aside>
 <div class="crm-sidebar-backdrop" id="crmSidebarBackdrop"></div>

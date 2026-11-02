@@ -40,6 +40,7 @@ class User extends Authenticatable
         'avatar_path',
         'is_active',
         'role',
+        'plan_id',
         'created_by',
         'modified_by',
         'updated_by',
@@ -169,5 +170,63 @@ class User extends Authenticatable
 
         $publicPath = public_path($path);
         return file_exists($publicPath) ? asset($path) : $default;
+    }
+
+    public function plan()
+    {
+        return $this->belongsTo(\App\Models\Plan::class, 'plan_id');
+    }
+
+    public function getActivePlan(): ?\App\Models\Plan
+    {
+        if ($this->plan_id && $this->plan) {
+            return $this->plan;
+        }
+
+        return \App\Models\Plan::where('is_active', 1)->latest('id')->first();
+    }
+
+    public function getLatestPlan(): ?\App\Models\Plan
+    {
+        if ($this->plan_id && $this->plan) {
+            return $this->plan;
+        }
+
+        return \App\Models\Plan::latest('id')->first();
+    }
+
+    public function checkPlanExpiryStatus(): array
+    {
+        $plan = $this->getLatestPlan();
+
+        if (!$plan || empty($plan->end_date)) {
+            return [
+                'status' => 'active',
+                'message' => null,
+                'end_date' => null,
+            ];
+        }
+
+        $today = \Carbon\Carbon::today('Asia/Kolkata');
+        $endDate = \Carbon\Carbon::parse($plan->end_date, 'Asia/Kolkata')->startOfDay();
+
+        if ($today->gt($endDate)) {
+            if ($plan->is_active) {
+                $plan->is_active = 0;
+                $plan->save();
+            }
+
+            return [
+                'status' => 'expired',
+                'message' => 'Your subscription plan has expired. Please renew your plan to continue using the system.',
+                'end_date' => $endDate->format('d-m-Y'),
+            ];
+        }
+
+        return [
+            'status' => 'active',
+            'message' => null,
+            'end_date' => $endDate->format('d-m-Y'),
+        ];
     }
 }

@@ -501,6 +501,14 @@ Route::middleware('auth.api')->group(function () {
     Route::resource('estimates', EstimateController::class);
     Route::post('estimates/{estimate}/status', [EstimateController::class, 'updateStatus'])->name('estimates.status');
 
+    // Subscription & Plan routes (Razorpay checkout backed by Admin-Product)
+    Route::get('/my-plan', [\App\Http\Controllers\PlanController::class, 'myplan'])->name('plans.myplan');
+    Route::get('/plan-details', [\App\Http\Controllers\PlanController::class, 'myPlanDetails'])->name('plans.details');
+    Route::get('/plans/upgrade-options', [\App\Http\Controllers\PlanController::class, 'getUpgradePlans'])->name('plans.upgrade.options');
+    Route::post('/plans/razorpay/create-order', [\App\Http\Controllers\PlanController::class, 'createRazorpayOrder'])->name('plans.razorpay.createOrder');
+    Route::post('/plans/razorpay/verify', [\App\Http\Controllers\PlanController::class, 'verifyRazorpayPayment'])->name('plans.razorpay.verify');
+    Route::get('/plans/invoice/pdf/{id?}', [\App\Http\Controllers\PlanController::class, 'downloadInvoicePdf'])->name('plans.invoice.pdf');
+
     // Settings web routes
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
