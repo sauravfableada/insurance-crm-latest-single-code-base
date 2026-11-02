@@ -4,18 +4,18 @@
 
 @section('content')
 <style>
-    /* Ensure modal close buttons always show cross icon clearly, with and without hover */
+    /* Ensure modal close buttons always show cross icon clearly */
     .modal .btn-close-custom {
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        width: 32px !important;
-        height: 32px !important;
-        min-width: 32px !important;
+        width: 34px !important;
+        height: 34px !important;
+        min-width: 34px !important;
         border-radius: 50% !important;
         border: none !important;
         outline: none !important;
-        font-size: 15px !important;
+        font-size: 16px !important;
         cursor: pointer !important;
         transition: all 0.2s ease-in-out !important;
         padding: 0 !important;
@@ -25,16 +25,16 @@
 
     /* White close button variant (for colored/dark headers) */
     .modal .btn-close-custom.btn-close-white-style {
-        background-color: rgba(255, 255, 255, 0.2) !important;
+        background-color: rgba(255, 255, 255, 0.25) !important;
         color: #ffffff !important;
     }
     .modal .btn-close-custom.btn-close-white-style:hover {
-        background-color: rgba(255, 255, 255, 0.35) !important;
+        background-color: rgba(255, 255, 255, 0.4) !important;
         color: #ffffff !important;
         transform: scale(1.08);
     }
 
-    /* Dark/Light close button variant (for white/light headers) */
+    /* Dark/Light close button variant */
     .modal .btn-close-custom.btn-close-dark-style {
         background-color: #f1f3f5 !important;
         color: #495057 !important;
@@ -44,9 +44,39 @@
         color: #212529 !important;
         transform: scale(1.08);
     }
+
+    /* Force pure white text on dark modal headers across all themes */
+    #renewPlanModal .modal-header,
+    #upgradePlanModal .modal-header,
+    #invoicesListModal .modal-header {
+        border-bottom: none !important;
+    }
+
+    #renewPlanModal .modal-title,
+    #renewPlanModal .modal-header h5,
+    #renewPlanModal .modal-header .modal-title,
+    #upgradePlanModal .modal-title,
+    #upgradePlanModal .modal-header h5,
+    #upgradePlanModal .modal-header .modal-title,
+    #invoicesListModal .modal-title,
+    #invoicesListModal .modal-header h5,
+    #invoicesListModal .modal-header .modal-title {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 1.2rem !important;
+        letter-spacing: 0.3px !important;
+        margin: 0 !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+    }
+
+    #renewPlanModal .modal-header i,
+    #upgradePlanModal .modal-header i {
+        color: #f59e0b !important;
+    }
 </style>
+
 <div class="content">
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div class="page-title">
             <h4 style="font-weight: 700; color: #333; margin-bottom: 5px;">My Plan Details</h4>
             <h6 style="color: #777; font-weight: 400;">Overview of your active subscription plan and limits</h6>
@@ -58,9 +88,6 @@
             <button type="button" class="btn btn-outline-success fw-semibold" style="border-radius: 6px;" data-bs-toggle="modal" data-bs-target="#renewPlanModal">
                 <i class="fas fa-sync-alt me-1"></i> Renew Plan
             </button>
-            <!-- <button type="button" class="btn text-white fw-semibold" style="background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 6px;" data-bs-toggle="modal" data-bs-target="#upgradePlanModal" onclick="loadUpgradePlans()">
-                <i class="fas fa-arrow-up me-1"></i> Upgrade Plan
-            </button> -->
             <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#planHistoryModal" style="color: #24355c; border: 1px solid #24355c; background-color: #fff; font-weight: 600; border-radius: 6px;">
                 <i class="fas fa-history me-1"></i> Plan History
             </button>
@@ -73,19 +100,58 @@
     @php
         $planDaysRemaining = 0;
         $isFutureOrToday = false;
-        if ($plan->end_date) {
+        if ($plan && $plan->end_date) {
             $endDate = \Carbon\Carbon::parse($plan->end_date)->startOfDay();
             $now = \Carbon\Carbon::now()->startOfDay();
             $planDaysRemaining = $now->diffInDays($endDate, false); 
             $isFutureOrToday = $endDate->greaterThanOrEqualTo($now);
         }
-        $renewalPrice = $plan->renewal_price ?? ($plan->total_amount ?? $plan->price ?? 0);
-        $currentCycle = strtolower(trim((string)($plan->duration ?? 'year')));
-        
-        // Exact rule:
-        // If plan is active (end_date >= today): renew from existing expiry date
-        // If plan is expired (end_date < today): renew from today
-        $renewalStartDateCarbon = ($plan->end_date && $isFutureOrToday)
+
+        // 1. Dynamic Plan Name from Tenant or Plan record
+        $tenantPlanName = function_exists('tenant') ? tenant('plan_name') : ($tenant['plan_name'] ?? null);
+        $displayPlanName = $tenantPlanName ?: ($plan->name ?? 'insurance-crm');
+
+        // 2. Dynamic Purchase Price / Amount from Tenant or Plan record
+        $tenantRawAmount = function_exists('tenant') ? tenant('amount') : ($tenant['amount'] ?? null);
+        $tenantAmount = null;
+        if ($tenantRawAmount !== null && $tenantRawAmount !== '') {
+            $tenantAmount = (float) (is_array($tenantRawAmount) ? ($tenantRawAmount[0] ?? 0) : $tenantRawAmount);
+        }
+
+        // 3. Dynamic Renewal Amount from Tenant or Plan record
+        $tenantRawRenewal = function_exists('tenant') ? tenant('renewal_amount') : ($tenant['renewal_amount'] ?? null);
+        $tenantRenewalAmount = null;
+        if ($tenantRawRenewal !== null && $tenantRawRenewal !== '') {
+            $tenantRenewalAmount = (float) (is_array($tenantRawRenewal) ? ($tenantRawRenewal[0] ?? 0) : $tenantRawRenewal);
+        }
+
+        // Resolve Total Amount
+        if ($tenantAmount !== null && $tenantAmount > 0) {
+            $displayTotalAmount = $tenantAmount;
+        } elseif ($plan && (float)($plan->total_amount ?? $plan->price ?? 0) > 0) {
+            $displayTotalAmount = (float)($plan->total_amount ?? $plan->price);
+        } else {
+            $displayTotalAmount = 50.00;
+        }
+
+        // Resolve Renewal Price (must NOT be 0 if renewal amount is configured)
+        if ($tenantRenewalAmount !== null && $tenantRenewalAmount > 0) {
+            $renewalPrice = $tenantRenewalAmount;
+        } elseif ($plan && (float)($plan->renewal_price ?? 0) > 0) {
+            $renewalPrice = (float) $plan->renewal_price;
+        } elseif ($displayTotalAmount > 0) {
+            $renewalPrice = $displayTotalAmount;
+        } else {
+            $renewalPrice = 49.00;
+        }
+
+        $currentCycle = strtolower(trim((string)($plan->duration ?? (function_exists('tenant') ? tenant('billing_cycle') : 'month'))));
+        if (empty($currentCycle)) {
+            $currentCycle = 'month';
+        }
+
+        // Renewal dates
+        $renewalStartDateCarbon = ($plan && $plan->end_date && $isFutureOrToday)
             ? \Carbon\Carbon::parse($plan->end_date)
             : \Carbon\Carbon::today();
 
@@ -95,53 +161,55 @@
 
         $extendedRenewalStartDate = $renewalStartDateCarbon->format('d-m-Y');
         $extendedRenewalDate = $renewalEndDateCarbon->format('d-m-Y');
+
+        // Subtitle / Purchased By
+        $purchasedBy = function_exists('tenant') 
+            ? (tenant('client_name') ?? tenant('brand_name')) 
+            : ($tenant['client_name'] ?? ($tenant['brand_name'] ?? null));
+        $displaySubtitle = $purchasedBy ? 'Purchased By ' . $purchasedBy : ($plan->subtitle ?? 'Purchased By Insurance-CRM');
     @endphp
 
+    <!-- Active Plan Gradient Banner -->
     <div class="card mb-4 border-0" style="background: linear-gradient(to right, #24355c, #d27936); color: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
         <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap">
             <div class="mb-3 mb-md-0">
-                <div class="d-flex align-items-center mb-3">
-                    <h2 class="mb-0 text-white me-3 text-capitalize" style="font-weight: 700;">{{ $plan->name }}</h2>
+                <div class="d-flex align-items-center mb-3 flex-wrap gap-2">
+                    <h2 class="mb-0 text-white me-3 text-capitalize" style="font-weight: 700;">{{ $displayPlanName }}</h2>
                     @if($planDaysRemaining <= 30)
-                    <span class="badge rounded-pill me-3" style="background-color: rgba(243, 156, 18, 0.2); color: #ffd166; border: 1px solid #ffd166; padding: 6px 12px; font-weight: 600;">
+                    <span class="badge rounded-pill me-2" style="background-color: rgba(243, 156, 18, 0.2); color: #ffd166; border: 1px solid #ffd166; padding: 6px 12px; font-weight: 600;">
                         <i class="fas fa-exclamation-triangle me-1"></i> Expiring Soon ({{ $planDaysRemaining > 0 ? $planDaysRemaining . ' days left' : 'Expired' }})
                     </span>
                     @endif
-                    @if(isset($plan->renewal_price))
-                    <span class="badge rounded-pill" style="background-color: rgba(255, 255, 255, 0.15); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3); padding: 6px 12px; font-weight: 600; font-size: 12px;">
-                        Renewal Price: ₹{{ number_format($plan->renewal_price, 2) }}
+                    <span class="badge rounded-pill" style="background-color: rgba(255, 255, 255, 0.18); color: #fff; border: 1px solid rgba(255, 255, 255, 0.35); padding: 6px 14px; font-weight: 600; font-size: 12.5px;">
+                        Renewal Price: ₹{{ number_format($renewalPrice, 2) }}
                     </span>
-                    @endif
                 </div>
-                <p class="mb-4 text-capitalize" style="opacity: 0.8; font-size: 14px;">{{ $plan->subtitle ?? '' }}</p>
+                <p class="mb-4 text-capitalize" style="opacity: 0.85; font-size: 14px;">{{ $displaySubtitle }}</p>
                 <div class="d-flex gap-4 flex-wrap" style="font-size: 13px; font-weight: 500;">
-                    <div><i class="far fa-calendar-alt" style="color: #ffd166;"></i> Start Date: {{ $plan->start_date ? \Carbon\Carbon::parse($plan->start_date)->format('d-m-Y') : 'N/A' }}</div>
-                    <div><i class="far fa-calendar-alt" style="color: #ffd166;"></i> End Date: {{ $plan->end_date ? \Carbon\Carbon::parse($plan->end_date)->format('d-m-Y') : 'N/A' }}</div>
-                    @if($plan->user_limit)
-                    <div><i class="fas fa-users" style="color: #ffd166;"></i> User Limit: {{ $plan->user_limit }}</div>
-                    @endif
-                    @if($plan->branch_limit)
-                    <div><i class="fas fa-building" style="color: #ffd166;"></i> Branch Limit: {{ $plan->branch_limit }}</div>
-                    @endif
+                    <div><i class="far fa-calendar-alt" style="color: #ffd166;"></i> Start Date: {{ $plan && $plan->start_date ? \Carbon\Carbon::parse($plan->start_date)->format('d-m-Y') : date('d-m-Y') }}</div>
+                    <div><i class="far fa-calendar-alt" style="color: #ffd166;"></i> End Date: {{ $plan && $plan->end_date ? \Carbon\Carbon::parse($plan->end_date)->format('d-m-Y') : 'N/A' }}</div>
+                    <div><i class="fas fa-users" style="color: #ffd166;"></i> User Limit: {{ $plan->user_limit ?? (function_exists('tenant') ? (tenant('max_user') ?? 50) : 50) }}</div>
+                    <div><i class="fas fa-building" style="color: #ffd166;"></i> Branch Limit: {{ $plan->branch_limit ?? (function_exists('tenant') ? (tenant('max_branch') ?? 1) : 1) }}</div>
                 </div>
             </div>
             
-            <div style="background-color: rgba(255,255,255,0.15); padding: 15px 30px; border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 5px; font-weight: 600;">Total Amount</div>
-                <h2 class="mb-1 text-white" style="font-weight: 700;">₹{{ number_format($plan->total_amount ?? ($plan->price ?? 0), 2) }}</h2>
+            <div style="background-color: rgba(255,255,255,0.15); padding: 15px 30px; border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1); min-width: 170px;">
+                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.85; margin-bottom: 5px; font-weight: 600;">Total Amount</div>
+                <h2 class="mb-1 text-white" style="font-weight: 700;">₹{{ number_format($displayTotalAmount, 2) }}</h2>
                 <div style="font-size: 13px; color: #ffd166; font-weight: 500; margin-bottom: 5px;">
-                    @if($plan->duration == 'month')
+                    @if(str_contains($currentCycle, 'month'))
                         1 Month
-                    @elseif($plan->duration == 'year')
+                    @elseif(str_contains($currentCycle, 'year'))
                         1 Year
                     @else
-                        {{ $plan->duration }}
+                        {{ ucfirst($currentCycle) }}
                     @endif
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Included Features Grid -->
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; border: 1px solid #f1f1f1 !important;">
         <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
             <h5 style="font-weight: 700; color: #333; font-size: 16px;">
@@ -150,8 +218,15 @@
         </div>
         <div class="card-body p-4">
             <div class="row">
-            @if(is_array($plan->features) && count($plan->features) > 0)
-                @foreach($plan->features as $feature)
+            @php
+                $modulesList = !empty($plan->features) && is_array($plan->features) && count($plan->features) > 0
+                    ? $plan->features
+                    : (function_exists('tenant') && is_array(tenant('modules')) && count(tenant('modules')) > 0
+                        ? tenant('modules')
+                        : ['Dashboard', 'Client Manage', 'Sales CRM', 'Policy Center', 'Commissions', 'Withdrawal Requests', 'Operations', 'Sub Agent']);
+            @endphp
+            @if(is_array($modulesList) && count($modulesList) > 0)
+                @foreach($modulesList as $feature)
                     <div class="col-md-3 col-sm-6 mb-3">
                         <div class="p-3 h-100" style="background-color: #fafbfc; border-radius: 8px; border: 1px solid #f1f1f1; color: #555; font-weight: 500;">
                             <i class="fas fa-check text-success me-2" style="background-color: #e6f9ed; padding: 5px; border-radius: 50%; font-size: 10px;"></i> {{ $feature }}
@@ -161,7 +236,7 @@
             @else
                 <div class="col-md-12 mb-3">
                     <div class="p-3" style="background-color: #fafbfc; border-radius: 8px; border: 1px solid #f1f1f1; color: #555; font-weight: 500;">
-                        <i class="fas fa-check text-success me-2" style="background-color: #e6f9ed; padding: 5px; border-radius: 50%; font-size: 10px;"></i> All standard features active for this plan.
+                        <i class="fas fa-check text-success me-2" style="background-color: #e6f9ed; padding: 5px; border-radius: 50%; font-size: 10px;"></i> All standard insurance CRM modules active for this plan.
                     </div>
                 </div>
             @endif
@@ -173,31 +248,32 @@
     <div class="modal fade" id="renewPlanModal" tabindex="-1" aria-labelledby="renewPlanModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
-                <div class="modal-header text-white" style="background: linear-gradient(135deg, #24355c, #2e4374); border-bottom: none; padding: 20px 24px;">
-                    <h5 class="modal-title fw-bold" id="renewPlanModalLabel">
-                        <i class="fas fa-sync-alt me-2 text-warning"></i> Renew Current Subscription
+                <!-- Header with High Contrast Pure White Text -->
+                <div class="modal-header" style="background: linear-gradient(135deg, #11223b, #1e3a5f) !important; border-bottom: none; padding: 20px 24px;">
+                    <h5 class="modal-title fw-bold text-white d-flex align-items-center mb-0" id="renewPlanModalLabel" style="color: #ffffff !important; font-size: 1.18rem;">
+                        <i class="fas fa-sync-alt me-2" style="color: #f59e0b !important;"></i> Renew Current Subscription
                     </h5>
-                    <button type="button" class="btn-close-custom btn-close-white-style" data-bs-dismiss="modal" aria-label="Close">
-                        <i class="fas fa-times"></i>
+                    <button type="button" class="btn-close-custom btn-close-white-style ms-auto" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fas fa-times" style="color: #ffffff !important;"></i>
                     </button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="text-center mb-4">
                         <div class="d-inline-flex align-items-center justify-content-center bg-light text-primary rounded-circle mb-2" style="width: 58px; height: 58px;">
-                            <i class="fas fa-file-invoice-dollar fs-3" style="color: #24355c;"></i>
+                            <i class="fas fa-file-invoice-dollar fs-3" style="color: #11223b;"></i>
                         </div>
-                        <h4 class="fw-bold mb-1" style="color: #24355c;">{{ $plan->name }}</h4>
+                        <h4 class="fw-bold mb-1 text-capitalize" style="color: #11223b;">{{ $displayPlanName }}</h4>
                         <span class="badge bg-light text-secondary border px-3 py-1">Active Plan</span>
                     </div>
 
                     <div class="bg-light rounded p-3 mb-3 border">
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Billing Cycle:</span>
-                            <span class="fw-semibold text-capitalize">{{ $plan->duration ?? '1 Year' }}</span>
+                            <span class="fw-semibold text-capitalize">{{ ucfirst($currentCycle) }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Current Expiry:</span>
-                            <span class="fw-semibold">{{ $plan->end_date ? \Carbon\Carbon::parse($plan->end_date)->format('d-m-Y') : 'N/A' }}</span>
+                            <span class="fw-semibold">{{ $plan && $plan->end_date ? \Carbon\Carbon::parse($plan->end_date)->format('d-m-Y') : 'N/A' }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Renewal Start Date:</span>
@@ -210,18 +286,18 @@
                         <hr class="my-2">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="fw-bold" style="font-size: 16px;">Renewal Payable:</span>
-                            <span class="fw-bold text-primary" style="font-size: 20px; color: #d27936 !important;">₹{{ number_format($renewalPrice, 2) }}</span>
+                            <span class="fw-bold text-primary" style="font-size: 22px; color: #d27936 !important;">₹{{ number_format($renewalPrice, 2) }}</span>
                         </div>
                     </div>
 
-                    <div class="alert alert-info py-2 px-3 small d-flex align-items-center mb-0">
-                        <i class="fas fa-shield-alt text-info me-2 fs-5"></i>
+                    <div class="alert alert-info py-2 px-3 small d-flex align-items-center mb-0" style="background-color: #e0f2fe; border-color: #bae6fd; color: #0369a1;">
+                        <i class="fas fa-shield-alt me-2 fs-5" style="color: #0284c7;"></i>
                         <span>Secure checkout powered by Razorpay. Plan updates immediately upon verification.</span>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0 px-4 py-3">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn text-white fw-bold px-4" id="btnConfirmRenewal" style="background-color: #24355c;" onclick="processRenewalPayment()">
+                    <button type="button" class="btn text-white fw-bold px-4" id="btnConfirmRenewal" style="background-color: #11223b;" onclick="processRenewalPayment()">
                         <span class="spinner-border spinner-border-sm me-1 d-none" id="renewalSpinner"></span>
                         <i class="fas fa-lock me-1"></i> Pay ₹{{ number_format($renewalPrice, 2) }} & Renew
                     </button>
@@ -234,15 +310,15 @@
     <div class="modal fade" id="upgradePlanModal" tabindex="-1" aria-labelledby="upgradePlanModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
-                <div class="modal-header text-white" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border-bottom: none; padding: 20px 24px;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #11223b, #1e3a5f) !important; border-bottom: none; padding: 20px 24px;">
                     <div>
-                        <h5 class="modal-title fw-bold" id="upgradePlanModalLabel">
-                            <i class="fas fa-rocket me-2 text-warning"></i> Upgrade Your Plan
+                        <h5 class="modal-title fw-bold text-white mb-1" id="upgradePlanModalLabel" style="color: #ffffff !important;">
+                            <i class="fas fa-rocket me-2" style="color: #f59e0b !important;"></i> Upgrade Your Plan
                         </h5>
-                        <p class="mb-0 small text-white-50">Select a membership package to unlock higher user/branch limits and expanded modules.</p>
+                        <p class="mb-0 small text-white-50" style="color: rgba(255, 255, 255, 0.75) !important;">Select a membership package to unlock higher user/branch limits and expanded modules.</p>
                     </div>
-                    <button type="button" class="btn-close-custom btn-close-white-style" data-bs-dismiss="modal" aria-label="Close">
-                        <i class="fas fa-times"></i>
+                    <button type="button" class="btn-close-custom btn-close-white-style ms-auto" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fas fa-times" style="color: #ffffff !important;"></i>
                     </button>
                 </div>
                 <div class="modal-body p-4">
@@ -270,18 +346,18 @@
     <div class="modal fade" id="invoicesListModal" tabindex="-1" aria-labelledby="invoicesListModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
-                <div class="modal-header text-white" style="background-color: #eb5e28; padding: 18px 24px;">
+                <div class="modal-header text-white" style="background-color: #eb5e28 !important; padding: 18px 24px;">
                     <div class="d-flex align-items-center">
                         <div class="rounded-circle p-2 bg-white bg-opacity-25 me-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
                             <i class="fas fa-file-invoice text-white fs-5"></i>
                         </div>
                         <div>
-                            <h5 class="modal-title fw-bold text-white mb-0" id="invoicesListModalLabel">Download Subscription Invoices</h5>
-                            <p class="mb-0 small text-white-50">Select and download tax invoices & receipts for all your plan purchases and renewals</p>
+                            <h5 class="modal-title fw-bold text-white mb-0" id="invoicesListModalLabel" style="color: #ffffff !important;">Download Subscription Invoices</h5>
+                            <p class="mb-0 small text-white-50" style="color: rgba(255, 255, 255, 0.8) !important;">Select and download tax invoices & receipts for all your plan purchases and renewals</p>
                         </div>
                     </div>
-                    <button type="button" class="btn-close-custom btn-close-white-style" data-bs-dismiss="modal" aria-label="Close">
-                        <i class="fas fa-times"></i>
+                    <button type="button" class="btn-close-custom btn-close-white-style ms-auto" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fas fa-times" style="color: #ffffff !important;"></i>
                     </button>
                 </div>
                 <div class="modal-body p-4">
@@ -311,7 +387,7 @@
                                                 <strong>{{ !empty($tx['created_at']) ? \Carbon\Carbon::parse($tx['created_at'])->format('d M Y, h:i A') : 'N/A' }}</strong>
                                             </td>
                                             <td>
-                                                <div class="fw-bold text-dark">{{ $plan->name ?? 'Subscription Plan' }}</div>
+                                                <div class="fw-bold text-dark">{{ $displayPlanName }}</div>
                                                 <small class="text-muted">{{ $tx['description'] ?? ($tx['razorpay_order_id'] ?? 'Subscription') }}</small>
                                             </td>
                                             <td>
@@ -348,10 +424,10 @@
                                                 INV-{{ date('Y') }}-{{ str_pad((string)($plan->id ?? 1), 4, '0', STR_PAD_LEFT) }}
                                             </span>
                                         </td>
-                                        <td><strong>{{ $plan->start_date ? \Carbon\Carbon::parse($plan->start_date)->format('d M Y') : date('d M Y') }}</strong></td>
-                                        <td><div class="fw-bold text-dark">{{ $plan->name ?? 'Active Plan' }}</div></td>
+                                        <td><strong>{{ $plan && $plan->start_date ? \Carbon\Carbon::parse($plan->start_date)->format('d M Y') : date('d M Y') }}</strong></td>
+                                        <td><div class="fw-bold text-dark text-capitalize">{{ $displayPlanName }}</div></td>
                                         <td><span class="badge bg-primary text-white">PURCHASE</span></td>
-                                        <td class="fw-bold text-dark">₹{{ number_format((float)($plan->total_amount ?? $plan->price ?? 0), 2) }}</td>
+                                        <td class="fw-bold text-dark">₹{{ number_format($displayTotalAmount, 2) }}</td>
                                         <td><span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Active</span></td>
                                         <td class="text-center">
                                             <a href="{{ route('plans.invoice.pdf') }}" target="_blank" class="btn btn-sm text-white fw-semibold" style="background-color: #eb5e28; border-radius: 6px; padding: 6px 14px;">
@@ -376,8 +452,8 @@
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content border-0 shadow" style="border-radius: 12px;">
                 <div class="modal-header border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
-                    <h5 class="modal-title" id="planHistoryModalLabel" style="font-weight: 700; color: #333;"><i class="fas fa-history text-secondary me-2"></i> Plan & Payment History</h5>
-                    <button type="button" class="btn-close-custom btn-close-dark-style" data-bs-dismiss="modal" aria-label="Close">
+                    <h5 class="modal-title fw-bold" id="planHistoryModalLabel" style="font-weight: 700; color: #11223b !important;"><i class="fas fa-history text-secondary me-2"></i> Plan & Payment History</h5>
+                    <button type="button" class="btn-close-custom btn-close-dark-style ms-auto" data-bs-dismiss="modal" aria-label="Close">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -403,7 +479,7 @@
                                                 <strong>{{ !empty($tx['created_at']) ? \Carbon\Carbon::parse($tx['created_at'])->format('d M Y, h:i A') : 'N/A' }}</strong>
                                             </td>
                                             <td>
-                                                <div class="fw-bold text-dark">{{ $plan->name ?? 'Subscription Plan' }}</div>
+                                                <div class="fw-bold text-dark text-capitalize">{{ $displayPlanName }}</div>
                                                 <small class="text-muted">{{ $tx['description'] ?? ($tx['razorpay_order_id'] ?? '-') }}</small>
                                             </td>
                                             <td>
@@ -441,7 +517,7 @@
                                         <tr>
                                             <td>{{ $historyItem->created_at ? \Carbon\Carbon::parse($historyItem->created_at)->format('d M Y') : 'N/A' }}</td>
                                             <td>
-                                                <div class="fw-bold">{{ $historyItem->name }}</div>
+                                                <div class="fw-bold text-capitalize">{{ $historyItem->name }}</div>
                                                 <small class="text-muted">{{ $historyItem->start_date ? \Carbon\Carbon::parse($historyItem->start_date)->format('d-m-Y') : '-' }} to {{ $historyItem->end_date ? \Carbon\Carbon::parse($historyItem->end_date)->format('d-m-Y') : '-' }}</small>
                                             </td>
                                             <td><span class="badge bg-primary text-white">SUBSCRIPTION</span></td>
@@ -449,13 +525,13 @@
                                             <td class="fw-bold">₹{{ number_format($historyItem->total_amount ?? $historyItem->price ?? 0, 2) }}</td>
                                             <td>
                                                 @if($historyItem->is_active)
-                                                    <span class="badge bg-success">Active</span>
+                                                    <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Active</span>
                                                 @else
-                                                    <span class="badge bg-secondary">Inactive</span>
+                                                    <span class="badge bg-secondary">Archived</span>
                                                 @endif
                                             </td>
                                             <td class="text-center">
-                                                <a href="{{ route('plans.invoice.pdf', $historyItem->id) }}" target="_blank" class="btn btn-sm text-white" style="background-color: #eb5e28; border-radius: 4px; padding: 4px 10px;" title="Download PDF Invoice">
+                                                <a href="{{ route('plans.invoice.pdf', ['id' => $historyItem->id]) }}" target="_blank" class="btn btn-sm text-white" style="background-color: #eb5e28; border-radius: 4px; padding: 4px 10px;">
                                                     <i class="fas fa-file-pdf me-1"></i> PDF
                                                 </a>
                                             </td>
@@ -463,27 +539,30 @@
                                     @endforeach
                                 @else
                                     <tr>
-                                        <td colspan="7" class="text-center py-4 text-muted">No plan payment history found.</td>
+                                        <td colspan="7" class="text-center text-muted py-3">No previous transactions found.</td>
                                     </tr>
                                 @endif
                             </tbody>
                         </table>
                     </div>
                 </div>
+                <div class="modal-footer bg-light border-0 px-4 py-3">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
-
 </div>
 @endsection
 
-@push('js')
+@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
     const currentPlanId = {{ $plan->id ?? 'null' }};
     const currentRenewalPrice = {{ (float) $renewalPrice }};
-    const currentBillingDuration = '{{ $plan->duration ?? "year" }}';
+    const currentBillingDuration = '{{ $currentCycle }}';
+    const currentPlanDisplayName = "{{ addslashes($displayPlanName) }}";
 
     // Helper for SweetAlert
     function notifyAlert(icon, title, text, callback = null) {
@@ -492,7 +571,7 @@
                 icon: icon,
                 title: title,
                 text: text,
-                confirmButtonColor: '#24355c',
+                confirmButtonColor: '#11223b',
                 confirmButtonText: 'OK'
             }).then(() => {
                 if (callback) callback();
@@ -520,7 +599,7 @@
             body: JSON.stringify({
                 amount: currentRenewalPrice,
                 payment_type: 'renewal',
-                description: 'Plan Renewal: {{ addslashes($plan->name ?? "Subscription") }}'
+                description: 'Plan Renewal: ' + currentPlanDisplayName
             })
         })
         .then(res => res.json())
@@ -546,7 +625,7 @@
                 description: order.description || 'Renewing active subscription',
                 order_id: order.id || order.order_id,
                 prefill: order.prefill || {},
-                theme: { color: '#24355c' },
+                theme: { color: '#11223b' },
                 modal: {
                     ondismiss: function() {
                         console.log('Payment modal dismissed by user.');
@@ -671,7 +750,7 @@
                                     <div class="small fw-bold text-uppercase text-muted mb-2" style="letter-spacing: 0.5px;">Included Modules</div>
                                     ${modulesHtml}
                                 </div>
-                                <button type="button" class="btn text-white w-100 fw-bold mt-auto" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 8px;" onclick="processUpgradePayment(${membership.id}, ${parseFloat(amount || 0)}, '${membership.plan_name}', '${cycleTitle}')">
+                                <button type="button" class="btn text-white w-100 fw-bold mt-auto" style="background: linear-gradient(135deg, #11223b, #1e3a5f); border-radius: 8px;" onclick="processUpgradePayment(${membership.id}, ${parseFloat(amount || 0)}, '${membership.plan_name}', '${cycleTitle}')">
                                     <i class="fas fa-arrow-up me-1"></i> Choose & Pay
                                 </button>
                             </div>
@@ -720,7 +799,7 @@
                 description: 'Subscription Plan Upgrade',
                 order_id: order.id || order.order_id,
                 prefill: order.prefill || {},
-                theme: { color: '#4f46e5' },
+                theme: { color: '#11223b' },
                 modal: {
                     ondismiss: function() {
                         console.log('Upgrade payment modal closed.');
@@ -752,7 +831,6 @@
 
     // 4. Verify payment with client backend + Super Admin API
     function verifyPayment(paymentDetails) {
-        // Show loading overlay
         const loadingDiv = document.createElement('div');
         loadingDiv.id = 'paymentVerifyingOverlay';
         loadingDiv.style.position = 'fixed';
@@ -802,4 +880,3 @@
     }
 </script>
 @endpush
-

@@ -786,6 +786,7 @@
     <script src="{{ ($publicPath ?: '') . '/js/main.js' }}?v={{ filemtime(public_path('js/main.js')) }}"></script>
     <script src="{{ ($publicPath ?: '') . '/js/contact-copy.js' }}?v={{ filemtime(public_path('js/contact-copy.js')) }}"></script>
     @stack('scripts')
+    @stack('js')
     <script
         src="{{ ($publicPath ?: '') . '/js/crm-layout.js' }}?v={{ filemtime(PUBLIC_PATH('js/crm-layout.js')) }}"></script>
     <script

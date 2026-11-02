@@ -27,18 +27,30 @@ class PlanController extends Controller
         // 1. Get or initialize local active Plan
         $plan = $user->getActivePlan();
 
+        $tenantPlanName = $tenant['plan_name'] ?? null;
+        $tenantAmount = isset($tenant['amount']) ? (float)(is_array($tenant['amount']) ? ($tenant['amount'][0] ?? 0) : $tenant['amount']) : 0;
+        $tenantRenewal = isset($tenant['renewal_amount']) ? (float)(is_array($tenant['renewal_amount']) ? ($tenant['renewal_amount'][0] ?? 0) : $tenant['renewal_amount']) : 0;
+
+        if ($tenantRenewal <= 0 && $tenantAmount > 0) {
+            $tenantRenewal = $tenantAmount;
+        }
+
         if (!$plan && $tenant) {
+            $initialAmount = $tenantAmount > 0 ? $tenantAmount : 50.00;
+            $initialRenewal = $tenantRenewal > 0 ? $tenantRenewal : 49.00;
+            $initialName = $tenantPlanName ?: 'insurance-crm';
+
             $plan = Plan::create([
-                'name'          => $tenant['plan_name'] ?? 'Starter Plan',
-                'price'         => $tenant['amount'] ?? 1000.00,
-                'renewal_price' => $tenant['renewal_amount'] ?? 0.00,
-                'total_amount'  => $tenant['amount'] ?? 1000.00,
-                'total_price'   => $tenant['amount'] ?? 1000.00,
+                'name'          => $initialName,
+                'price'         => $initialAmount,
+                'renewal_price' => $initialRenewal,
+                'total_amount'  => $initialAmount,
+                'total_price'   => $initialAmount,
                 'duration'      => (str_contains(strtolower($tenant['billing_cycle'] ?? ''), 'month')) ? 'month' : 'year',
                 'start_date'    => !empty($tenant['start_date']) ? Carbon::parse($tenant['start_date'])->format('Y-m-d') : now()->format('Y-m-d'),
                 'end_date'      => !empty($tenant['expiry_date']) ? Carbon::parse($tenant['expiry_date'])->format('Y-m-d') : now()->addYear()->format('Y-m-d'),
-                'subtitle'      => 'Purchased By ' . ($tenant['client_name'] ?? ($tenant['brand_name'] ?? ($user->name ?? 'Company'))),
-                'user_limit'    => $tenant['max_user'] ?? 10,
+                'subtitle'      => 'Purchased By ' . ($tenant['client_name'] ?? ($tenant['brand_name'] ?? ($user->name ?? 'Insurance-CRM'))),
+                'user_limit'    => $tenant['max_user'] ?? 50,
                 'branch_limit'  => $tenant['max_branch'] ?? 1,
                 'is_active'     => true,
                 'features'      => !empty($tenant['modules']) && is_array($tenant['modules']) ? array_values($tenant['modules']) : [
@@ -52,16 +64,16 @@ class PlanController extends Controller
             $plan = Plan::firstOrCreate(
                 ['is_active' => true],
                 [
-                    'name'          => 'Starter Plan',
-                    'price'         => 1000.00,
-                    'renewal_price' => 0.00,
-                    'total_amount'  => 1000.00,
-                    'total_price'   => 1000.00,
+                    'name'          => 'insurance-crm',
+                    'price'         => 50.00,
+                    'renewal_price' => 49.00,
+                    'total_amount'  => 50.00,
+                    'total_price'   => 50.00,
                     'duration'      => 'month',
                     'start_date'    => now()->format('Y-m-d'),
                     'end_date'      => now()->addYear()->format('Y-m-d'),
                     'subtitle'      => 'Purchased By ' . ($user->name ?? 'Company'),
-                    'user_limit'    => 10,
+                    'user_limit'    => 50,
                     'branch_limit'  => 1,
                     'is_active'     => true,
                     'features'      => [
@@ -72,25 +84,85 @@ class PlanController extends Controller
             $user->update(['plan_id' => $plan->id]);
         }
 
-        // 2. Sync latest validated subscription dates from Super Admin tenant payload if available
-        if ($tenant && !empty($tenant['expiry_date']) && $plan) {
-            $tenantExpiry = Carbon::parse($tenant['expiry_date'])->format('Y-m-d');
-            $tenantStart = !empty($tenant['start_date']) ? Carbon::parse($tenant['start_date'])->format('Y-m-d') : null;
-
+        // 2. Synchronize all plan details dynamically with tenant payload from Super Admin
+        if ($tenant && $plan) {
             $needsUpdate = false;
             $updateData = [];
 
-            if ($plan->end_date !== $tenantExpiry) {
-                $updateData['end_date'] = $tenantExpiry;
+            // Sync Plan Name
+            if (!empty($tenantPlanName) && $plan->name !== $tenantPlanName) {
+                $updateData['name'] = $tenantPlanName;
                 $needsUpdate = true;
             }
-            if ($tenantStart && $plan->start_date !== $tenantStart) {
-                $updateData['start_date'] = $tenantStart;
+
+            // Sync Total Amount & Price
+            if ($tenantAmount > 0 && (float)$plan->total_amount !== $tenantAmount) {
+                $updateData['price'] = $tenantAmount;
+                $updateData['total_amount'] = $tenantAmount;
+                $updateData['total_price'] = $tenantAmount;
                 $needsUpdate = true;
             }
-            if (!empty($tenant['billing_cycle']) && $plan->duration !== (str_contains(strtolower($tenant['billing_cycle']), 'month') ? 'month' : 'year')) {
-                $updateData['duration'] = str_contains(strtolower($tenant['billing_cycle']), 'month') ? 'month' : 'year';
+
+            // Sync Renewal Price
+            if ($tenantRenewal > 0 && (float)$plan->renewal_price !== $tenantRenewal) {
+                $updateData['renewal_price'] = $tenantRenewal;
                 $needsUpdate = true;
+            }
+
+            // Sync Dates
+            if (!empty($tenant['expiry_date'])) {
+                $tenantExpiry = Carbon::parse($tenant['expiry_date'])->format('Y-m-d');
+                if ($plan->end_date !== $tenantExpiry) {
+                    $updateData['end_date'] = $tenantExpiry;
+                    $needsUpdate = true;
+                }
+            }
+
+            if (!empty($tenant['start_date'])) {
+                $tenantStart = Carbon::parse($tenant['start_date'])->format('Y-m-d');
+                if ($plan->start_date !== $tenantStart) {
+                    $updateData['start_date'] = $tenantStart;
+                    $needsUpdate = true;
+                }
+            }
+
+            // Sync Billing Cycle
+            if (!empty($tenant['billing_cycle'])) {
+                $cycle = str_contains(strtolower($tenant['billing_cycle']), 'month') ? 'month' : 'year';
+                if ($plan->duration !== $cycle) {
+                    $updateData['duration'] = $cycle;
+                    $needsUpdate = true;
+                }
+            }
+
+            // Sync Limits
+            if (!empty($tenant['max_user']) && (int)$plan->user_limit !== (int)$tenant['max_user']) {
+                $updateData['user_limit'] = (int)$tenant['max_user'];
+                $needsUpdate = true;
+            }
+
+            if (!empty($tenant['max_branch']) && (int)$plan->branch_limit !== (int)$tenant['max_branch']) {
+                $updateData['branch_limit'] = (int)$tenant['max_branch'];
+                $needsUpdate = true;
+            }
+
+            // Sync Modules
+            if (!empty($tenant['modules']) && is_array($tenant['modules'])) {
+                $mods = array_values($tenant['modules']);
+                if ($plan->features !== $mods) {
+                    $updateData['features'] = $mods;
+                    $needsUpdate = true;
+                }
+            }
+
+            // Sync Subtitle
+            $tenantClientName = $tenant['client_name'] ?? ($tenant['brand_name'] ?? null);
+            if ($tenantClientName) {
+                $sub = 'Purchased By ' . $tenantClientName;
+                if ($plan->subtitle !== $sub) {
+                    $updateData['subtitle'] = $sub;
+                    $needsUpdate = true;
+                }
             }
 
             if ($needsUpdate) {
@@ -174,7 +246,7 @@ class PlanController extends Controller
     {
         $validated = $request->validate([
             'payment_type'  => 'required|in:renewal,upgrade',
-            'amount'        => 'required|numeric|min:1',
+            'amount'        => 'required|numeric|min:0.01',
             'membership_id' => 'nullable|integer',
             'billing_cycle' => 'nullable|string',
         ]);
@@ -191,9 +263,22 @@ class PlanController extends Controller
             ], 400);
         }
 
+        $plan = auth()->user()->getActivePlan();
+        $tenantRenewal = isset($tenant['renewal_amount']) ? (float)(is_array($tenant['renewal_amount']) ? ($tenant['renewal_amount'][0] ?? 0) : $tenant['renewal_amount']) : 0;
+        $tenantAmount = isset($tenant['amount']) ? (float)(is_array($tenant['amount']) ? ($tenant['amount'][0] ?? 0) : $tenant['amount']) : 0;
+
+        $amount = (float) ($validated['amount'] ?? 0);
+        if ($amount <= 0) {
+            if ($validated['payment_type'] === 'renewal') {
+                $amount = $tenantRenewal > 0 ? $tenantRenewal : (float)($plan->renewal_price ?? ($tenantAmount > 0 ? $tenantAmount : 49.00));
+            } else {
+                $amount = $tenantAmount > 0 ? $tenantAmount : (float)($plan->total_amount ?? 50.00);
+            }
+        }
+
         $user = auth()->user();
         $payload = [
-            'amount'       => (float) $validated['amount'],
+            'amount'       => $amount,
             'client_id'    => $clientId,
             'payment_type' => $validated['payment_type'],
             'name'         => $tenant['client_name'] ?? ($tenant['brand_name'] ?? $user->name),
