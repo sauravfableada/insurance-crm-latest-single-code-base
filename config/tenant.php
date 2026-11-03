@@ -25,7 +25,9 @@ return [
     | Example: http://127.0.0.1:8000/api/tenant or https://admin.fableadtech.com/api/tenant
     |
     */
-    'api_url' => rtrim((string) env('TENANT_API_URL', ''), '/'),
+    'api_url' => env('TENANT_API_URL')
+        ? rtrim((string) env('TENANT_API_URL'), '/')
+        : 'https://admin-products.fableadtech.com/api/tenant',
 
     /*
     |--------------------------------------------------------------------------
@@ -36,7 +38,7 @@ return [
     | with Admin-Product's tenant management API.
     |
     */
-    'secret' => (string) env('TENANT_API_SECRET', ''),
+    'secret' => (string) (env('TENANT_API_SECRET') ?: 'fab_erp_tenant_secret_key_8f7b2c9d1e4a6053'),
 
     /*
     |--------------------------------------------------------------------------
@@ -48,8 +50,8 @@ return [
     | cannot access this system.
     |
     */
-    'product_code' => strtoupper((string) env('TENANT_PRODUCT_CODE', 'CRM')),
-    'project_code' => strtoupper((string) env('TENANT_PROJECT_CODE', 'CRM')),
+    'product_code' => strtoupper((string) (env('TENANT_PRODUCT_CODE') ?: 'CRM')),
+    'project_code' => env('TENANT_PROJECT_CODE') ? strtoupper((string) env('TENANT_PROJECT_CODE')) : null,
 
     /*
     |--------------------------------------------------------------------------

@@ -32,16 +32,16 @@ class SubscriptionPlanTest extends TestCase
     public function test_authenticated_user_can_access_my_plan_page()
     {
         $plan = Plan::create([
-            'name'          => 'Starter Plan',
-            'price'         => 1000.00,
-            'renewal_price' => 0.00,
-            'total_amount'  => 1000.00,
-            'total_price'   => 1000.00,
+            'name'          => 'insurance-crm',
+            'price'         => 50.00,
+            'renewal_price' => 49.00,
+            'total_amount'  => 50.00,
+            'total_price'   => 50.00,
             'duration'      => 'month',
             'start_date'    => '2026-09-23',
             'end_date'      => '2028-01-01',
-            'subtitle'      => 'Purchased By Fablead Demo Company',
-            'user_limit'    => 10,
+            'subtitle'      => 'Purchased By Insurance-CRM',
+            'user_limit'    => 50,
             'branch_limit'  => 1,
             'is_active'     => true,
             'features'      => ['Dashboard', 'Client Manage', 'Sales CRM', 'Policy Center'],
@@ -53,10 +53,38 @@ class SubscriptionPlanTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('My Plan Details');
-        $response->assertSee('Starter Plan');
+        $response->assertSee('insurance-crm');
         $response->assertSee('Included Features');
         $response->assertSee('Download Invoice');
         $response->assertSee('Renew Plan');
+    }
+
+    public function test_legacy_starter_plan_is_automatically_migrated_to_tenant_plan()
+    {
+        $legacyPlan = Plan::create([
+            'name'          => 'Starter Plan',
+            'price'         => 1000.00,
+            'renewal_price' => 0.00,
+            'total_amount'  => 1000.00,
+            'total_price'   => 1000.00,
+            'duration'      => 'month',
+            'start_date'    => '2026-09-23',
+            'end_date'      => '2028-01-01',
+            'is_active'     => true,
+        ]);
+
+        $this->user->update(['plan_id' => $legacyPlan->id]);
+
+        $response = $this->actingAs($this->user)->get(route('plans.myplan'));
+
+        $response->assertStatus(200);
+        $response->assertSee('insurance-crm');
+        $response->assertDontSee('Pay ₹1,000.00 & Renew');
+
+        $legacyPlan->refresh();
+        $this->assertSame('insurance-crm', $legacyPlan->name);
+        $this->assertEquals(50.00, (float)$legacyPlan->price);
+        $this->assertEquals(49.00, (float)$legacyPlan->renewal_price);
     }
 
     public function test_upgrade_options_returns_json()

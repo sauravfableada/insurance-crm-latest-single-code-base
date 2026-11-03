@@ -109,7 +109,7 @@
 
         // 1. Dynamic Plan Name from Tenant or Plan record
         $tenantPlanName = function_exists('tenant') ? tenant('plan_name') : ($tenant['plan_name'] ?? null);
-        $displayPlanName = $tenantPlanName ?: ($plan->name ?? 'insurance-crm');
+        $displayPlanName = $tenantPlanName ?: (($plan && $plan->name && $plan->name !== 'Starter Plan') ? $plan->name : 'insurance-crm');
 
         // 2. Dynamic Purchase Price / Amount from Tenant or Plan record
         $tenantRawAmount = function_exists('tenant') ? tenant('amount') : ($tenant['amount'] ?? null);
@@ -128,7 +128,7 @@
         // Resolve Total Amount
         if ($tenantAmount !== null && $tenantAmount > 0) {
             $displayTotalAmount = $tenantAmount;
-        } elseif ($plan && (float)($plan->total_amount ?? $plan->price ?? 0) > 0) {
+        } elseif ($plan && (float)($plan->total_amount ?? $plan->price ?? 0) > 0 && (float)($plan->total_amount ?? $plan->price ?? 0) !== 1000.00) {
             $displayTotalAmount = (float)($plan->total_amount ?? $plan->price);
         } else {
             $displayTotalAmount = 50.00;
@@ -137,9 +137,9 @@
         // Resolve Renewal Price (must NOT be 0 if renewal amount is configured)
         if ($tenantRenewalAmount !== null && $tenantRenewalAmount > 0) {
             $renewalPrice = $tenantRenewalAmount;
-        } elseif ($plan && (float)($plan->renewal_price ?? 0) > 0) {
+        } elseif ($plan && (float)($plan->renewal_price ?? 0) > 0 && (float)($plan->renewal_price ?? 0) !== 1000.00) {
             $renewalPrice = (float) $plan->renewal_price;
-        } elseif ($displayTotalAmount > 0) {
+        } elseif ($displayTotalAmount > 0 && (float)$displayTotalAmount !== 1000.00) {
             $renewalPrice = $displayTotalAmount;
         } else {
             $renewalPrice = 49.00;

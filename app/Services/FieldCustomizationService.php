@@ -1674,4 +1674,3 @@ class FieldCustomizationService
         return $data;
     }
 }
-

@@ -67,4 +67,3 @@
             placeholder="e.g. {{ $field['label'] }} is required.">
     </td>
 </tr>
-

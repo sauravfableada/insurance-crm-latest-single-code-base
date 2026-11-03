@@ -13,16 +13,103 @@ use Carbon\Carbon;
 class PlanController extends Controller
 {
     /**
+     * Get the Super Admin base API URL with robust fallback to production URL.
+     */
+    protected function getSuperAdminBase(): string
+    {
+        $apiUrl = config('tenant.api_url');
+        if (empty($apiUrl)) {
+            $apiUrl = 'https://admin-products.fableadtech.com/api/tenant';
+        }
+        return preg_replace('#/api/tenant/?$#i', '', $apiUrl) ?: 'https://admin-products.fableadtech.com';
+    }
+
+    /**
+     * Dynamically resolve tenant context from TenantManager, session, or Super Admin API.
+     */
+    protected function resolveTenantContext(): ?array
+    {
+        // 1. Check existing tenant context from TenantManager
+        $tenant = function_exists('tenant') ? tenant() : null;
+        if (!empty($tenant) && is_array($tenant) && !empty($tenant['client_id'] ?? $tenant['id'])) {
+            return $tenant;
+        }
+
+        // 2. Check session tenant
+        if (session()->has('tenant')) {
+            $sessionTenant = session('tenant');
+            if (is_array($sessionTenant) && !empty($sessionTenant['client_id'] ?? $sessionTenant['id'])) {
+                if (app()->bound(\App\Services\Tenancy\TenantManager::class)) {
+                    app()->instance('tenant', $sessionTenant);
+                }
+                return $sessionTenant;
+            }
+        }
+
+        // 3. Fetch from Super Admin dynamically by host or authenticated user email
+        $superAdminBase = $this->getSuperAdminBase();
+        $secret = config('tenant.secret') ?: 'fab_erp_tenant_secret_key_8f7b2c9d1e4a6053';
+        $host = \App\Services\Tenancy\TenantManager::normalizeHost(request()->getHost());
+
+        $resolved = null;
+
+        // Try by host domain first (e.g. mediumslateblue-owl-603065.hostingersite.com)
+        if ($host && !in_array($host, ['localhost', '127.0.0.1'], true)) {
+            try {
+                $resp = Http::timeout(6)->withHeaders(['X-Tenant-Secret' => $secret])
+                    ->post("{$superAdminBase}/api/tenant/resolve", [
+                        'domain'       => $host,
+                        'product_code' => config('tenant.product_code', 'CRM'),
+                    ]);
+                if ($resp->successful() && $resp->json('success') && !empty($resp->json('tenant'))) {
+                    $resolved = $resp->json('tenant');
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Dynamic tenant resolution by host failed: ' . $e->getMessage());
+            }
+        }
+
+        // Try by user email / login if domain lookup failed or was local
+        if (!$resolved && auth()->check()) {
+            $user = auth()->user();
+            $login = $user->email ?: ($user->username ?? '');
+            if ($login) {
+                try {
+                    $resp = Http::timeout(6)->withHeaders(['X-Tenant-Secret' => $secret])
+                        ->post("{$superAdminBase}/api/tenant/resolve-user", [
+                            'login'        => $login,
+                            'email'        => $user->email,
+                            'username'     => $user->username ?? null,
+                            'product_code' => config('tenant.product_code', 'CRM'),
+                        ]);
+                    if ($resp->successful() && $resp->json('success') && !empty($resp->json('tenant'))) {
+                        $resolved = $resp->json('tenant');
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Dynamic tenant resolution by user failed: ' . $e->getMessage());
+                }
+            }
+        }
+
+        if ($resolved) {
+            session(['tenant' => $resolved, 'tenant_id' => $resolved['id'] ?? null]);
+            app()->instance('tenant', $resolved);
+            return $resolved;
+        }
+
+        return null;
+    }
+
+    /**
      * Display current active plan details, limits, and billing history.
      */
     public function myplan()
     {
         $user = auth()->user();
-        $tenant = function_exists('tenant') ? tenant() : null;
-        $clientId = $tenant['client_id'] ?? null;
+        $tenant = $this->resolveTenantContext();
+        $clientId = $tenant['client_id'] ?? ($tenant['id'] ?? null);
 
-        $apiUrl = config('tenant.api_url');
-        $superAdminBase = $apiUrl ? preg_replace('#/api/tenant/?$#i', '', $apiUrl) : '';
+        $superAdminBase = $this->getSuperAdminBase();
 
         // 1. Get or initialize local active Plan
         $plan = $user->getActivePlan();
@@ -35,6 +122,8 @@ class PlanController extends Controller
             $tenantRenewal = $tenantAmount;
         }
 
+        $isLegacyPlan = $plan && ($plan->name === 'Starter Plan' || (float)$plan->total_amount === 1000.00 || (float)$plan->price === 1000.00);
+
         if (!$plan && $tenant) {
             $initialAmount = $tenantAmount > 0 ? $tenantAmount : 50.00;
             $initialRenewal = $tenantRenewal > 0 ? $tenantRenewal : 49.00;
@@ -46,9 +135,9 @@ class PlanController extends Controller
                 'renewal_price' => $initialRenewal,
                 'total_amount'  => $initialAmount,
                 'total_price'   => $initialAmount,
-                'duration'      => (str_contains(strtolower($tenant['billing_cycle'] ?? ''), 'month')) ? 'month' : 'year',
+                'duration'      => (str_contains(strtolower($tenant['billing_cycle'] ?? ''), 'month')) ? 'month' : 'month',
                 'start_date'    => !empty($tenant['start_date']) ? Carbon::parse($tenant['start_date'])->format('Y-m-d') : now()->format('Y-m-d'),
-                'end_date'      => !empty($tenant['expiry_date']) ? Carbon::parse($tenant['expiry_date'])->format('Y-m-d') : now()->addYear()->format('Y-m-d'),
+                'end_date'      => !empty($tenant['expiry_date']) ? Carbon::parse($tenant['expiry_date'])->format('Y-m-d') : now()->addMonth()->format('Y-m-d'),
                 'subtitle'      => 'Purchased By ' . ($tenant['client_name'] ?? ($tenant['brand_name'] ?? ($user->name ?? 'Insurance-CRM'))),
                 'user_limit'    => $tenant['max_user'] ?? 50,
                 'branch_limit'  => $tenant['max_branch'] ?? 1,
@@ -59,29 +148,44 @@ class PlanController extends Controller
             ]);
 
             $user->update(['plan_id' => $plan->id]);
-        } elseif (!$plan) {
-            // Local fallback plan
-            $plan = Plan::firstOrCreate(
-                ['is_active' => true],
-                [
-                    'name'          => 'insurance-crm',
-                    'price'         => 50.00,
-                    'renewal_price' => 49.00,
-                    'total_amount'  => 50.00,
-                    'total_price'   => 50.00,
+        } elseif (!$plan || $isLegacyPlan) {
+            // Local fallback or replace legacy starter placeholder with accurate tenant values
+            $defaultName = $tenantPlanName ?: 'insurance-crm';
+            $defaultAmount = $tenantAmount > 0 ? $tenantAmount : 50.00;
+            $defaultRenewal = $tenantRenewal > 0 ? $tenantRenewal : 49.00;
+
+            if ($plan) {
+                $plan->update([
+                    'name'          => $defaultName,
+                    'price'         => $defaultAmount,
+                    'renewal_price' => $defaultRenewal,
+                    'total_amount'  => $defaultAmount,
+                    'total_price'   => $defaultAmount,
+                    'duration'      => (str_contains(strtolower($tenant['billing_cycle'] ?? ''), 'month')) ? 'month' : 'month',
+                    'subtitle'      => 'Purchased By ' . ($tenant['client_name'] ?? ($tenant['brand_name'] ?? ($user->name ?? 'Insurance-CRM'))),
+                    'user_limit'    => $tenant['max_user'] ?? 50,
+                    'branch_limit'  => $tenant['max_branch'] ?? 1,
+                ]);
+            } else {
+                $plan = Plan::create([
+                    'name'          => $defaultName,
+                    'price'         => $defaultAmount,
+                    'renewal_price' => $defaultRenewal,
+                    'total_amount'  => $defaultAmount,
+                    'total_price'   => $defaultAmount,
                     'duration'      => 'month',
                     'start_date'    => now()->format('Y-m-d'),
-                    'end_date'      => now()->addYear()->format('Y-m-d'),
-                    'subtitle'      => 'Purchased By ' . ($user->name ?? 'Company'),
+                    'end_date'      => now()->addMonth()->format('Y-m-d'),
+                    'subtitle'      => 'Purchased By ' . ($user->name ?? 'Insurance-CRM'),
                     'user_limit'    => 50,
                     'branch_limit'  => 1,
                     'is_active'     => true,
                     'features'      => [
                         'Dashboard', 'Client Manage', 'Sales CRM', 'Policy Center', 'Commissions', 'Withdrawal Requests', 'Operations', 'Sub Agent'
                     ],
-                ]
-            );
-            $user->update(['plan_id' => $plan->id]);
+                ]);
+                $user->update(['plan_id' => $plan->id]);
+            }
         }
 
         // 2. Synchronize all plan details dynamically with tenant payload from Super Admin
@@ -210,9 +314,8 @@ class PlanController extends Controller
      */
     public function getUpgradePlans(Request $request)
     {
-        $tenant = function_exists('tenant') ? tenant() : null;
-        $apiUrl = config('tenant.api_url');
-        $superAdminBase = $apiUrl ? preg_replace('#/api/tenant/?$#i', '', $apiUrl) : '';
+        $tenant = $this->resolveTenantContext();
+        $superAdminBase = $this->getSuperAdminBase();
         $memberships = [];
 
         if ($superAdminBase) {
@@ -251,28 +354,20 @@ class PlanController extends Controller
             'billing_cycle' => 'nullable|string',
         ]);
 
-        $tenant = function_exists('tenant') ? tenant() : null;
-        $clientId = $tenant['client_id'] ?? null;
-        $apiUrl = config('tenant.api_url');
-        $superAdminBase = $apiUrl ? preg_replace('#/api/tenant/?$#i', '', $apiUrl) : '';
-
-        if (!$superAdminBase) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Super Admin API URL is not configured in TENANT_API_URL.',
-            ], 400);
-        }
+        $tenant = $this->resolveTenantContext();
+        $clientId = $tenant['client_id'] ?? ($tenant['id'] ?? null);
+        $superAdminBase = $this->getSuperAdminBase();
 
         $plan = auth()->user()->getActivePlan();
         $tenantRenewal = isset($tenant['renewal_amount']) ? (float)(is_array($tenant['renewal_amount']) ? ($tenant['renewal_amount'][0] ?? 0) : $tenant['renewal_amount']) : 0;
         $tenantAmount = isset($tenant['amount']) ? (float)(is_array($tenant['amount']) ? ($tenant['amount'][0] ?? 0) : $tenant['amount']) : 0;
 
         $amount = (float) ($validated['amount'] ?? 0);
-        if ($amount <= 0) {
+        if ($amount <= 0 || ($validated['payment_type'] === 'renewal' && $amount == 1000.00)) {
             if ($validated['payment_type'] === 'renewal') {
-                $amount = $tenantRenewal > 0 ? $tenantRenewal : (float)($plan->renewal_price ?? ($tenantAmount > 0 ? $tenantAmount : 49.00));
+                $amount = $tenantRenewal > 0 ? $tenantRenewal : (float)(($plan && (float)$plan->renewal_price > 0 && (float)$plan->renewal_price !== 1000.00) ? $plan->renewal_price : ($tenantAmount > 0 ? $tenantAmount : 49.00));
             } else {
-                $amount = $tenantAmount > 0 ? $tenantAmount : (float)($plan->total_amount ?? 50.00);
+                $amount = $tenantAmount > 0 ? $tenantAmount : (float)(($plan && (float)$plan->total_amount > 0 && (float)$plan->total_amount !== 1000.00) ? $plan->total_amount : 50.00);
             }
         }
 
@@ -281,12 +376,12 @@ class PlanController extends Controller
             'amount'       => $amount,
             'client_id'    => $clientId,
             'payment_type' => $validated['payment_type'],
-            'name'         => $tenant['client_name'] ?? ($tenant['brand_name'] ?? $user->name),
+            'name'         => $tenant['client_name'] ?? ($tenant['brand_name'] ?? ($user->name ?? 'Insurance-CRM')),
             'email'        => $user->email,
             'contact'      => $user->phone ?? ($user->whatsapp ?? ''),
             'description'  => $validated['payment_type'] === 'renewal'
-                ? 'Plan renewal payment for ' . ($tenant['client_name'] ?? $user->name)
-                : 'Plan upgrade payment for ' . ($tenant['client_name'] ?? $user->name),
+                ? 'Plan renewal payment for ' . ($tenant['client_name'] ?? ($user->name ?? 'Insurance-CRM'))
+                : 'Plan upgrade payment for ' . ($tenant['client_name'] ?? ($user->name ?? 'Insurance-CRM')),
         ];
 
         if ($validated['payment_type'] === 'upgrade' && !empty($validated['membership_id'])) {
@@ -332,10 +427,9 @@ class PlanController extends Controller
             'billing_cycle'       => 'nullable|string',
         ]);
 
-        $tenant = function_exists('tenant') ? tenant() : null;
-        $clientId = $tenant['client_id'] ?? null;
-        $apiUrl = config('tenant.api_url');
-        $superAdminBase = $apiUrl ? preg_replace('#/api/tenant/?$#i', '', $apiUrl) : '';
+        $tenant = $this->resolveTenantContext();
+        $clientId = $tenant['client_id'] ?? ($tenant['id'] ?? null);
+        $superAdminBase = $this->getSuperAdminBase();
 
         try {
             // 1. Verify payment with Super Admin API

@@ -280,6 +280,7 @@ class SettingController extends Controller
             'subTypesWithCommission',
             'policiesWithCommission',
             'agentsWithCommission',
+            'agentsWithCommission',
             'fieldCustomizationModules',
             'initialFieldCustomizationModule',
             'initialFieldCustomizationFields'

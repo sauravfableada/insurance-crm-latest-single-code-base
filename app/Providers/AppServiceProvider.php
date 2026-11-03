@@ -117,10 +117,12 @@ class AppServiceProvider extends ServiceProvider
 
                 if ($tenantPlanName) {
                     $currentPlanName = $tenantPlanName;
-                } elseif ($activeModelPlan) {
+                } elseif ($activeModelPlan && $activeModelPlan->name !== 'Starter Plan') {
                     $currentPlanName = $activeModelPlan->name;
                 } else {
-                    $currentPlanName = $currentUserPlan?->plan?->name ?? 'Starter Plan';
+                    $currentPlanName = ($currentUserPlan?->plan?->name && $currentUserPlan->plan->name !== 'Starter Plan')
+                        ? $currentUserPlan->plan->name
+                        : 'insurance-crm';
                 }
 
                 $currentPlanStaffLimit = (int) ($activeModelPlan?->user_limit ?? ($currentUserPlan?->plan?->staff_limit ?? (tenant('max_user') ?? 15)));

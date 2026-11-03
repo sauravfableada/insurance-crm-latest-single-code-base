@@ -304,4 +304,3 @@ class FieldCustomizationTest extends TestCase
         }
     }
 }
-

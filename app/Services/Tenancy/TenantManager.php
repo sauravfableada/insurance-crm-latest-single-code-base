@@ -83,11 +83,15 @@ class TenantManager
         }
 
         try {
-            $response = $this->client()->post('/resolve', [
+            $projectCode = config('tenant.project_code');
+            $params = [
                 'domain' => $host,
-                'product_code' => config('tenant.product_code'),
-                'project_code' => config('tenant.project_code') ?: null,
-            ]);
+                'product_code' => config('tenant.product_code', 'CRM'),
+            ];
+            if (!empty($projectCode) && $projectCode !== 'CRM') {
+                $params['project_code'] = $projectCode;
+            }
+            $response = $this->client()->post('/resolve', $params);
         } catch (ConnectionException $e) {
             return $this->activateStaleOrFail($key, $e->getMessage());
         }
@@ -383,14 +387,22 @@ class TenantManager
 
     private function belongsToThisApp(array $tenant): bool
     {
-        $product = strtoupper((string) config('tenant.product_code'));
-        $project = strtoupper((string) config('tenant.project_code'));
+        $product = strtoupper((string) config('tenant.product_code', 'CRM'));
+        $project = config('tenant.project_code') ? strtoupper((string) config('tenant.project_code')) : null;
 
         $tProduct = strtoupper((string) ($tenant['product_code'] ?? ''));
         $tProject = strtoupper((string) ($tenant['project_code'] ?? ''));
 
         $productMatches = ($tProduct === '' || $product === '' || $tProduct === $product);
-        $projectMatches = ($tProject === '' || $project === '' || $tProject === $project);
+        $projectMatches = (
+            $project === null ||
+            $project === '' ||
+            $project === 'CRM' ||
+            $tProject === '' ||
+            $tProject === $project ||
+            str_contains($tProject, (string)$project) ||
+            str_contains((string)$project, $tProject)
+        );
 
         return $productMatches && $projectMatches;
     }
