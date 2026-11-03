@@ -30,6 +30,11 @@ class AppServiceProvider extends ServiceProvider
         if (file_exists($legacyHelpers)) {
             require_once $legacyHelpers;
         }
+
+        $fieldCustomizationHelper = app_path('Helpers/FieldCustomizationHelper.php');
+        if (file_exists($fieldCustomizationHelper)) {
+            require_once $fieldCustomizationHelper;
+        }
     }
 
     /**

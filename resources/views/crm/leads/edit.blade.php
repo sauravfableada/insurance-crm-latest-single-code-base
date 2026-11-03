@@ -48,14 +48,18 @@
             @endif
 
             @php
-                $fieldLabel = function(string $field, string $default) {
-                    return function_exists('field_label') ? field_label('leads', $field, $default) : $default;
+                if (!function_exists('field_label') && file_exists(app_path('Helpers/FieldCustomizationHelper.php'))) {
+                    require_once app_path('Helpers/FieldCustomizationHelper.php');
+                }
+                $customService = app(\App\Services\FieldCustomizationService::class);
+                $fieldLabel = function(string $field, string $default) use ($customService) {
+                    return $customService->getFieldLabel('leads', $field, $default);
                 };
-                $isRequired = function(string $field, bool $default = false) {
-                    return function_exists('is_field_required') ? is_field_required('leads', $field) : $default;
+                $isRequired = function(string $field, bool $default = false) use ($customService) {
+                    return $customService->isFieldRequired('leads', $field);
                 };
-                $isVisible = function(string $field, bool $default = true) {
-                    return function_exists('is_field_visible') ? is_field_visible('leads', $field) : $default;
+                $isVisible = function(string $field, bool $default = true) use ($customService) {
+                    return $customService->isFieldVisible('leads', $field);
                 };
             @endphp
 

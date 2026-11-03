@@ -1,5 +1,11 @@
 @extends('layouts.app')
 
+@php
+    if (!function_exists('field_label') && file_exists(app_path('Helpers/FieldCustomizationHelper.php'))) {
+        require_once app_path('Helpers/FieldCustomizationHelper.php');
+    }
+@endphp
+
 @section('page_title', 'Leads')
 
 @section('content')
