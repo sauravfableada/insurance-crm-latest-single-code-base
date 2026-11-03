@@ -102,12 +102,12 @@
                             $leadCountryCode = old('country_code', $lead->country_code ?: '+91');
                             $leadLocalPhone = str_starts_with((string) $lead->phone, $leadCountryCode) ? substr($lead->phone, strlen($leadCountryCode)) : $lead->phone;
                         @endphp
-                        <div class="input-group">
+                        <div class="input-group has-validation">
                             <input type="text" name="country_code" value="{{ $leadCountryCode }}" class="form-control flex-grow-0" list="leadCountryCodes" maxlength="5" style="width:95px" aria-label="Country code">
                             <input type="tel" name="phone" id="phone" value="{{ old('phone', $leadLocalPhone) }}" class="form-control @error('phone') is-invalid @enderror" placeholder="{{ $fieldLabel('phone', 'Phone Number') }}" maxlength="15" inputmode="numeric" {{ $isRequired('phone', true) ? 'required' : '' }}>
+                            <div class="invalid-feedback @error('phone') d-block @enderror" id="phone-error">@error('phone') {{ $message }} @enderror</div>
                         </div>
                         <datalist id="leadCountryCodes"><option value="+91"><option value="+1"><option value="+44"><option value="+61"><option value="+971"><option value="+966"><option value="+65"><option value="+60"><option value="+974"></datalist>
-                        <div class="invalid-feedback" id="phone-error">@error('phone') {{ $message }} @enderror</div>
                     </div>
                     @endif
 
@@ -118,11 +118,11 @@
                             $leadWhatsappCountryCode = old('whatsapp_country_code', $lead->whatsapp_country_code ?: '+91');
                             $leadLocalWhatsapp = str_starts_with((string) $lead->whatsapp, $leadWhatsappCountryCode) ? substr($lead->whatsapp, strlen($leadWhatsappCountryCode)) : $lead->whatsapp;
                         @endphp
-                        <div class="input-group">
+                        <div class="input-group has-validation">
                             <input type="text" name="whatsapp_country_code" value="{{ $leadWhatsappCountryCode }}" class="form-control flex-grow-0" list="leadCountryCodes" maxlength="5" style="width:95px" aria-label="WhatsApp country code">
                             <input type="tel" name="whatsapp" id="whatsapp" value="{{ old('whatsapp', $leadLocalWhatsapp) }}" class="form-control @error('whatsapp') is-invalid @enderror" placeholder="{{ $fieldLabel('whatsapp', 'WhatsApp Number') }}" maxlength="15" inputmode="numeric" {{ $isRequired('whatsapp', false) ? 'required' : '' }}>
+                            <div class="invalid-feedback @error('whatsapp') d-block @enderror" id="whatsapp-error">@error('whatsapp') {{ $message }} @enderror</div>
                         </div>
-                        <div class="invalid-feedback" id="whatsapp-error">@error('whatsapp') {{ $message }} @enderror</div>
                     </div>
                     @endif
 

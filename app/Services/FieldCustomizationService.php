@@ -1580,8 +1580,13 @@ class FieldCustomizationService
     /**
      * Apply dynamic validation rules and custom messages for a module.
      */
-    public static function applyDynamicValidation(string $module, array $rules, array &$messages = [], bool $isUpdate = false): array
+    public static function applyDynamicValidation(string $module, array $rules, array &$messages = [], array|bool &$customAttributes = [], bool $isUpdate = false): array
     {
+        if (is_bool($customAttributes)) {
+            $isUpdate = $customAttributes;
+            $customAttributes = [];
+        }
+
         $instance = app(self::class);
         $moduleFields = $instance->getModuleFields($module)->keyBy('field_name');
 
@@ -1589,7 +1594,12 @@ class FieldCustomizationService
             $isRequired = (bool) $fieldConfig['is_required'];
             $isVisible = (bool) $fieldConfig['is_visible'];
             $label = $fieldConfig['label'];
-            $customMsg = !empty($fieldConfig['validation_message']) ? $fieldConfig['validation_message'] : "The {$label} is required.";
+            $hasCustomMsg = !empty($fieldConfig['validation_message']);
+            $customMsg = $hasCustomMsg ? $fieldConfig['validation_message'] : "The {$label} field is required.";
+
+            if (is_array($customAttributes)) {
+                $customAttributes[$fieldName] = $label;
+            }
 
             if (!$isVisible && !$fieldConfig['system_required']) {
                 $isRequired = false;
@@ -1621,6 +1631,12 @@ class FieldCustomizationService
                     }
 
                     $messages["{$fieldName}.required"] = $customMsg;
+                    if ($hasCustomMsg) {
+                        $messages["{$fieldName}.regex"] = $customMsg;
+                        $messages["{$fieldName}.string"] = $customMsg;
+                        $messages["{$fieldName}.max"] = $customMsg;
+                        $messages["{$fieldName}.min"] = $customMsg;
+                    }
                 } else {
                     if (!$fieldConfig['system_required']) {
                         $fieldRules = array_filter($fieldRules, function ($r) {
@@ -1638,6 +1654,14 @@ class FieldCustomizationService
                             array_unshift($fieldRules, 'nullable');
                         }
                     }
+
+                    if ($hasCustomMsg) {
+                        $messages["{$fieldName}.required"] = $customMsg;
+                        $messages["{$fieldName}.regex"] = $customMsg;
+                        $messages["{$fieldName}.string"] = $customMsg;
+                        $messages["{$fieldName}.max"] = $customMsg;
+                        $messages["{$fieldName}.min"] = $customMsg;
+                    }
                 }
 
                 $rules[$fieldName] = array_values($fieldRules);
@@ -1645,6 +1669,10 @@ class FieldCustomizationService
                 if ($isRequired) {
                     $rules[$fieldName] = ['required'];
                     $messages["{$fieldName}.required"] = $customMsg;
+                    if ($hasCustomMsg) {
+                        $messages["{$fieldName}.regex"] = $customMsg;
+                        $messages["{$fieldName}.string"] = $customMsg;
+                    }
                 }
             }
         }
