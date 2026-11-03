@@ -18,10 +18,23 @@ class PlanController extends Controller
     protected function getSuperAdminBase(): string
     {
         $apiUrl = config('tenant.api_url');
-        if (empty($apiUrl)) {
-            $apiUrl = 'https://admin-products.fableadtech.com/api/tenant';
+        if (empty($apiUrl) || !str_contains($apiUrl, 'http')) {
+            $apiUrl = 'https://admin-products.fableadtech.com/services/public/api/tenant';
         }
-        return preg_replace('#/api/tenant/?$#i', '', $apiUrl) ?: 'https://admin-products.fableadtech.com';
+
+        // Auto-correct if pointing to admin-products.fableadtech.com without /services/public
+        if (str_contains($apiUrl, 'admin-products.fableadtech.com') && !str_contains($apiUrl, '/services/public')) {
+            $apiUrl = str_replace('admin-products.fableadtech.com', 'admin-products.fableadtech.com/services/public', $apiUrl);
+        }
+
+        $base = preg_replace('#/api/tenant/?$#i', '', $apiUrl);
+        $base = rtrim($base, '/');
+
+        if (str_contains($base, 'admin-products.fableadtech.com') && !str_contains($base, '/services/public')) {
+            $base .= '/services/public';
+        }
+
+        return $base ?: 'https://admin-products.fableadtech.com/services/public';
     }
 
     /**
@@ -56,7 +69,7 @@ class PlanController extends Controller
         // Try by host domain first (e.g. mediumslateblue-owl-603065.hostingersite.com)
         if ($host && !in_array($host, ['localhost', '127.0.0.1'], true)) {
             try {
-                $resp = Http::timeout(6)->withHeaders(['X-Tenant-Secret' => $secret])
+                $resp = Http::timeout(6)->acceptJson()->withHeaders(['X-Tenant-Secret' => $secret])
                     ->post("{$superAdminBase}/api/tenant/resolve", [
                         'domain'       => $host,
                         'product_code' => config('tenant.product_code', 'CRM'),
@@ -75,7 +88,7 @@ class PlanController extends Controller
             $login = $user->email ?: ($user->username ?? '');
             if ($login) {
                 try {
-                    $resp = Http::timeout(6)->withHeaders(['X-Tenant-Secret' => $secret])
+                    $resp = Http::timeout(6)->acceptJson()->withHeaders(['X-Tenant-Secret' => $secret])
                         ->post("{$superAdminBase}/api/tenant/resolve-user", [
                             'login'        => $login,
                             'email'        => $user->email,
@@ -280,7 +293,7 @@ class PlanController extends Controller
         // 3. Fetch official transactions/payments from Super Admin for this client
         if ($clientId && $superAdminBase) {
             try {
-                $resp = Http::timeout(6)->withHeaders([
+                $resp = Http::timeout(6)->acceptJson()->withHeaders([
                     'X-Tenant-Secret' => config('tenant.secret'),
                 ])->post("{$superAdminBase}/api/tenant/billing-history", [
                     'client_id' => $clientId,
@@ -320,7 +333,7 @@ class PlanController extends Controller
 
         if ($superAdminBase) {
             try {
-                $resp = Http::timeout(6)->get("{$superAdminBase}/api/memberships", [
+                $resp = Http::timeout(6)->acceptJson()->get("{$superAdminBase}/api/memberships", [
                     'status' => 'Active',
                 ]);
 
@@ -390,7 +403,7 @@ class PlanController extends Controller
         }
 
         try {
-            $resp = Http::timeout(10)->post("{$superAdminBase}/api/razorpay/create-order", $payload);
+            $resp = Http::timeout(10)->acceptJson()->post("{$superAdminBase}/api/razorpay/create-order", $payload);
 
             if ($resp->successful() && !empty($resp->json('data'))) {
                 return response()->json([
@@ -399,12 +412,24 @@ class PlanController extends Controller
                 ]);
             }
 
+            Log::error('Razorpay create-order failed from Super Admin', [
+                'url'      => "{$superAdminBase}/api/razorpay/create-order",
+                'status'   => $resp->status(),
+                'response' => $resp->body(),
+                'payload'  => $payload,
+            ]);
+
+            $errorMsg = $resp->json('message')
+                ?: ($resp->json('error')
+                    ?: 'Failed to initialize payment gateway order. (HTTP ' . $resp->status() . ')');
+
             return response()->json([
                 'success' => false,
-                'message' => $resp->json('message') ?? 'Failed to initialize payment gateway order.',
-                'error'   => $resp->json(),
+                'message' => $errorMsg,
+                'error'   => $resp->json() ?: substr($resp->body(), 0, 200),
             ], 400);
         } catch (\Throwable $e) {
+            Log::error('Razorpay create-order exception: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Unable to connect to Super Admin payment gateway: ' . $e->getMessage(),
@@ -433,7 +458,7 @@ class PlanController extends Controller
 
         try {
             // 1. Verify payment with Super Admin API
-            $verifyResp = Http::timeout(12)->post("{$superAdminBase}/api/razorpay/verify-payment", [
+            $verifyResp = Http::timeout(12)->acceptJson()->post("{$superAdminBase}/api/razorpay/verify-payment", [
                 'razorpay_order_id'   => $validated['razorpay_order_id'],
                 'razorpay_payment_id' => $validated['razorpay_payment_id'],
                 'razorpay_signature'  => $validated['razorpay_signature'],
@@ -502,7 +527,7 @@ class PlanController extends Controller
                 }
             } elseif ($validated['payment_type'] === 'upgrade' && !empty($validated['membership_id'])) {
                 // Fetch the upgraded membership info
-                $membershipResp = Http::timeout(6)->get("{$superAdminBase}/api/memberships/{$validated['membership_id']}");
+                $membershipResp = Http::timeout(6)->acceptJson()->get("{$superAdminBase}/api/memberships/{$validated['membership_id']}");
                 $membershipData = $membershipResp->successful() ? $membershipResp->json('data') : null;
 
                 $planName = $membershipData['plan_name'] ?? 'Upgraded Plan';
@@ -564,8 +589,7 @@ class PlanController extends Controller
             return redirect()->back()->with('error', 'Plan not found.');
         }
 
-        $apiUrl = config('tenant.api_url');
-        $superAdminBase = $apiUrl ? preg_replace('#/api/tenant/?$#i', '', $apiUrl) : '';
+        $superAdminBase = $this->getSuperAdminBase();
         $tenant = function_exists('tenant') ? tenant() : [];
         $productId = $tenant['product_id'] ?? null;
         $projectId = $tenant['project_id'] ?? null;
@@ -576,7 +600,7 @@ class PlanController extends Controller
 
         if ($superAdminBase) {
             try {
-                $resp = Http::timeout(5)->get($superAdminBase . '/api/invoice-details', [
+                $resp = Http::timeout(5)->acceptJson()->get($superAdminBase . '/api/invoice-details', [
                     'product_id' => $productId,
                     'project_id' => $projectId,
                 ]);
@@ -595,7 +619,7 @@ class PlanController extends Controller
 
         if ($clientId && $transactionId && $superAdminBase) {
             try {
-                $txResp = Http::timeout(5)->withHeaders([
+                $txResp = Http::timeout(5)->acceptJson()->withHeaders([
                     'X-Tenant-Secret' => config('tenant.secret'),
                 ])->post("{$superAdminBase}/api/tenant/billing-history", [
                     'client_id'      => $clientId,

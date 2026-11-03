@@ -423,6 +423,9 @@ class TenantManager
     private function client(): PendingRequest
     {
         $url = (string) config('tenant.api_url');
+        if (str_contains($url, 'admin-products.fableadtech.com') && !str_contains($url, '/services/public')) {
+            $url = str_replace('admin-products.fableadtech.com', 'admin-products.fableadtech.com/services/public', $url);
+        }
         if ($url === '' || strlen((string) config('tenant.secret')) < 32 || config('tenant.product_code') === '') {
             throw new TenantResolutionException(
                 'NOT_CONFIGURED',

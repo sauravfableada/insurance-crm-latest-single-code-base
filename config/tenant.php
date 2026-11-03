@@ -27,7 +27,7 @@ return [
     */
     'api_url' => env('TENANT_API_URL')
         ? rtrim((string) env('TENANT_API_URL'), '/')
-        : 'https://admin-products.fableadtech.com/api/tenant',
+        : 'https://admin-products.fableadtech.com/services/public/api/tenant',
 
     /*
     |--------------------------------------------------------------------------
