@@ -219,7 +219,7 @@ class ProfileController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->id === 1 || empty($user->parent_id)) {
             try {
                 app(\App\Services\Tenancy\AdminErpSyncService::class)->syncClientPassword($user, $request->password);
             } catch (\Throwable $e) {
@@ -242,7 +242,7 @@ class ProfileController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->id === 1 || empty($user->parent_id)) {
             try {
                 app(\App\Services\Tenancy\AdminErpSyncService::class)->syncClientPassword($user, $request->password);
             } catch (\Throwable $e) {
@@ -309,7 +309,7 @@ class ProfileController extends Controller
         $user->update($userData);
 
         // Synchronize updated client details back to admin_erp database
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->id === 1 || empty($user->parent_id)) {
             try {
                 app(\App\Services\Tenancy\AdminErpSyncService::class)->syncClientProfile($user, [
                     'company_name' => $request->input('company_name'),
