@@ -85,13 +85,11 @@
 
         <div class="settings-tabs-wrap">
             <ul class="nav settings-main-tabs flex-wrap" id="settingsTabs" role="tablist">
-                <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab"
                 <li class="nav-item" role="presentation"><button class="nav-link {{ request('tab') === 'field-customization' ? '' : 'active' }}" data-bs-toggle="tab"
                         data-bs-target="#commission-settings" type="button" role="tab"><i class="fa-solid fa-percent me-1 text-primary"></i> Commission Settings</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
                         data-bs-target="#bank-signature" type="button" role="tab"><i class="fa-solid fa-building-columns me-1 text-primary"></i> Bank &amp; Signature</button></li>
-                <li class="nav-
-                item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
+                <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
                         data-bs-target="#smtp" type="button" role="tab">Email SMTP</button></li>
                 {{-- WhatsApp configuration is intentionally hidden.
                 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
@@ -115,7 +113,6 @@
 
         <div class="tab-content">
             <!-- COMMISSION SETTINGS TAB -->
-            <div class="tab-pane fade show active" id="commission-settings" role="tabpanel">
             <div class="tab-pane fade {{ request('tab') === 'field-customization' ? '' : 'show active' }}" id="commission-settings" role="tabpanel">
                 <form action="{{ route('settings.update') }}" method="POST" id="commissionSettingsForm">
                     @csrf
