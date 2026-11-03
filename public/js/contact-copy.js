@@ -69,6 +69,9 @@
     function enhanceContactFields(root) {
         const scope = root && root.querySelectorAll ? root : document;
         scope.querySelectorAll('input').forEach(function (field) {
+            if (field.closest('#fieldCustomizationTable') || field.closest('.settings-shell') || field.closest('.field-customization-wrap') || (field.name && field.name.includes('['))) {
+                return;
+            }
             if (whatsappPattern.test(fieldKey(field))) {
                 addCopyButton(field);
             }

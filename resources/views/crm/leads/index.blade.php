@@ -114,12 +114,12 @@
                         <thead>
                             <tr>
                                 <th class="ps-4" style="width: 80px;">Sr.No</th>
-                                <th>Lead Name</th>
-                                <th class="d-none d-md-table-cell">Phone</th>
-                                <th class="d-none d-md-table-cell">Lead Source</th>
+                                <th>{{ function_exists('field_label') ? field_label('leads', 'name', 'Lead Name') : 'Lead Name' }}</th>
+                                <th class="d-none d-md-table-cell">{{ function_exists('field_label') ? field_label('leads', 'phone', 'Phone') : 'Phone' }}</th>
+                                <th class="d-none d-md-table-cell">{{ function_exists('field_label') ? field_label('leads', 'source', 'Lead Source') : 'Lead Source' }}</th>
                                 <th class="d-none d-md-table-cell">Created By</th>
                                 <th class="d-none d-md-table-cell">Created At</th>
-                                <th class="d-none d-md-table-cell">Status</th>
+                                <th class="d-none d-md-table-cell">{{ function_exists('field_label') ? field_label('leads', 'status', 'Status') : 'Status' }}</th>
                                 <th class="text-end pe-4 d-none d-md-table-cell" style="width: 120px;">Actions</th>
                                 <th class="text-center d-md-none" style="width: 80px;">Action</th>
                             </tr>
