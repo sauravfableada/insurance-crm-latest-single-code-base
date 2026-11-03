@@ -210,26 +210,34 @@
     </div>
 
     <!-- Included Features Grid -->
+    @php
+        $modulesList = !empty($plan->features) && is_array($plan->features) && count($plan->features) > 0
+            ? $plan->features
+            : (!empty($tenant['modules']) && is_array($tenant['modules']) && count($tenant['modules']) > 0
+                ? $tenant['modules']
+                : (function_exists('tenant') && is_array(tenant('modules')) && count(tenant('modules')) > 0
+                    ? tenant('modules')
+                    : ['Dashboard', 'Client Manage', 'Sales CRM', 'Policy Center', 'Commissions', 'Withdrawal Requests', 'Operations', 'Sub Agent']));
+    @endphp
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; border: 1px solid #f1f1f1 !important;">
-        <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
-            <h5 style="font-weight: 700; color: #333; font-size: 16px;">
-                <i class="fas fa-check-circle text-success me-2" style="font-size: 18px;"></i> Included Features
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 style="font-weight: 700; color: #333; font-size: 16px;" class="mb-0">
+                <i class="fas fa-check-circle text-success me-2" style="font-size: 18px;"></i> Included Features & Modules
             </h5>
+            @if(!empty($modulesList) && is_array($modulesList))
+            <span class="badge px-3 py-2 fw-bold text-success" style="background-color: #e6f9ed; border-radius: 20px; font-size: 12px; border: 1px solid #c2f0d4;">
+                <i class="fas fa-cube me-1"></i> {{ count($modulesList) }} Modules / Features Configured
+            </span>
+            @endif
         </div>
         <div class="card-body p-4">
             <div class="row">
-            @php
-                $modulesList = !empty($plan->features) && is_array($plan->features) && count($plan->features) > 0
-                    ? $plan->features
-                    : (function_exists('tenant') && is_array(tenant('modules')) && count(tenant('modules')) > 0
-                        ? tenant('modules')
-                        : ['Dashboard', 'Client Manage', 'Sales CRM', 'Policy Center', 'Commissions', 'Withdrawal Requests', 'Operations', 'Sub Agent']);
-            @endphp
             @if(is_array($modulesList) && count($modulesList) > 0)
                 @foreach($modulesList as $feature)
                     <div class="col-md-3 col-sm-6 mb-3">
-                        <div class="p-3 h-100" style="background-color: #fafbfc; border-radius: 8px; border: 1px solid #f1f1f1; color: #555; font-weight: 500;">
-                            <i class="fas fa-check text-success me-2" style="background-color: #e6f9ed; padding: 5px; border-radius: 50%; font-size: 10px;"></i> {{ $feature }}
+                        <div class="p-3 h-100 d-flex align-items-center" style="background-color: #fafbfc; border-radius: 8px; border: 1px solid #eef2f6; color: #334155; font-weight: 500; font-size: 13.5px; transition: all 0.2s ease;">
+                            <i class="fas fa-check text-success me-2 flex-shrink-0" style="background-color: #e6f9ed; padding: 6px; border-radius: 50%; font-size: 10px;"></i>
+                            <span class="text-truncate" title="{{ $feature }}">{{ $feature }}</span>
                         </div>
                     </div>
                 @endforeach

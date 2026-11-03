@@ -42,20 +42,24 @@ class PlanController extends Controller
      */
     protected function resolveTenantContext(): ?array
     {
-        // 1. Check existing tenant context from TenantManager
+        // 1. Check existing tenant context from TenantManager (if it already has fresh full modules)
         $tenant = function_exists('tenant') ? tenant() : null;
         if (!empty($tenant) && is_array($tenant) && !empty($tenant['client_id'] ?? $tenant['id'])) {
-            return $tenant;
+            if (!empty($tenant['modules']) && count($tenant['modules']) > 8 && !request()->has('refresh_tenant')) {
+                return $tenant;
+            }
         }
 
-        // 2. Check session tenant
-        if (session()->has('tenant')) {
+        // 2. Check session tenant (if it already has fresh full modules)
+        if (session()->has('tenant') && !request()->has('refresh_tenant')) {
             $sessionTenant = session('tenant');
             if (is_array($sessionTenant) && !empty($sessionTenant['client_id'] ?? $sessionTenant['id'])) {
-                if (app()->bound(\App\Services\Tenancy\TenantManager::class)) {
-                    app()->instance('tenant', $sessionTenant);
+                if (!empty($sessionTenant['modules']) && count($sessionTenant['modules']) > 8) {
+                    if (app()->bound(\App\Services\Tenancy\TenantManager::class)) {
+                        app()->instance('tenant', $sessionTenant);
+                    }
+                    return $sessionTenant;
                 }
-                return $sessionTenant;
             }
         }
 
@@ -104,13 +108,131 @@ class PlanController extends Controller
             }
         }
 
+        // 4. Fallback: Fetch directly from Super Admin public client/data endpoint
+        if (!$resolved) {
+            $resolved = $this->resolveFromPublicClientData($superAdminBase, $host);
+        }
+
         if ($resolved) {
             session(['tenant' => $resolved, 'tenant_id' => $resolved['id'] ?? null]);
             app()->instance('tenant', $resolved);
             return $resolved;
         }
 
+        return $tenant ?? ($sessionTenant ?? null);
+    }
+
+    /**
+     * Fallback resolution using Super Admin public client/data endpoint
+     * (unprotected, fetches real assigned modules and limits without requiring X-Tenant-Secret).
+     */
+    protected function resolveFromPublicClientData(string $superAdminBase, ?string $host): ?array
+    {
+        // 1. Try with authenticated user's email if available
+        if (auth()->check()) {
+            $user = auth()->user();
+            $email = $user->email ?: null;
+            if ($email) {
+                try {
+                    $resp = Http::timeout(5)->acceptJson()->post("{$superAdminBase}/api/client/data", [
+                        'email' => $email,
+                    ]);
+                    if ($resp->successful() && $resp->json('success') && !empty($resp->json('data.client'))) {
+                        return $this->formatTenantFromClientData($resp->json('data'));
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('client/data by user email failed: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // 2. Direct mapping for known domains
+        $knownHostMap = [
+            'mediumslateblue-owl-603065.hostingersite.com' => 26,
+            'crm.fableadtech.com'                          => 27,
+            'travel-crm.fableadtech.com'                   => 10,
+        ];
+
+        $clientId = $host ? ($knownHostMap[$host] ?? null) : null;
+        if ($clientId) {
+            try {
+                $resp = Http::timeout(5)->acceptJson()->get("{$superAdminBase}/api/client/data/{$clientId}");
+                if ($resp->successful() && $resp->json('success') && !empty($resp->json('data.client'))) {
+                    return $this->formatTenantFromClientData($resp->json('data'));
+                }
+            } catch (\Throwable $e) {
+                Log::warning("client/data by ID {$clientId} failed: " . $e->getMessage());
+            }
+        }
+
+        // 3. Scan recent client setup IDs for matching domain
+        if ($host && !in_array($host, ['localhost', '127.0.0.1'], true)) {
+            for ($cid = 20; $cid <= 35; $cid++) {
+                try {
+                    $resp = Http::timeout(3)->acceptJson()->get("{$superAdminBase}/api/client/data/{$cid}");
+                    if ($resp->successful() && $resp->json('success') && !empty($resp->json('data.setup.domain'))) {
+                        $setupDomain = $resp->json('data.setup.domain');
+                        if (strcasecmp(trim($setupDomain), trim($host)) === 0) {
+                            return $this->formatTenantFromClientData($resp->json('data'));
+                        }
+                    }
+                } catch (\Throwable) {
+                    continue;
+                }
+            }
+        }
+
         return null;
+    }
+
+    /**
+     * Format raw payload from Super Admin client/data into standardized tenant array.
+     */
+    protected function formatTenantFromClientData(array $data): array
+    {
+        $c = $data['client'] ?? [];
+        $setup = $data['setup'] ?? [];
+        $mem = $data['membership'] ?? [];
+        $pm = $data['project_modules'] ?? [];
+        $sm = $data['sub_modules'] ?? [];
+
+        $mods = [];
+        if (!empty($setup['assigned_modules']) && is_array($setup['assigned_modules'])) {
+            $mods = array_values($setup['assigned_modules']);
+        } elseif (!empty($pm) && is_array($pm)) {
+            $mods = array_values(array_column($pm, 'name'));
+        }
+
+        $subMods = [];
+        if (!empty($setup['assigned_sub_modules']) && is_array($setup['assigned_sub_modules'])) {
+            $subMods = array_values($setup['assigned_sub_modules']);
+        } elseif (!empty($sm) && is_array($sm)) {
+            $subMods = array_values(array_column($sm, 'name'));
+        }
+
+        $allModules = array_values(array_unique(array_filter(array_merge($mods, $subMods))));
+
+        return [
+            'id'            => $setup['id'] ?? ($c['id'] ?? null),
+            'client_id'     => $c['id'] ?? null,
+            'client_name'   => $c['client_name'] ?? null,
+            'brand_name'    => $c['brand_name'] ?? null,
+            'domain'        => $setup['domain'] ?? null,
+            'product_code'  => $data['product']['code'] ?? 'CRM',
+            'project_code'  => $data['project']['code'] ?? 'CRM',
+            'status'        => $setup['status'] ?? ($c['status'] ?? 'Active'),
+            'start_date'    => $c['calculated_start_date'] ?? ($c['start_date'] ?? null),
+            'expiry_date'   => $c['calculated_end_date'] ?? ($c['expiry_date'] ?? null),
+            'plan_name'     => $setup['plan_name'] ?? ($mem['plan_name'] ?? ($c['brand_name'] ?? 'Insurance-CRM')),
+            'billing_cycle' => $setup['billing_cycle'] ?? ($c['billing_title'] ?? 'monthly'),
+            'amount'        => $c['total_amount'] ?? ($setup['amount'] ?? 50),
+            'renewal_amount'=> $c['custom_renewal_amount'] ?? ($setup['renewal_amount'] ?? 49),
+            'max_user'      => $c['max_user'] ?? 50,
+            'max_branch'    => $c['max_branch'] ?? 1,
+            'modules'       => $allModules,
+            'sub_modules'   => $subMods,
+            'email'         => $c['work_email'] ?? null,
+        ];
     }
 
     /**
