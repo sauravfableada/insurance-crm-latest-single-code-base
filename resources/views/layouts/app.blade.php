@@ -361,6 +361,7 @@
                                 <span>Upload via AI</span>
                             </a>
                             @endif
+                            @endif
 
                             <div class="dropdown">
                                 <button class="notification-btn {{ request()->routeIs('notifications.index') ? 'bg-light' : '' }}"
