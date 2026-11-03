@@ -30,7 +30,8 @@ if (!function_exists('tenant')) {
 if (!function_exists('tenant_has_module')) {
     /**
      * Check if current tenant has access to given module name(s).
-     * If tenancy is disabled or tenant is null, returns true.
+     * If tenancy is disabled and no tenant/plan context exists, returns true.
+     * When tenant or plan configuration is present but has 0 assigned modules, returns false.
      * Automatically handles module name variants and aliases.
      *
      * @param string|array $moduleNames
@@ -38,16 +39,22 @@ if (!function_exists('tenant_has_module')) {
      */
     function tenant_has_module($moduleNames): bool
     {
-        $assigned = [];
+        $hasContext = false;
+        $assigned = null;
 
         // 1. Direct tenant configuration from TenantManager, app('tenant'), or session('tenant')
         $t = function_exists('tenant') ? tenant() : null;
-        if (!empty($t) && is_array($t) && !empty($t['modules']) && is_array($t['modules'])) {
-            $assigned = $t['modules'];
+        if (empty($t) && session()->has('tenant')) {
+            $t = session('tenant');
+        }
+
+        if (is_array($t) && array_key_exists('modules', $t)) {
+            $hasContext = true;
+            $assigned = is_array($t['modules']) ? $t['modules'] : [];
         }
 
         // 2. Active subscription plan features from the database
-        if (empty($assigned)) {
+        if ($assigned === null) {
             $plan = null;
             if (auth()->check()) {
                 $plan = auth()->user()->getActivePlan();
@@ -55,14 +62,31 @@ if (!function_exists('tenant_has_module')) {
             if (!$plan) {
                 $plan = \App\Models\Plan::where('is_active', 1)->latest('id')->first();
             }
-            if ($plan && !empty($plan->features) && is_array($plan->features)) {
+            if ($plan && is_array($plan->features)) {
+                $hasContext = true;
                 $assigned = $plan->features;
             }
         }
 
-        // If no module restrictions exist, allow full access
-        if (empty($assigned)) {
+        // If no tenant or plan context is active at all (standard non-tenant app without restrictions), allow all
+        if (!$hasContext || $assigned === null) {
             return true;
+        }
+
+        // Core items that are always accessible even with 0 modules
+        static $coreAlwaysAllowed = ['my profile', 'profile', 'my subscription', 'my plan', 'subscription', 'plan'];
+
+        $checkList = is_array($moduleNames) ? $moduleNames : [$moduleNames];
+        foreach ($checkList as $name) {
+            $norm = strtolower(trim((string) $name));
+            if (in_array($norm, $coreAlwaysAllowed, true)) {
+                return true;
+            }
+        }
+
+        // If tenant context exists and assigned modules is empty (admin gave 0 permissions), DENY ALL
+        if (empty($assigned)) {
+            return false;
         }
 
         $assignedNormalized = array_map(function ($m) {
@@ -128,12 +152,8 @@ if (!function_exists('tenant_has_module')) {
         $checkList = is_array($moduleNames) ? $moduleNames : [$moduleNames];
         $expandedCheckList = [];
 
-        static $coreAlwaysAllowed = ['my profile', 'profile'];
         foreach ($checkList as $name) {
             $norm = strtolower(trim((string) $name));
-            if (in_array($norm, $coreAlwaysAllowed, true)) {
-                return true;
-            }
             $expandedCheckList[$norm] = true;
             foreach ($aliasGroups as $group) {
                 if (in_array($norm, $group, true)) {
@@ -164,19 +184,24 @@ if (!function_exists('tenant_has_sub_module')) {
      */
     function tenant_has_sub_module($subModuleNames, $parentModuleName = null): bool
     {
-        if (!config('tenant.enabled', false) || !tenant()) {
-            return true;
-        }
-
         if ($parentModuleName !== null && !tenant_has_module($parentModuleName)) {
             return false;
         }
 
-        $rawNames = tenant('sub_module_names') ?: tenant('sub_modules') ?: [];
+        $t = function_exists('tenant') ? tenant() : null;
+        if (empty($t) && session()->has('tenant')) {
+            $t = session('tenant');
+        }
+
+        if (!$t) {
+            return true;
+        }
+
+        $rawNames = $t['sub_module_names'] ?? ($t['sub_modules'] ?? []);
         $activeNames = array_map(function ($m) {
             return strtolower(trim((string) $m));
         }, (array) $rawNames);
-        $activeSlugs = array_map('strtolower', (array) tenant('sub_module_slugs', []));
+        $activeSlugs = array_map('strtolower', (array) ($t['sub_module_slugs'] ?? []));
 
         // If no sub-modules are tracked in tenant payload, default to parent module status
         if (empty($activeNames) && empty($activeSlugs)) {
@@ -193,7 +218,7 @@ if (!function_exists('tenant_has_sub_module')) {
 
         // Check structured modules_with_sub_modules
         if ($parentModuleName !== null) {
-            $modulesWithSubs = tenant('modules_with_sub_modules');
+            $modulesWithSubs = $t['modules_with_sub_modules'] ?? null;
             if (is_array($modulesWithSubs)) {
                 $parentList = is_array($parentModuleName) ? $parentModuleName : [$parentModuleName];
                 $parentListNormalized = array_map(fn($p) => strtolower(trim((string) $p)), $parentList);

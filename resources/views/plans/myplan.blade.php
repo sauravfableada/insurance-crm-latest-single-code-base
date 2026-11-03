@@ -211,13 +211,16 @@
 
     <!-- Included Features Grid -->
     @php
-        $modulesList = !empty($plan->features) && is_array($plan->features) && count($plan->features) > 0
-            ? $plan->features
-            : (!empty($tenant['modules']) && is_array($tenant['modules']) && count($tenant['modules']) > 0
-                ? $tenant['modules']
-                : (function_exists('tenant') && is_array(tenant('modules')) && count(tenant('modules')) > 0
-                    ? tenant('modules')
-                    : ['Dashboard', 'Client Manage', 'Sales CRM', 'Policy Center', 'Commissions', 'Withdrawal Requests', 'Operations', 'Sub Agent']));
+        $modulesList = null;
+        if ($plan && isset($plan->features) && is_array($plan->features)) {
+            $modulesList = $plan->features;
+        } elseif (isset($tenant['modules']) && is_array($tenant['modules'])) {
+            $modulesList = $tenant['modules'];
+        } elseif (function_exists('tenant') && is_array(tenant('modules'))) {
+            $modulesList = tenant('modules');
+        } else {
+            $modulesList = ['Dashboard', 'Client Manage', 'Sales CRM', 'Policy Center', 'Commissions', 'Withdrawal Requests', 'Operations', 'Sub Agent'];
+        }
     @endphp
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px; border: 1px solid #f1f1f1 !important;">
         <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -225,9 +228,13 @@
                 <i class="fas fa-check-circle text-success me-2" style="font-size: 18px;"></i> Included Features & Modules
             </h5>
             <div class="d-flex align-items-center gap-2">
-                @if(!empty($modulesList) && is_array($modulesList))
+                @if(is_array($modulesList) && count($modulesList) > 0)
                 <span class="badge px-3 py-2 fw-bold text-success" style="background-color: #e6f9ed; border-radius: 20px; font-size: 12px; border: 1px solid #c2f0d4;">
                     <i class="fas fa-cube me-1"></i> {{ count($modulesList) }} Modules / Features Configured
+                </span>
+                @else
+                <span class="badge px-3 py-2 fw-bold text-secondary" style="background-color: #f1f5f9; border-radius: 20px; font-size: 12px; border: 1px solid #cbd5e1;">
+                    <i class="fas fa-cube me-1"></i> 0 Modules / Features Configured
                 </span>
                 @endif
                 <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" id="btnSyncAdminModules" onclick="syncSuperAdminModules(this)" style="border-radius: 20px; font-size: 12px; font-weight: 600; padding: 5px 14px; transition: all 0.2s ease;">
@@ -248,8 +255,9 @@
                 @endforeach
             @else
                 <div class="col-md-12 mb-3">
-                    <div class="p-3" style="background-color: #fafbfc; border-radius: 8px; border: 1px solid #f1f1f1; color: #555; font-weight: 500;">
-                        <i class="fas fa-check text-success me-2" style="background-color: #e6f9ed; padding: 5px; border-radius: 50%; font-size: 10px;"></i> All standard insurance CRM modules active for this plan.
+                    <div class="p-4 text-center" style="background-color: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; color: #64748b; font-weight: 500;">
+                        <i class="fas fa-info-circle text-muted me-2" style="font-size: 18px;"></i>
+                        No active modules or features are currently assigned to this account by the administrator.
                     </div>
                 </div>
             @endif

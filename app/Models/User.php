@@ -85,11 +85,9 @@ class User extends Authenticatable
     public function hasMatrixPermission(string $permission): bool
     {
         // Enforce tenant plan boundary: if tenant does not have the module, deny
-        if (config('tenant.enabled', false) && tenant()) {
-            $module = $this->permissionToModule($permission);
-            if ($module && !tenant_has_module($module)) {
-                return false;
-            }
+        $module = $this->permissionToModule($permission);
+        if ($module && function_exists('tenant_has_module') && !tenant_has_module($module)) {
+            return false;
         }
 
         if ($this->isAdmin()) {

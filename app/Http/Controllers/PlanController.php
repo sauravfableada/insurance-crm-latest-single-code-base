@@ -53,11 +53,9 @@ class PlanController extends Controller
         if (!$forceFresh && !request()->has('refresh_tenant')) {
             $tenant = function_exists('tenant') ? tenant() : null;
             if (!empty($tenant) && is_array($tenant) && !empty($tenant['client_id'] ?? $tenant['id'])) {
-                if (!empty($tenant['modules']) && count($tenant['modules']) > 8) {
-                    $syncedAt = session('tenant_synced_at', 0);
-                    if ($syncedAt && (time() - $syncedAt) < 300) {
-                        return $tenant;
-                    }
+                $syncedAt = session('tenant_synced_at', 0);
+                if ($syncedAt && (time() - $syncedAt) < 60) {
+                    return $tenant;
                 }
             }
 
@@ -65,14 +63,12 @@ class PlanController extends Controller
             if (session()->has('tenant')) {
                 $sessionTenant = session('tenant');
                 if (is_array($sessionTenant) && !empty($sessionTenant['client_id'] ?? $sessionTenant['id'])) {
-                    if (!empty($sessionTenant['modules']) && count($sessionTenant['modules']) > 8) {
-                        $syncedAt = session('tenant_synced_at', 0);
-                        if ($syncedAt && (time() - $syncedAt) < 300) {
-                            if (app()->bound(\App\Services\Tenancy\TenantManager::class)) {
-                                app()->instance('tenant', $sessionTenant);
-                            }
-                            return $sessionTenant;
+                    $syncedAt = session('tenant_synced_at', 0);
+                    if ($syncedAt && (time() - $syncedAt) < 60) {
+                        if (app()->bound(\App\Services\Tenancy\TenantManager::class)) {
+                            app()->instance('tenant', $sessionTenant);
                         }
+                        return $sessionTenant;
                     }
                 }
             }
@@ -218,14 +214,14 @@ class PlanController extends Controller
         $sm = $data['sub_modules'] ?? [];
 
         $mods = [];
-        if (!empty($setup['assigned_modules']) && is_array($setup['assigned_modules'])) {
+        if (isset($setup['assigned_modules']) && is_array($setup['assigned_modules'])) {
             $mods = array_values($setup['assigned_modules']);
         } elseif (!empty($pm) && is_array($pm)) {
             $mods = array_values(array_column($pm, 'name'));
         }
 
         $subMods = [];
-        if (!empty($setup['assigned_sub_modules']) && is_array($setup['assigned_sub_modules'])) {
+        if (isset($setup['assigned_sub_modules']) && is_array($setup['assigned_sub_modules'])) {
             $subMods = array_values($setup['assigned_sub_modules']);
         } elseif (!empty($sm) && is_array($sm)) {
             $subMods = array_values(array_column($sm, 'name'));
@@ -252,6 +248,7 @@ class PlanController extends Controller
             'max_branch'    => $c['max_branch'] ?? 1,
             'modules'       => $allModules,
             'sub_modules'   => $subMods,
+            'has_module_config' => true,
             'email'         => $c['work_email'] ?? null,
         ];
     }
@@ -282,12 +279,12 @@ class PlanController extends Controller
                 $tenantRenewal = $tenantAmount;
             }
 
-            $tenantModules = !empty($tenant['modules']) && is_array($tenant['modules']) ? array_values($tenant['modules']) : [];
+            $tenantModules = isset($tenant['modules']) && is_array($tenant['modules']) ? array_values($tenant['modules']) : null;
             $clientName = $tenant['client_name'] ?? ($tenant['brand_name'] ?? ($user?->name ?? 'Insurance-CRM'));
 
             $updateData = [];
 
-            if (!empty($tenantModules)) {
+            if ($tenantModules !== null) {
                 $updateData['features'] = $tenantModules;
             }
 
@@ -366,11 +363,10 @@ class PlanController extends Controller
             $inputModules = $request->input('assigned_modules') ?? $request->input('modules');
             $inputSubModules = $request->input('assigned_sub_modules') ?? $request->input('sub_modules');
 
-            if (!empty($inputModules) && is_array($inputModules)) {
-                $allMods = array_values(array_unique(array_filter(array_merge(
-                    $inputModules,
-                    is_array($inputSubModules) ? $inputSubModules : []
-                ))));
+            if (($request->has('assigned_modules') || $request->has('modules')) && is_array($inputModules ?? [])) {
+                $rawMods = is_array($inputModules) ? $inputModules : [];
+                $rawSubMods = is_array($inputSubModules) ? $inputSubModules : [];
+                $allMods = array_values(array_unique(array_filter(array_merge($rawMods, $rawSubMods))));
 
                 $tenant = [
                     'id'            => $request->input('id') ?? $request->input('client_id'),
@@ -382,7 +378,8 @@ class PlanController extends Controller
                     'max_branch'    => $request->input('max_branch'),
                     'billing_cycle' => $request->input('billing_cycle'),
                     'modules'       => $allMods,
-                    'sub_modules'   => is_array($inputSubModules) ? $inputSubModules : [],
+                    'sub_modules'   => $rawSubMods,
+                    'has_module_config' => true,
                 ];
 
                 if ($request->hasSession()) {
@@ -483,7 +480,7 @@ class PlanController extends Controller
                 'user_limit'    => $tenant['max_user'] ?? 50,
                 'branch_limit'  => $tenant['max_branch'] ?? 1,
                 'is_active'     => true,
-                'features'      => !empty($tenant['modules']) && is_array($tenant['modules']) ? array_values($tenant['modules']) : [
+                'features'      => isset($tenant['modules']) && is_array($tenant['modules']) ? array_values($tenant['modules']) : [
                     'Dashboard', 'Client Manage', 'Sales CRM', 'Policy Center', 'Commissions', 'Withdrawal Requests', 'Operations', 'Sub Agent'
                 ],
             ]);
@@ -592,7 +589,7 @@ class PlanController extends Controller
             }
 
             // Sync Modules
-            if (!empty($tenant['modules']) && is_array($tenant['modules'])) {
+            if (isset($tenant['modules']) && is_array($tenant['modules'])) {
                 $mods = array_values($tenant['modules']);
                 if ($plan->features !== $mods) {
                     $updateData['features'] = $mods;
