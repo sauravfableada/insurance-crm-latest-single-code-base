@@ -32,40 +32,44 @@
         .header-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 0;
         }
         .header-table td {
             vertical-align: top;
+            padding-bottom: 14px;
         }
         .company-logo {
             max-height: 48px;
             max-width: 135px;
         }
         .company-title {
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: bold;
             color: #0b1528;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             text-transform: uppercase;
             margin-bottom: 3px;
         }
         .company-address {
-            font-size: 9px;
+            font-size: 8.5px;
             color: #334155;
             line-height: 1.35;
-            max-width: 380px;
+            margin-bottom: 4px;
         }
         .company-contact {
-            font-size: 8.5px;
+            font-size: 8px;
             font-weight: bold;
             color: #0f172a;
             margin-top: 3px;
+            padding-bottom: 6px;
+            line-height: 1.3;
         }
 
         /* Two columns customer and order details */
         .info-container {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 4px;
             margin-bottom: 12px;
         }
         .info-box {
@@ -340,6 +344,9 @@
                 </td>
             </tr>
         </table>
+
+        <!-- Spacer between Header and Order Details -->
+        <div style="height: 12px; font-size: 1px; line-height: 12px; clear: both;">&nbsp;</div>
 
         <!-- Customer & Order details -->
         <table class="info-container">
