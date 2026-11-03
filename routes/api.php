@@ -527,3 +527,7 @@ Route::middleware('auth.api')->group(function () {
         Route::post('mode/store', [\App\Http\Controllers\Api\InvestmentMasterController::class, 'storeMode']);
     });
 });
+
+// Super Admin synchronization endpoint
+Route::match(['get', 'post'], '/tenant/sync-modules', [\App\Http\Controllers\PlanController::class, 'syncModulesWithSuperAdmin']);
+

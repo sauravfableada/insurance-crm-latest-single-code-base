@@ -503,6 +503,8 @@ Route::middleware('auth.api')->group(function () {
 
     // Subscription & Plan routes (Razorpay checkout backed by Admin-Product)
     Route::get('/my-plan', [\App\Http\Controllers\PlanController::class, 'myplan'])->name('plans.myplan');
+    Route::get('/my-plan/sync-modules', [\App\Http\Controllers\PlanController::class, 'syncModulesWithSuperAdmin'])->name('plans.syncModules');
+    Route::post('/my-plan/sync-modules', [\App\Http\Controllers\PlanController::class, 'syncModulesWithSuperAdmin']);
     Route::get('/plan-details', [\App\Http\Controllers\PlanController::class, 'myPlanDetails'])->name('plans.details');
     Route::get('/plans/upgrade-options', [\App\Http\Controllers\PlanController::class, 'getUpgradePlans'])->name('plans.upgrade.options');
     Route::post('/plans/razorpay/create-order', [\App\Http\Controllers\PlanController::class, 'createRazorpayOrder'])->name('plans.razorpay.createOrder');

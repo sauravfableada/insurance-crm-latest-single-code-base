@@ -256,7 +256,7 @@
         </li>
         @endif
 
-        @if(tenant_has_module(['Commissions', 'Withdrawal Requests']) && !$isCustomerUser && ($authUser?->isAdmin() || $authUser?->type === 'admin' || $authUser?->type === 'super_admin'))
+        @if(tenant_has_module(['Withdrawal Requests', 'Withdrawals']) && !$isCustomerUser && ($authUser?->isAdmin() || $authUser?->type === 'admin' || $authUser?->type === 'super_admin'))
         <!-- Admin Withdrawal Requests link -->
         <li class="nav-item mt-2 sidebar-module" data-requires-perm="false">
             <a class="nav-link ccc ddd @if(request()->is('admin/withdrawals*')) active @endif" href="{{ route('admin.withdrawals.index') }}">

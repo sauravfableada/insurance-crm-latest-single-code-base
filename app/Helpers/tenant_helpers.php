@@ -15,6 +15,14 @@ if (!function_exists('tenant')) {
         $manager = app()->bound(TenantManager::class) ? app(TenantManager::class) : null;
         $tenant = $manager ? $manager->current() : null;
 
+        if (!$tenant && app()->bound('tenant')) {
+            $tenant = app('tenant');
+        }
+
+        if (!$tenant && session()->has('tenant')) {
+            $tenant = session('tenant');
+        }
+
         return $key === null ? $tenant : data_get($tenant, $key, $default);
     }
 }
@@ -30,13 +38,31 @@ if (!function_exists('tenant_has_module')) {
      */
     function tenant_has_module($moduleNames): bool
     {
-        if (!config('tenant.enabled', false) || !tenant()) {
-            return true;
+        $assigned = [];
+
+        // 1. Direct tenant configuration from TenantManager, app('tenant'), or session('tenant')
+        $t = function_exists('tenant') ? tenant() : null;
+        if (!empty($t) && is_array($t) && !empty($t['modules']) && is_array($t['modules'])) {
+            $assigned = $t['modules'];
         }
 
-        $assigned = (array) tenant('modules', []);
+        // 2. Active subscription plan features from the database
         if (empty($assigned)) {
-            return false;
+            $plan = null;
+            if (auth()->check()) {
+                $plan = auth()->user()->getActivePlan();
+            }
+            if (!$plan) {
+                $plan = \App\Models\Plan::where('is_active', 1)->latest('id')->first();
+            }
+            if ($plan && !empty($plan->features) && is_array($plan->features)) {
+                $assigned = $plan->features;
+            }
+        }
+
+        // If no module restrictions exist, allow full access
+        if (empty($assigned)) {
+            return true;
         }
 
         $assignedNormalized = array_map(function ($m) {
@@ -63,8 +89,11 @@ if (!function_exists('tenant_has_module')) {
             ['insurance', 'life insurance', 'life_insurance', 'add insurance', 'manage insurance', 'renew insurance'],
             ['investments', 'investment', 'manage investment', 'add investment'],
 
-            // Commissions
-            ['commissions', 'commission', 'commission rules', 'commission entries', 'withdrawal requests', 'withdrawals'],
+            // Commissions (separate from withdrawal requests!)
+            ['commissions', 'commission', 'commission rules', 'commission entries'],
+
+            // Withdrawal Requests (independent)
+            ['withdrawal requests', 'withdrawal request', 'withdrawals', 'withdrawal'],
 
             // Operations / Documents / Tasks / Endorsements
             ['operations', 'operation'],
@@ -73,7 +102,8 @@ if (!function_exists('tenant_has_module')) {
             ['endorsements', 'endorsement', 'alteration & endorsements', 'alterations', 'alteration and endorsements'],
 
             // Staff / Sub Agent / Users
-            ['staff', 'sub agent', 'sub_agent', 'users', 'user', 'manage staff', 'employees', 'employee'],
+            ['staff', 'users', 'user', 'manage staff', 'employees', 'employee'],
+            ['sub agent', 'sub_agent', 'subagent'],
             ['team members', 'team member', 'team_members'],
 
             // Masters
@@ -98,8 +128,12 @@ if (!function_exists('tenant_has_module')) {
         $checkList = is_array($moduleNames) ? $moduleNames : [$moduleNames];
         $expandedCheckList = [];
 
+        static $coreAlwaysAllowed = ['dashboard', 'overview', 'home', 'my profile', 'profile'];
         foreach ($checkList as $name) {
             $norm = strtolower(trim((string) $name));
+            if (in_array($norm, $coreAlwaysAllowed, true)) {
+                return true;
+            }
             $expandedCheckList[$norm] = true;
             foreach ($aliasGroups as $group) {
                 if (in_array($norm, $group, true)) {

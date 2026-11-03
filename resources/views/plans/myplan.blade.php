@@ -224,11 +224,16 @@
             <h5 style="font-weight: 700; color: #333; font-size: 16px;" class="mb-0">
                 <i class="fas fa-check-circle text-success me-2" style="font-size: 18px;"></i> Included Features & Modules
             </h5>
-            @if(!empty($modulesList) && is_array($modulesList))
-            <span class="badge px-3 py-2 fw-bold text-success" style="background-color: #e6f9ed; border-radius: 20px; font-size: 12px; border: 1px solid #c2f0d4;">
-                <i class="fas fa-cube me-1"></i> {{ count($modulesList) }} Modules / Features Configured
-            </span>
-            @endif
+            <div class="d-flex align-items-center gap-2">
+                @if(!empty($modulesList) && is_array($modulesList))
+                <span class="badge px-3 py-2 fw-bold text-success" style="background-color: #e6f9ed; border-radius: 20px; font-size: 12px; border: 1px solid #c2f0d4;">
+                    <i class="fas fa-cube me-1"></i> {{ count($modulesList) }} Modules / Features Configured
+                </span>
+                @endif
+                <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" id="btnSyncAdminModules" onclick="syncSuperAdminModules(this)" style="border-radius: 20px; font-size: 12px; font-weight: 600; padding: 5px 14px; transition: all 0.2s ease;">
+                    <i class="fas fa-arrows-rotate me-1"></i> Sync from Admin
+                </button>
+            </div>
         </div>
         <div class="card-body p-4">
             <div class="row">
@@ -884,6 +889,45 @@
             const overlay = document.getElementById('paymentVerifyingOverlay');
             if (overlay) overlay.remove();
             notifyAlert('error', 'Verification Error', 'Payment verification error: ' + err.message);
+        });
+    }
+
+    function syncSuperAdminModules(btn) {
+        if (!btn) btn = document.getElementById('btnSyncAdminModules');
+        const originalHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Syncing...';
+        }
+
+        fetch("{{ route('plans.syncModules') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+            if (data.success) {
+                notifyAlert('success', 'Modules Synchronized!', data.message || `Successfully synced ${data.modules_count || ''} modules from Super Admin.`, function() {
+                    window.location.reload();
+                });
+            } else {
+                notifyAlert('error', 'Sync Failed', data.message || 'Could not synchronize modules.');
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+            notifyAlert('error', 'Sync Error', 'Network error while syncing: ' + err.message);
         });
     }
 </script>

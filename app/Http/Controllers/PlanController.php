@@ -18,6 +18,13 @@ class PlanController extends Controller
     protected function getSuperAdminBase(): string
     {
         $apiUrl = config('tenant.api_url');
+        $host = request()->getHost();
+        $isLiveDomain = !in_array($host, ['localhost', '127.0.0.1'], true);
+
+        if ($isLiveDomain && (empty($apiUrl) || str_contains($apiUrl, 'localhost') || str_contains($apiUrl, '127.0.0.1'))) {
+            return 'https://admin-products.fableadtech.com/services/public';
+        }
+
         if (empty($apiUrl) || !str_contains($apiUrl, 'http')) {
             $apiUrl = 'https://admin-products.fableadtech.com/services/public/api/tenant';
         }
@@ -40,25 +47,33 @@ class PlanController extends Controller
     /**
      * Dynamically resolve tenant context from TenantManager, session, or Super Admin API.
      */
-    protected function resolveTenantContext(): ?array
+    public function resolveTenantContext(bool $forceFresh = false): ?array
     {
-        // 1. Check existing tenant context from TenantManager (if it already has fresh full modules)
-        $tenant = function_exists('tenant') ? tenant() : null;
-        if (!empty($tenant) && is_array($tenant) && !empty($tenant['client_id'] ?? $tenant['id'])) {
-            if (!empty($tenant['modules']) && count($tenant['modules']) > 8 && !request()->has('refresh_tenant')) {
-                return $tenant;
-            }
-        }
-
-        // 2. Check session tenant (if it already has fresh full modules)
-        if (session()->has('tenant') && !request()->has('refresh_tenant')) {
-            $sessionTenant = session('tenant');
-            if (is_array($sessionTenant) && !empty($sessionTenant['client_id'] ?? $sessionTenant['id'])) {
-                if (!empty($sessionTenant['modules']) && count($sessionTenant['modules']) > 8) {
-                    if (app()->bound(\App\Services\Tenancy\TenantManager::class)) {
-                        app()->instance('tenant', $sessionTenant);
+        // 1. Check existing tenant context from TenantManager (if not forced fresh)
+        if (!$forceFresh && !request()->has('refresh_tenant')) {
+            $tenant = function_exists('tenant') ? tenant() : null;
+            if (!empty($tenant) && is_array($tenant) && !empty($tenant['client_id'] ?? $tenant['id'])) {
+                if (!empty($tenant['modules']) && count($tenant['modules']) > 8) {
+                    $syncedAt = session('tenant_synced_at', 0);
+                    if ($syncedAt && (time() - $syncedAt) < 300) {
+                        return $tenant;
                     }
-                    return $sessionTenant;
+                }
+            }
+
+            // 2. Check session tenant (if not forced fresh)
+            if (session()->has('tenant')) {
+                $sessionTenant = session('tenant');
+                if (is_array($sessionTenant) && !empty($sessionTenant['client_id'] ?? $sessionTenant['id'])) {
+                    if (!empty($sessionTenant['modules']) && count($sessionTenant['modules']) > 8) {
+                        $syncedAt = session('tenant_synced_at', 0);
+                        if ($syncedAt && (time() - $syncedAt) < 300) {
+                            if (app()->bound(\App\Services\Tenancy\TenantManager::class)) {
+                                app()->instance('tenant', $sessionTenant);
+                            }
+                            return $sessionTenant;
+                        }
+                    }
                 }
             }
         }
@@ -70,8 +85,11 @@ class PlanController extends Controller
 
         $resolved = null;
 
-        // Try by host domain first (e.g. mediumslateblue-owl-603065.hostingersite.com)
-        if ($host && !in_array($host, ['localhost', '127.0.0.1'], true)) {
+        // Try direct public endpoint for host domain first (bypasses secret header)
+        $resolved = $this->resolveFromPublicClientData($superAdminBase, $host);
+
+        // Try by host domain with /resolve if public endpoint didn't resolve
+        if (!$resolved && $host && !in_array($host, ['localhost', '127.0.0.1'], true)) {
             try {
                 $resp = Http::timeout(6)->acceptJson()->withHeaders(['X-Tenant-Secret' => $secret])
                     ->post("{$superAdminBase}/api/tenant/resolve", [
@@ -108,14 +126,17 @@ class PlanController extends Controller
             }
         }
 
-        // 4. Fallback: Fetch directly from Super Admin public client/data endpoint
-        if (!$resolved) {
-            $resolved = $this->resolveFromPublicClientData($superAdminBase, $host);
-        }
-
         if ($resolved) {
-            session(['tenant' => $resolved, 'tenant_id' => $resolved['id'] ?? null]);
+            session([
+                'tenant'           => $resolved,
+                'tenant_id'        => $resolved['id'] ?? null,
+                'tenant_synced_at' => time(),
+            ]);
             app()->instance('tenant', $resolved);
+
+            // Immediately synchronize local database active plan with Super Admin tenant configuration
+            $this->syncLocalPlanWithTenantData($resolved);
+
             return $resolved;
         }
 
@@ -236,18 +257,162 @@ class PlanController extends Controller
     }
 
     /**
+     * Synchronize local database active Plan with tenant data from Super Admin.
+     */
+    public function syncLocalPlanWithTenantData(?array $tenant): ?Plan
+    {
+        if (empty($tenant)) {
+            return null;
+        }
+
+        try {
+            $user = auth()->check() ? auth()->user() : null;
+            $plan = $user ? $user->getActivePlan() : null;
+            if (!$plan) {
+                $plan = Plan::where('is_active', 1)->latest('id')->first();
+            }
+            if (!$plan) {
+                $plan = Plan::latest('id')->first();
+            }
+
+            $tenantPlanName = $tenant['plan_name'] ?? null;
+            $tenantAmount = isset($tenant['amount']) ? (float)(is_array($tenant['amount']) ? ($tenant['amount'][0] ?? 0) : $tenant['amount']) : 0;
+            $tenantRenewal = isset($tenant['renewal_amount']) ? (float)(is_array($tenant['renewal_amount']) ? ($tenant['renewal_amount'][0] ?? 0) : $tenant['renewal_amount']) : 0;
+            if ($tenantRenewal <= 0 && $tenantAmount > 0) {
+                $tenantRenewal = $tenantAmount;
+            }
+
+            $tenantModules = !empty($tenant['modules']) && is_array($tenant['modules']) ? array_values($tenant['modules']) : [];
+            $clientName = $tenant['client_name'] ?? ($tenant['brand_name'] ?? ($user?->name ?? 'Insurance-CRM'));
+
+            $updateData = [];
+
+            if (!empty($tenantModules)) {
+                $updateData['features'] = $tenantModules;
+            }
+
+            if (!empty($tenantPlanName)) {
+                $updateData['name'] = $tenantPlanName;
+            }
+
+            if ($tenantAmount > 0) {
+                $updateData['price'] = $tenantAmount;
+                $updateData['total_amount'] = $tenantAmount;
+                $updateData['total_price'] = $tenantAmount;
+            }
+
+            if ($tenantRenewal > 0) {
+                $updateData['renewal_price'] = $tenantRenewal;
+            }
+
+            if (!empty($tenant['expiry_date'])) {
+                $updateData['end_date'] = Carbon::parse($tenant['expiry_date'])->format('Y-m-d');
+            }
+
+            if (!empty($tenant['start_date'])) {
+                $updateData['start_date'] = Carbon::parse($tenant['start_date'])->format('Y-m-d');
+            }
+
+            if (!empty($tenant['billing_cycle'])) {
+                $updateData['duration'] = str_contains(strtolower($tenant['billing_cycle']), 'year') ? 'year' : 'month';
+            }
+
+            if (!empty($tenant['max_user'])) {
+                $updateData['user_limit'] = (int)$tenant['max_user'];
+            }
+
+            if (!empty($tenant['max_branch'])) {
+                $updateData['branch_limit'] = (int)$tenant['max_branch'];
+            }
+
+            $updateData['subtitle'] = 'Purchased By ' . $clientName;
+            $updateData['is_active'] = true;
+
+            if ($plan) {
+                $plan->update($updateData);
+                $plan->refresh();
+            } else {
+                $updateData['name'] = $tenantPlanName ?: 'insurance-crm';
+                $updateData['price'] = $tenantAmount > 0 ? $tenantAmount : 50.00;
+                $updateData['renewal_price'] = $tenantRenewal > 0 ? $tenantRenewal : 49.00;
+                $updateData['total_amount'] = $updateData['price'];
+                $updateData['total_price'] = $updateData['price'];
+                $updateData['duration'] = 'month';
+                $updateData['start_date'] = now()->format('Y-m-d');
+                $updateData['end_date'] = now()->addMonth()->format('Y-m-d');
+                $updateData['user_limit'] = $tenant['max_user'] ?? 50;
+                $updateData['branch_limit'] = $tenant['max_branch'] ?? 1;
+
+                $plan = Plan::create($updateData);
+            }
+
+            if ($user && empty($user->plan_id)) {
+                $user->update(['plan_id' => $plan->id]);
+            }
+
+            return $plan;
+        } catch (\Throwable $e) {
+            Log::error('Failed to sync local plan with tenant data: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * AJAX/Webhook endpoint to immediately sync modules and limits from Super Admin.
+     */
+    public function syncModulesWithSuperAdmin(Request $request)
+    {
+        try {
+            // Force bypass session/cache to fetch live configuration from Super Admin
+            $tenant = $this->resolveTenantContext(true);
+
+            if (!$tenant) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to connect to Super Admin or locate tenant configuration.',
+                ], 404);
+            }
+
+            $plan = $this->syncLocalPlanWithTenantData($tenant);
+            $features = $plan?->features ?? ($tenant['modules'] ?? []);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully synchronized modules and plan configuration from Super Admin!',
+                'modules_count' => count($features),
+                'modules' => $features,
+                'plan_name' => $plan?->name ?? ($tenant['plan_name'] ?? 'Active Plan'),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error synchronizing: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Display current active plan details, limits, and billing history.
      */
     public function myplan()
     {
         $user = auth()->user();
-        $tenant = $this->resolveTenantContext();
+        // Force fresh pull from Super Admin on /my-plan to guarantee up-to-date modules
+        $tenant = $this->resolveTenantContext(true);
         $clientId = $tenant['client_id'] ?? ($tenant['id'] ?? null);
 
         $superAdminBase = $this->getSuperAdminBase();
 
         // 1. Get or initialize local active Plan
-        $plan = $user->getActivePlan();
+        $plan = $user ? $user->getActivePlan() : null;
+        if (!$plan) {
+            $plan = Plan::where('is_active', 1)->latest('id')->first();
+        }
+
+        // Sync with local database Plan
+        if ($tenant) {
+            $plan = $this->syncLocalPlanWithTenantData($tenant) ?: $plan;
+        }
 
         $tenantPlanName = $tenant['plan_name'] ?? null;
         $tenantAmount = isset($tenant['amount']) ? (float)(is_array($tenant['amount']) ? ($tenant['amount'][0] ?? 0) : $tenant['amount']) : 0;
