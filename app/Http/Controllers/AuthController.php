@@ -16,7 +16,7 @@ class AuthController extends Controller
     public function showLoginForm(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route('dashboard');
+            return redirect()->to(function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('dashboard'));
         }
 
         return view('auth.login');
@@ -168,7 +168,7 @@ class AuthController extends Controller
             $response = response()->json([
                 'success' => true,
                 'token' => $token,
-                'redirect_url' => route('dashboard'),
+                'redirect_url' => function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('dashboard'),
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -187,8 +187,11 @@ class AuthController extends Controller
             return $response;
         }
 
-        $targetUrl = route('dashboard');
+        $targetUrl = function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('dashboard');
         $redirectUrl = session()->get('url.intended', $targetUrl);
+        if ($redirectUrl === route('dashboard') && function_exists('tenant_has_module') && !tenant_has_module('Dashboard')) {
+            $redirectUrl = $targetUrl;
+        }
         if (!$user->isAdmin() && (str_contains($redirectUrl, '/users') || str_contains($redirectUrl, '/roles'))) {
             $redirectUrl = $targetUrl;
         }

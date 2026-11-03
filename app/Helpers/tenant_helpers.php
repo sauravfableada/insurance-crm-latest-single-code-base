@@ -128,7 +128,7 @@ if (!function_exists('tenant_has_module')) {
         $checkList = is_array($moduleNames) ? $moduleNames : [$moduleNames];
         $expandedCheckList = [];
 
-        static $coreAlwaysAllowed = ['dashboard', 'overview', 'home', 'my profile', 'profile'];
+        static $coreAlwaysAllowed = ['my profile', 'profile'];
         foreach ($checkList as $name) {
             $norm = strtolower(trim((string) $name));
             if (in_array($norm, $coreAlwaysAllowed, true)) {
@@ -245,6 +245,43 @@ if (!function_exists('tenant_storage_url')) {
     {
         $clean = ltrim($path, '/\\');
         return url('storage/' . $clean);
+    }
+}
+
+if (!function_exists('tenant_default_landing_url')) {
+    /**
+     * Get the default landing URL for the current tenant based on active module permissions.
+     */
+    function tenant_default_landing_url(): string
+    {
+        if (tenant_has_module('Dashboard')) {
+            return route('dashboard');
+        }
+        if (tenant_has_module(['Leads', 'Sales CRM'])) {
+            return route('leads.index');
+        }
+        if (tenant_has_module(['Policies', 'Policy Center'])) {
+            return route('policies.index');
+        }
+        if (tenant_has_module(['Customers', 'Clients', 'Client Manage'])) {
+            return route('masters.customers.index');
+        }
+        if (tenant_has_module('Prospects')) {
+            return route('prospects.index');
+        }
+        if (tenant_has_module('Commissions')) {
+            return route('commission-rules.index');
+        }
+        if (tenant_has_module('Withdrawal Requests')) {
+            return route('admin.withdrawals.index');
+        }
+        if (tenant_has_module(['Operations', 'Documents'])) {
+            return route('documents.index');
+        }
+        if (tenant_has_module(['Sub Agent', 'Staff', 'Users'])) {
+            return route('users.index');
+        }
+        return route('plans.myplan');
     }
 }
 

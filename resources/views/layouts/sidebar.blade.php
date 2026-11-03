@@ -8,7 +8,7 @@
 @if(!$isCustomerUser)
 <aside class="crm-sidebar shadow-sm" id="sidenav-main" style="min-width: 260px">
     <div class="sidenav-header sidebar-logo-header">
-        <a class="navbar-brand sidebar-logo-card" href="{{ route('dashboard') }}" aria-label="Go to dashboard">
+        <a class="navbar-brand sidebar-logo-card" href="{{ function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('dashboard') }}" aria-label="Go to home">
             <img src="{{ $companyLogoUrl ?? asset('logo/fableadcrmLogo.png') }}"
                 class="sidebar-company-logo"
                 alt="{{ $companyName ? $companyName . ' logo' : 'Company logo' }}">

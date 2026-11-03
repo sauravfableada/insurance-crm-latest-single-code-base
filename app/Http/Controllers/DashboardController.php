@@ -22,8 +22,13 @@ use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index()
     {
+        if (function_exists('tenant_has_module') && !tenant_has_module('Dashboard')) {
+            $landing = function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('plans.myplan');
+            return redirect()->to($landing);
+        }
+
         $showRenewalPoliciesModal = (bool) session()->pull('show_renewal_policies_modal', false);
 
         $query = Policy::with(['holder', 'policyType', 'company'])

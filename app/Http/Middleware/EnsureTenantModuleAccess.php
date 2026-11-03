@@ -16,6 +16,7 @@ class EnsureTenantModuleAccess
      * Map common route name prefixes or URI segments to tenant module names.
      */
     protected array $routeModuleMap = [
+        'dashboard' => ['Dashboard'],
         'customers' => ['Customers', 'Clients'],
         'masters.customers' => ['Customers', 'Clients'],
         'masters.family_groups' => ['Family Groups'],
@@ -29,7 +30,7 @@ class EnsureTenantModuleAccess
         'commission' => ['Commissions'],
         'commission-rules' => ['Commissions'],
         'commission-entries' => ['Commissions'],
-        'admin.withdrawals' => ['Commissions'],
+        'admin.withdrawals' => ['Withdrawal Requests'],
         'documents' => ['Documents'],
         'tasks' => ['Tasks'],
         'endorsement' => ['Alteration & Endorsements', 'Endorsements'],
@@ -97,7 +98,8 @@ class EnsureTenantModuleAccess
             ], 403);
         }
 
-        return redirect()->route('dashboard')->with('error', $message);
+        $landing = function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('plans.myplan');
+        return redirect()->to($landing)->with('error', $message);
     }
 }
 
