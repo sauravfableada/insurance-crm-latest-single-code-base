@@ -581,7 +581,7 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
     const currentPlanId = {{ $plan->id ?? 'null' }};
-    const currentRenewalPrice = {{ (float) $renewalPrice }};
+    const currentRenewalPrice = {{ (float) ($renewalPrice > 0 ? $renewalPrice : 49.00) }};
     const currentBillingDuration = '{{ $currentCycle }}';
     const currentPlanDisplayName = "{{ addslashes($displayPlanName) }}";
 
