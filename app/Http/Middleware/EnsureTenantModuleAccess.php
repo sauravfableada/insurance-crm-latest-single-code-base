@@ -19,21 +19,24 @@ class EnsureTenantModuleAccess
         'dashboard' => ['Dashboard'],
         'customers' => ['Customers', 'Clients'],
         'masters.customers' => ['Customers', 'Clients'],
-        'masters.family_groups' => ['Family Groups'],
+        'masters.family_groups' => ['Family Groups', 'Customers', 'Clients'],
         'prospects' => ['Prospects'],
-        'leads' => ['Leads'],
-        'followups' => ['Followups'],
-        'meetings' => ['Meetings'],
-        'policies' => ['Policies', 'Insurance'],
+        'leads' => ['Leads', 'Sales CRM'],
+        'followups' => ['Followups', 'Sales CRM'],
+        'meetings' => ['Meetings', 'Sales CRM'],
+        'policies.legacy' => ['Policies', 'Insurance', 'Policy Center'],
+        'masters.policies' => ['Policies', 'Insurance', 'Policy Center'],
+        'policies' => ['Policies', 'Insurance', 'Policy Center'],
+        'upload-policy-ai' => ['Policies', 'Insurance', 'Policy Center'],
         'life-insurance' => ['Life Insurance', 'Insurance', 'Policies'],
         'investment' => ['Investments'],
-        'commission' => ['Commissions'],
         'commission-rules' => ['Commissions'],
         'commission-entries' => ['Commissions'],
+        'commission' => ['Commissions'],
         'admin.withdrawals' => ['Withdrawal Requests'],
-        'documents' => ['Documents'],
-        'tasks' => ['Tasks'],
-        'endorsement' => ['Alteration & Endorsements', 'Endorsements'],
+        'documents' => ['Documents', 'Operations'],
+        'tasks' => ['Tasks', 'Operations'],
+        'endorsement' => ['Alteration & Endorsements', 'Endorsements', 'Operations'],
         'users' => ['Staff', 'Users', 'Sub Agent'],
         'team-members' => ['Team Members', 'Staff'],
         'masters' => ['Masters', 'Manage Masters'],
@@ -45,7 +48,25 @@ class EnsureTenantModuleAccess
 
     public function handle(Request $request, Closure $next, ?string $requiredModule = null): Response
     {
-        if (!config('tenant.enabled', false) || !tenant()) {
+        // Don't enforce restrictions on public auth or assets or sync routes or plan details
+        if ($request->is('/', 'login', 'logout', 'api/login', 'storage/*', 'public/*', 'uploads/*', 'webhook/*', 'my-plan*', 'api/tenant/sync-modules')) {
+            return $next($request);
+        }
+
+        // Determine if tenant restrictions exist
+        $assigned = [];
+        $t = function_exists('tenant') ? tenant() : null;
+        if (!empty($t) && !empty($t['modules']) && is_array($t['modules'])) {
+            $assigned = $t['modules'];
+        } elseif (auth()->check()) {
+            $plan = auth()->user()->getActivePlan();
+            if ($plan && !empty($plan->features) && is_array($plan->features)) {
+                $assigned = $plan->features;
+            }
+        }
+
+        // If no tenant or plan module restrictions exist at all, allow access
+        if (empty($assigned)) {
             return $next($request);
         }
 
@@ -99,6 +120,11 @@ class EnsureTenantModuleAccess
         }
 
         $landing = function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('plans.myplan');
+
+        if ($request->url() === $landing || $request->fullUrl() === $landing) {
+            abort(403, $message);
+        }
+
         return redirect()->to($landing)->with('error', $message);
     }
 }

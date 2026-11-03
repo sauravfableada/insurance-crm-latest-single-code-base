@@ -346,7 +346,7 @@
                                 <span class="text-white-50" style="font-size: 0.65rem;">Expires: {{ $currentPlanExpiresAt?->format('d-m-Y') ?? '31-12-2026' }}</span>
                             </a>
 
-                            @if($authUser?->hasMatrixPermission('view_policies'))
+                            @if(tenant_has_module(['Policies', 'Insurance', 'Policy Center']) && $authUser?->hasMatrixPermission('view_policies'))
                             <a class="btn top-action-btn header-menu-btn d-none d-lg-inline-flex align-items-center gap-2 {{ request()->routeIs('policies.*') ? 'active' : '' }}"
                                href="{{ route('policies.legacy.index') }}">
                                 <i class="bi bi-shield-check"></i>
@@ -354,6 +354,7 @@
                             </a>
                             @endif
 
+                            @if(tenant_has_module(['Policies', 'Insurance', 'Policy Center']))
                             <a class="btn top-action-btn header-menu-btn d-none d-lg-inline-flex align-items-center gap-2"
                                href="{{ base_url('upload-policy-ai') }}">
                                 <i class="fas fa-magic text-white"></i>

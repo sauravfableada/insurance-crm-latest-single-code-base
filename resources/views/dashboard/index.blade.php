@@ -8,7 +8,7 @@
 
     <div class="row g-3 mb-2" id="dashboardStats">
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_customers">
-            <a href="{{ route('masters.customers.index') }}" class="text-decoration-none">
+            <a href="{{ tenant_has_module(['Customers', 'Clients']) ? route('masters.customers.index') : 'javascript:void(0)' }}" class="text-decoration-none" style="{{ !tenant_has_module(['Customers', 'Clients']) ? 'cursor: default; pointer-events: none;' : '' }}">
                 <div class="metric-card card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Customers</p>
@@ -21,7 +21,7 @@
             </a>
         </div>
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_policies">
-            <a href="{{ route('policies.legacy.index') }}" class="text-decoration-none">
+            <a href="{{ tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? route('policies.legacy.index') : 'javascript:void(0)' }}" class="text-decoration-none" style="{{ !tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? 'cursor: default; pointer-events: none;' : '' }}">
                 <div class="metric-card card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Total Policies</p>
@@ -34,7 +34,7 @@
             </a>
         </div>
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_policies">
-            <a href="{{ route('policies.legacy.index') }}" class="text-decoration-none">
+            <a href="{{ tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? route('policies.legacy.index') : 'javascript:void(0)' }}" class="text-decoration-none" style="{{ !tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? 'cursor: default; pointer-events: none;' : '' }}">
                 <div class="metric-card card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Active Policies</p>
@@ -47,7 +47,7 @@
             </a>
         </div>
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_policies">
-            <a href="{{ route('policies.legacy.index') }}" class="text-decoration-none">
+            <a href="{{ tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? route('policies.legacy.index') : 'javascript:void(0)' }}" class="text-decoration-none" style="{{ !tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? 'cursor: default; pointer-events: none;' : '' }}">
                 <div class="metric-card card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Renewal Due</p>
