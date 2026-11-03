@@ -103,7 +103,7 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $this->buildLeadBoard()->map(function ($stage) {
-                    return [
+                       return [
                         'id' => $stage->id,
                         'name' => $stage->name,
                         'count' => $stage->leads_count,

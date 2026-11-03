@@ -363,6 +363,47 @@ class PlanController extends Controller
     public function syncModulesWithSuperAdmin(Request $request)
     {
         try {
+            $inputModules = $request->input('assigned_modules') ?? $request->input('modules');
+            $inputSubModules = $request->input('assigned_sub_modules') ?? $request->input('sub_modules');
+
+            if (!empty($inputModules) && is_array($inputModules)) {
+                $allMods = array_values(array_unique(array_filter(array_merge(
+                    $inputModules,
+                    is_array($inputSubModules) ? $inputSubModules : []
+                ))));
+
+                $tenant = [
+                    'id'            => $request->input('id') ?? $request->input('client_id'),
+                    'client_id'     => $request->input('client_id'),
+                    'plan_name'     => $request->input('plan_name') ?: 'Insurance-CRM',
+                    'amount'        => $request->input('amount'),
+                    'renewal_amount'=> $request->input('renewal_amount'),
+                    'max_user'      => $request->input('max_user'),
+                    'max_branch'    => $request->input('max_branch'),
+                    'billing_cycle' => $request->input('billing_cycle'),
+                    'modules'       => $allMods,
+                    'sub_modules'   => is_array($inputSubModules) ? $inputSubModules : [],
+                ];
+
+                if ($request->hasSession()) {
+                    session([
+                        'tenant' => $tenant,
+                        'tenant_synced_at' => time(),
+                    ]);
+                }
+                app()->instance('tenant', $tenant);
+
+                $plan = $this->syncLocalPlanWithTenantData($tenant);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Modules updated directly from webhook!',
+                    'modules_count' => count($allMods),
+                    'modules' => $allMods,
+                    'plan_name' => $plan?->name ?? 'Active Plan',
+                ]);
+            }
+
             // Force bypass session/cache to fetch live configuration from Super Admin
             $tenant = $this->resolveTenantContext(true);
 

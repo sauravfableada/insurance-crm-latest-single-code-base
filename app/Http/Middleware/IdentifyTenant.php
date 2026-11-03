@@ -22,6 +22,7 @@ class IdentifyTenant
     public function handle(Request $request, Closure $next): Response
     {
         if (!$this->tenancy->enabled()) {
+            $this->syncStaleTenantPermissions($request);
             return $next($request);
         }
 
@@ -183,6 +184,42 @@ class IdentifyTenant
         $allCentral = array_map(fn($h) => TenantManager::normalizeHost((string)$h), array_merge($configured, $defaults));
 
         return in_array($host, $allCentral, true);
+    }
+
+    /**
+     * Periodically synchronize tenant module permissions and plan details with Super Admin
+     * even when the tenancy master switch is disabled (shared DB / single-database mode).
+     */
+    protected function syncStaleTenantPermissions(Request $request): void
+    {
+        // Don't sync on static assets or sync webhook
+        if ($request->is('storage/*', 'public/*', 'uploads/*', 'webhook/*', 'api/tenant/sync-modules')) {
+            return;
+        }
+
+        try {
+            $lastSynced = $request->hasSession() ? (int) $request->session()->get('tenant_synced_at', 0) : 0;
+            $now = time();
+            $forceRefresh = $request->has('refresh_tenant') || $request->has('refresh_permissions');
+
+            // Sync if never synced in this session, or older than 15 seconds, or forced
+            if ($forceRefresh || ($now - $lastSynced) > 15) {
+                /** @var \App\Http\Controllers\PlanController $planCtrl */
+                $planCtrl = app(\App\Http\Controllers\PlanController::class);
+                $resolved = $planCtrl->resolveTenantContext(true);
+
+                if ($resolved && $request->hasSession()) {
+                    $request->session()->put('tenant', $resolved);
+                    $request->session()->put('tenant_id', $resolved['id'] ?? null);
+                    $request->session()->put('tenant_synced_at', $now);
+                    app()->instance('tenant', $resolved);
+                }
+            } elseif ($request->hasSession() && $request->session()->has('tenant')) {
+                app()->instance('tenant', $request->session()->get('tenant'));
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Auto sync tenant permissions failed: ' . $e->getMessage());
+        }
     }
 }
 
