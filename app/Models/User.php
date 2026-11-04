@@ -140,6 +140,10 @@ class User extends Authenticatable
 
     protected function hasAdminRole(): bool
     {
+        if (in_array(strtolower((string) ($this->type ?? '')), ['admin', 'super_admin', 'super-admin'], true)) {
+            return true;
+        }
+
         return $this->roles()->whereIn('name', ['admin', 'super-admin'])->exists();
     }
 

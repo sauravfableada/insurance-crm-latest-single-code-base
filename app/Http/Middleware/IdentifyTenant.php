@@ -41,12 +41,15 @@ class IdentifyTenant
         if ($activeTenantId) {
             try {
                 $tenantId = $activeTenantId;
-                $forceFresh = $request->has('refresh_tenant') || $request->has('refresh_permissions');
+                $forceFresh = $request->has('refresh_tenant') 
+                    || $request->has('refresh_permissions')
+                    || ($request->hasSession() && (time() - (int) $request->session()->get('tenant_synced_at', 0) > 60));
 
                 $tenant = $this->tenancy->resolveById($tenantId, $forceFresh);
                 if ($request->hasSession()) {
                     $request->session()->put('tenant', $tenant);
                     $request->session()->put('tenant_id', $tenantId);
+                    $request->session()->put('tenant_synced_at', time());
                 }
 
                 return $next($request);

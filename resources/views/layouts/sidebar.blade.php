@@ -75,7 +75,7 @@
         @endif
 
         @php
-            $canClientManage = tenant_has_module(['Customers', 'Clients', 'Family Groups', 'Client Manage']) && (
+            $canClientManage = tenant_has_module(['Customers', 'Clients', 'Family Groups', 'Client Manage', 'All Clients']) && (
                 $authUser?->isAdmin()
                 || $authUser?->hasMatrixPermission('view_customers')
                 || $authUser?->hasMatrixPermission('view_family_groups')
