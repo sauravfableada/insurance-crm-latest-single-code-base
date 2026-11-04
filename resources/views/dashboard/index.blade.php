@@ -3,12 +3,19 @@
 @section('page_title', 'Dashboard')
 
 @section('content')
+@php
+    $canViewPolicies = tenant_has_module(['Policies', 'Insurance', 'Policy Center']) && (auth()->user()?->isAdmin() || auth()->user()?->hasMatrixPermission('view_policies'));
+    $canViewCustomers = tenant_has_module(['Customers', 'Clients', 'All Clients']) && (auth()->user()?->isAdmin() || auth()->user()?->hasMatrixPermission('view_customers'));
+    $shouldShowRenewalModal = $canViewPolicies && !empty($showRenewalPoliciesModal);
+@endphp
 <div class="container-fluid p-0 dashboard-page" id="dashboardPage" data-user-id="{{ auth()->id() }}"
-    data-show-renewal-modal="{{ $showRenewalPoliciesModal ? '1' : '0' }}">
+    data-show-renewal-modal="{{ $shouldShowRenewalModal ? '1' : '0' }}"
+    data-has-policies="{{ $canViewPolicies ? '1' : '0' }}">
 
     <div class="row g-3 mb-2" id="dashboardStats">
+        @if($canViewCustomers)
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_customers">
-            <a href="{{ tenant_has_module(['Customers', 'Clients']) ? route('masters.customers.index') : 'javascript:void(0)' }}" class="text-decoration-none" style="{{ !tenant_has_module(['Customers', 'Clients']) ? 'cursor: default; pointer-events: none;' : '' }}">
+            <a href="{{ route('masters.customers.index') }}" class="text-decoration-none">
                 <div class="metric-card card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Customers</p>
@@ -20,8 +27,10 @@
                 </div>
             </a>
         </div>
+        @endif
+        @if($canViewPolicies)
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_policies">
-            <a href="{{ tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? route('policies.legacy.index') : 'javascript:void(0)' }}" class="text-decoration-none" style="{{ !tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? 'cursor: default; pointer-events: none;' : '' }}">
+            <a href="{{ route('policies.legacy.index') }}" class="text-decoration-none">
                 <div class="metric-card card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Total Policies</p>
@@ -34,7 +43,7 @@
             </a>
         </div>
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_policies">
-            <a href="{{ tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? route('policies.legacy.index') : 'javascript:void(0)' }}" class="text-decoration-none" style="{{ !tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? 'cursor: default; pointer-events: none;' : '' }}">
+            <a href="{{ route('policies.legacy.index') }}" class="text-decoration-none">
                 <div class="metric-card card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Active Policies</p>
@@ -47,7 +56,7 @@
             </a>
         </div>
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_policies">
-            <a href="{{ tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? route('policies.legacy.index') : 'javascript:void(0)' }}" class="text-decoration-none" style="{{ !tenant_has_module(['Policies', 'Insurance', 'Policy Center']) ? 'cursor: default; pointer-events: none;' : '' }}">
+            <a href="{{ route('policies.legacy.index') }}" class="text-decoration-none">
                 <div class="metric-card card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Renewal Due</p>
@@ -59,6 +68,7 @@
                 </div>
             </a>
         </div>
+        @endif
     </div>
 
     {{-- Lead status board hidden for the insurance-focused dashboard.
@@ -488,6 +498,7 @@
         }
     </style>
 
+    @if($canViewPolicies)
     <div class="row mt-3 policy-tabs">
         <div class="col-12">
             <div class="card border-0 shadow-lg rounded-4 p-0">
@@ -994,7 +1005,9 @@
             </div>
         </div>
     </div>
+    @endif
 
+    @if($canViewPolicies)
     <div class="row g-3 mt-1">
         <div class="col-12 col-xl-7">
             <div class="card border-0 shadow-sm h-100">
@@ -1028,7 +1041,9 @@
             </div>
         </div>
     </div>
+    @endif
 
+    @if($canViewPolicies)
     <div class="row g-3 mt-1">
         <div class="col-12 col-xl-7">
             <div class="card border-0 shadow-sm h-100">
@@ -1129,6 +1144,7 @@
     </footer>
 </div>
 
+@if($canViewPolicies)
 <div class="modal fade" id="renewalPoliciesModal" tabindex="-1" aria-labelledby="renewalPoliciesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg renewal-reminder-modal">
@@ -1154,6 +1170,7 @@
         </div>
     </div>
 </div>
+@endif
 @endsection
 
 @push('styles')

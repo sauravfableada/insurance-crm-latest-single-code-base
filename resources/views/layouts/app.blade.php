@@ -499,7 +499,7 @@
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Success!',
-                                    text: "{{ session('success') }}",
+                                    html: {!! json_encode(html_entity_decode((string) session('success'), ENT_QUOTES | ENT_HTML5, 'UTF-8')) !!},
                                     toast: true,
                                     position: 'top-end',
                                     showConfirmButton: false,
@@ -519,7 +519,7 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error!',
-                                    text: "{{ session('error') }}",
+                                    html: {!! json_encode(html_entity_decode((string) session('error'), ENT_QUOTES | ENT_HTML5, 'UTF-8')) !!},
                                     toast: true,
                                     position: 'top-end',
                                     showConfirmButton: false,

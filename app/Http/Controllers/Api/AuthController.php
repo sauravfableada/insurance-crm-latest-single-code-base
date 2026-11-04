@@ -83,11 +83,12 @@ class AuthController extends ApiBaseController
             
             $token = SanctumLogin::issueToken($user, $deviceName);
             $tenantId = $resolvedTenant['id'] ?? ($tenancy->id() ?? ($user->tenant_id ?? null));
+            $redirectUrl = function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('dashboard');
 
             $response = $this->success([
                 'token' => $token,
                 'tenant_id' => $tenantId,
-                'redirect_url' => '/dashboard',
+                'redirect_url' => $redirectUrl,
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,

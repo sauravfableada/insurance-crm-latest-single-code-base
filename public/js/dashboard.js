@@ -198,6 +198,10 @@
     }
 
     function loadRenewalPolicies() {
+        const page = document.getElementById("dashboardPage");
+        if (page && page.dataset.hasPolicies === "0") {
+            return;
+        }
         const tbody = document.querySelector("#dashboardRenewalPoliciesTable tbody");
         const modalBody = document.getElementById("renewalPoliciesModalBody");
         if (!tbody) {
@@ -349,10 +353,12 @@
     function showRenewalModalAfterLogin(attempt) {
         const page = document.getElementById('dashboardPage');
         const modalElement = document.getElementById('renewalPoliciesModal');
+        const hasPolicies = page && page.dataset.hasPolicies !== '0';
         const serverRequested = page && page.dataset.showRenewalModal === '1';
         const browserRequested = sessionStorage.getItem('show_renewal_policies_modal') === '1';
 
-        if (!page || (!serverRequested && !browserRequested) || !modalElement) {
+        if (!hasPolicies || !page || (!serverRequested && !browserRequested) || !modalElement) {
+            sessionStorage.removeItem('show_renewal_policies_modal');
             return;
         }
 

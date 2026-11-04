@@ -17,9 +17,9 @@ class EnsureTenantModuleAccess
      */
     protected array $routeModuleMap = [
         'dashboard' => ['Dashboard'],
-        'customers' => ['Customers', 'Clients'],
-        'masters.customers' => ['Customers', 'Clients'],
-        'masters.family_groups' => ['Family Groups', 'Customers', 'Clients'],
+        'customers' => ['Customers', 'Clients', 'All Clients'],
+        'masters.customers' => ['Customers', 'Clients', 'All Clients'],
+        'masters.family_groups' => ['Family Groups', 'Customers', 'Clients', 'All Clients'],
         'prospects' => ['Prospects'],
         'leads' => ['Leads', 'Sales CRM'],
         'followups' => ['Followups', 'Sales CRM'],
