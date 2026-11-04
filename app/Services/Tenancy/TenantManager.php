@@ -273,6 +273,10 @@ class TenantManager
         $dbUsername = $db['username'] ?? '';
         $dbPassword = (string) ($db['password'] ?? '');
         $databaseName = $db['database'];
+        $dbPort = (int) ($db['port'] ?? 3306);
+        if (in_array($dbPort, [0, 3606, 5432], true)) {
+            $dbPort = 3306;
+        }
 
         // On local development, allow using local MySQL credentials (e.g. XAMPP root with blank password)
         // and safely fallback if tenant database has not yet been named identically locally.
@@ -285,7 +289,7 @@ class TenantManager
             }
 
             try {
-                $pdo = new \PDO("mysql:host={$dbHost};port=" . (int) ($db['port'] ?? 3306), $dbUsername, $dbPassword, [
+                $pdo = new \PDO("mysql:host={$dbHost};port={$dbPort}", $dbUsername, $dbPassword, [
                     \PDO::ATTR_ERRMODE => \PDO::ERRMODE_SILENT,
                     \PDO::ATTR_TIMEOUT => 2,
                 ]);
@@ -307,7 +311,7 @@ class TenantManager
 
         config([
             "database.connections.{$connection}.host" => $dbHost,
-            "database.connections.{$connection}.port" => (int) ($db['port'] ?? 3306),
+            "database.connections.{$connection}.port" => $dbPort,
             "database.connections.{$connection}.database" => $databaseName,
             "database.connections.{$connection}.username" => $dbUsername,
             "database.connections.{$connection}.password" => $dbPassword,

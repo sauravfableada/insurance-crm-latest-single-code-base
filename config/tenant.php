@@ -78,7 +78,7 @@ return [
     */
     'central_hosts' => array_filter(array_map('trim', explode(',', (string) env(
         'TENANT_CENTRAL_HOSTS',
-        'localhost,127.0.0.1,crm.fableadtech.com,crm.fableadtech.in,devcrm.fableadtech.com'
+        'localhost,127.0.0.1,crm.fableadtech.com,crm.fableadtech.in,devcrm.fableadtech.com,mediumslateblue-owl-603065.hostingersite.com'
     )))),
 
 ];

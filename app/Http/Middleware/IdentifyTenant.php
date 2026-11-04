@@ -179,6 +179,7 @@ class IdentifyTenant
             'crm.fableadtech.in',
             'devcrm.fableadtech.com',
             'insurance.fableadtech.com',
+            'mediumslateblue-owl-603065.hostingersite.com',
         ];
 
         $allCentral = array_map(fn($h) => TenantManager::normalizeHost((string)$h), array_merge($configured, $defaults));
