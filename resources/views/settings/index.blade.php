@@ -73,6 +73,19 @@
         $dscStampUrl = !empty($dscStampPath)
             ? route('settings.dsc_stamp.image') . '?v=' . time()
             : null;
+
+        $canCommission = function_exists('tenant_has_module') ? tenant_has_module('Commissions') : true;
+        $canFieldCustomization = !empty($fieldCustomizationModules);
+        $requestedTab = request('tab');
+        if ($requestedTab === 'field-customization' && $canFieldCustomization) {
+            $activeSettingsTab = 'field-customization';
+        } elseif ($requestedTab && in_array($requestedTab, ['bank-signature', 'smtp', 'integrations', 'google-connect'])) {
+            $activeSettingsTab = $requestedTab;
+        } elseif ($canCommission) {
+            $activeSettingsTab = 'commission-settings';
+        } else {
+            $activeSettingsTab = 'bank-signature';
+        }
     @endphp
 
     <div class="container-fluid px-0 settings-shell">
@@ -85,11 +98,13 @@
 
         <div class="settings-tabs-wrap">
             <ul class="nav settings-main-tabs flex-wrap" id="settingsTabs" role="tablist">
-                <li class="nav-item" role="presentation"><button class="nav-link {{ request('tab') === 'field-customization' ? '' : 'active' }}" data-bs-toggle="tab"
+                @if($canCommission)
+                <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'commission-settings' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#commission-settings" type="button" role="tab"><i class="fa-solid fa-percent me-1 text-primary"></i> Commission Settings</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
+                @endif
+                <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'bank-signature' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#bank-signature" type="button" role="tab"><i class="fa-solid fa-building-columns me-1 text-primary"></i> Bank &amp; Signature</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
+                <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'smtp' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#smtp" type="button" role="tab">Email SMTP</button></li>
                 {{-- WhatsApp configuration is intentionally hidden.
                 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
@@ -97,13 +112,15 @@
                 </li>
                 --}}
                 @unless($isBasicPlan)
-                    <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
+                    <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'integrations' ? 'active' : '' }}" data-bs-toggle="tab"
                             data-bs-target="#integrations" type="button" role="tab">Integrations</button></li>
                 @endunless
-                <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
+                <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'google-connect' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#google-connect" type="button" role="tab">Google Connect</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link {{ request('tab') === 'field-customization' ? 'active' : '' }}" data-bs-toggle="tab"
+                @if($canFieldCustomization)
+                <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'field-customization' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#field-customization" type="button" role="tab"><i class="fa-solid fa-sliders me-1 text-primary"></i> Field Customization</button></li>
+                @endif
                 @if(false /* Feature disabled: auth()->id() === 1 || auth()->user()->email === 'harsing.fablead@gmail.com' */)
                 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
                         data-bs-target="#tutorials" type="button" role="tab">Tutorials</button></li>
@@ -112,8 +129,9 @@
         </div>
 
         <div class="tab-content">
+            @if($canCommission)
             <!-- COMMISSION SETTINGS TAB -->
-            <div class="tab-pane fade {{ request('tab') === 'field-customization' ? '' : 'show active' }}" id="commission-settings" role="tabpanel">
+            <div class="tab-pane fade {{ $activeSettingsTab === 'commission-settings' ? 'show active' : '' }}" id="commission-settings" role="tabpanel">
                 <form action="{{ route('settings.update') }}" method="POST" id="commissionSettingsForm">
                     @csrf
                     @method('PUT')
@@ -896,9 +914,10 @@
                 </div>
 
             </div>
+            @endif
 
             <!-- BANK & SIGNATURE TAB -->
-            <div class="tab-pane fade" id="bank-signature" role="tabpanel">
+            <div class="tab-pane fade {{ $activeSettingsTab === 'bank-signature' ? 'show active' : '' }}" id="bank-signature" role="tabpanel">
                 <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data" id="bankSignatureSettingsForm">
                     @csrf
                     @method('PUT')
@@ -1128,7 +1147,7 @@
             </div>
 
             <!-- EMAIL SMTP TAB -->
-            <div class="tab-pane fade" id="smtp" role="tabpanel">
+            <div class="tab-pane fade {{ $activeSettingsTab === 'smtp' ? 'show active' : '' }}" id="smtp" role="tabpanel">
                 <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data"
                     id="smtpSettingsForm">
                     @csrf
@@ -1382,7 +1401,7 @@
             </div>
             @endif
             @unless($isBasicPlan)
-            <div class="tab-pane fade" id="integrations" role="tabpanel">
+            <div class="tab-pane fade {{ $activeSettingsTab === 'integrations' ? 'show active' : '' }}" id="integrations" role="tabpanel">
                 <div class="settings-panel">
                     <div class="settings-panel-head d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <span>Integrations</span>
@@ -1477,7 +1496,7 @@
                 </div>
             </div>
             @endunless
-            <div class="tab-pane fade" id="google-connect" role="tabpanel">
+            <div class="tab-pane fade {{ $activeSettingsTab === 'google-connect' ? 'show active' : '' }}" id="google-connect" role="tabpanel">
                 <div class="settings-panel">
                     <div class="settings-panel-head d-flex justify-content-between align-items-center gap-3">
                         <span>Google Connect</span>
@@ -1505,10 +1524,12 @@
                 </div>
             </div>
 
+            @if($canFieldCustomization)
             <!-- FIELD CUSTOMIZATION TAB -->
-            <div class="tab-pane fade {{ request('tab') === 'field-customization' ? 'show active' : '' }}" id="field-customization" role="tabpanel">
+            <div class="tab-pane fade {{ $activeSettingsTab === 'field-customization' ? 'show active' : '' }}" id="field-customization" role="tabpanel">
                 @include('settings.partials.field-customization')
             </div>
+            @endif
 
             @if(false /* Feature disabled */)
             <div class="tab-pane fade" id="tutorials" role="tabpanel">

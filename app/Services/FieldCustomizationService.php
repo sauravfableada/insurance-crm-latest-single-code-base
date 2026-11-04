@@ -19,12 +19,28 @@ class FieldCustomizationService
         self::$runtimeCache = [];
     }
 
+    public static array $moduleTenantMap = [
+        'policies'       => ['Policies', 'Insurance', 'Policy Center'],
+        'customers'      => ['Customers', 'Clients', 'All Clients', 'Family Groups'],
+        'leads'          => ['Leads', 'Sales CRM'],
+        'prospects'      => ['Prospects', 'Sales CRM'],
+        'claim_trackers' => ['Claim Tracker', 'Claims'],
+        'followups'      => ['Followups', 'Follow ups', 'Sales CRM'],
+        'meetings'       => ['Meetings', 'Sales CRM'],
+        'tasks'          => ['Tasks', 'Operations'],
+        'investments'    => ['Investments'],
+        'users'          => ['Staff', 'Users', 'Sub Agent'],
+        'deals'          => ['Deals', 'Sales CRM'],
+        'quotations'     => ['Quotations', 'Policies', 'Sales CRM'],
+    ];
+
     /**
      * Get all supported modules for field customization in this Insurance CRM.
+     * When $onlyPermitted is true (default), filters out modules the tenant does not have access to.
      */
-    public function getModules(): array
+    public function getModules(bool $onlyPermitted = true): array
     {
-        return [
+        $all = [
             'policies' => [
                 'key' => 'policies',
                 'name' => 'Policies',
@@ -110,6 +126,27 @@ class FieldCustomizationService
                 'description' => 'Configure fields for Estimates and Insurance Quotations.',
             ],
         ];
+
+        if (!$onlyPermitted || !function_exists('tenant_has_module')) {
+            return $all;
+        }
+
+        return array_filter($all, function ($mod, $key) {
+            $required = self::$moduleTenantMap[$key] ?? null;
+            return $required ? tenant_has_module($required) : true;
+        }, ARRAY_FILTER_USE_BOTH);
+    }
+
+    /**
+     * Check if a specific field customization module is permitted for the current tenant.
+     */
+    public function isModulePermitted(string $module): bool
+    {
+        if (!function_exists('tenant_has_module')) {
+            return true;
+        }
+        $required = self::$moduleTenantMap[$module] ?? null;
+        return $required ? tenant_has_module($required) : true;
     }
 
     /**

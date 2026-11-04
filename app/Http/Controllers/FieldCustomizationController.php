@@ -37,8 +37,8 @@ class FieldCustomizationController extends Controller
         if (!isset($modules[$module])) {
             return response()->json([
                 'success' => false,
-                'message' => "Module [{$module}] not found.",
-            ], 404);
+                'message' => "The '{$module}' module is not included in your current subscription plan.",
+            ], 403);
         }
 
         $fields = $this->service->getModuleFields($module);
@@ -59,8 +59,8 @@ class FieldCustomizationController extends Controller
         if (!isset($modules[$module])) {
             return response()->json([
                 'success' => false,
-                'message' => "Module [{$module}] not found.",
-            ], 404);
+                'message' => "The '{$module}' module is not included in your current subscription plan.",
+            ], 403);
         }
 
         $request->validate([
@@ -102,8 +102,8 @@ class FieldCustomizationController extends Controller
         if (!isset($modules[$module])) {
             return response()->json([
                 'success' => false,
-                'message' => "Module [{$module}] not found.",
-            ], 404);
+                'message' => "The '{$module}' module is not included in your current subscription plan.",
+            ], 403);
         }
 
         $this->service->resetModuleFields($module);

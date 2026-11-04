@@ -260,11 +260,13 @@ class SettingController extends Controller
 
         $fieldCustomizationService = app(\App\Services\FieldCustomizationService::class);
         $fieldCustomizationModules = $fieldCustomizationService->getModules();
-        $initialFieldCustomizationModule = request('custom_module', 'policies');
-        if (!isset($fieldCustomizationModules[$initialFieldCustomizationModule])) {
-            $initialFieldCustomizationModule = 'policies';
+        $initialFieldCustomizationModule = request('custom_module');
+        if (!$initialFieldCustomizationModule || !isset($fieldCustomizationModules[$initialFieldCustomizationModule])) {
+            $initialFieldCustomizationModule = array_key_first($fieldCustomizationModules) ?: 'customers';
         }
-        $initialFieldCustomizationFields = $fieldCustomizationService->getModuleFields($initialFieldCustomizationModule);
+        $initialFieldCustomizationFields = !empty($fieldCustomizationModules) 
+            ? $fieldCustomizationService->getModuleFields($initialFieldCustomizationModule)
+            : [];
 
         return view('settings.index', compact(
             'settings',

@@ -35,7 +35,7 @@
             </div>
             <div class="field-custom-scroller-track">
                 <div class="field-custom-modules-scroller" id="fieldCustomizationModulePills" role="tablist">
-                    @foreach($fieldCustomizationModules as $modKey => $modInfo)
+                    @forelse($fieldCustomizationModules as $modKey => $modInfo)
                         <button type="button" 
                             class="field-custom-mod-btn {{ $modKey === $initialFieldCustomizationModule ? 'active' : '' }}"
                             data-module="{{ $modKey }}"
@@ -43,11 +43,14 @@
                             <i class="fa-solid {{ $modInfo['icon'] }} field-mod-icon"></i>
                             <span>{{ $modInfo['name'] }}</span>
                         </button>
-                    @endforeach
+                    @empty
+                        <div class="text-muted small py-2 px-3">No active modules available for field customization in your current plan.</div>
+                    @endforelse
                 </div>
             </div>
         </div>
 
+        @if(!empty($fieldCustomizationModules) && isset($fieldCustomizationModules[$initialFieldCustomizationModule]))
         <!-- Module Configuration Form -->
         <form id="fieldCustomizationForm">
             @csrf
@@ -98,6 +101,11 @@
                 </div>
             </div>
         </form>
+        @else
+        <div class="alert alert-info py-3 px-4 rounded-3 border-0 shadow-sm mt-3">
+            <i class="fa-solid fa-circle-info me-2"></i> No configurable modules are available in your current subscription plan.
+        </div>
+        @endif
     </div>
 </div>
 
