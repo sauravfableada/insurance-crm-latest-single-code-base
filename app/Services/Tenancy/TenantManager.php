@@ -278,9 +278,10 @@ class TenantManager
             $dbPort = 3306;
         }
 
-        // On local development, allow using local MySQL credentials (e.g. XAMPP root with blank password)
-        // and safely fallback if tenant database has not yet been named identically locally.
-        if (app()->environment('local') && env('TENANT_USE_LOCAL_DB_CREDENTIALS', true)) {
+        // On local development only (localhost/127.0.0.1), allow using local MySQL credentials (e.g. XAMPP root with blank password)
+        // Never override credentials on production or live hosting domains.
+        $isLocalHost = in_array(static::normalizeHost(request()->getHost()), ['localhost', '127.0.0.1'], true);
+        if ($isLocalHost && app()->environment('local') && env('TENANT_USE_LOCAL_DB_CREDENTIALS', false)) {
             $defaultUsername = config("database.connections.{$connection}.username");
             $defaultPassword = config("database.connections.{$connection}.password");
             if (!empty($defaultUsername) || $defaultPassword === '') {

@@ -140,7 +140,14 @@ class IdentifyTenant
             }
 
             if (!$request->is('/') && !$request->is('login')) {
-                return redirect()->route('login');
+                $response = redirect()->route('login');
+                if ($request->cookie('crm_auth_token')) {
+                    $response->cookie(cookie()->forget('crm_auth_token'));
+                }
+                if ($request->cookie('crm_tenant_id')) {
+                    $response->cookie(cookie()->forget('crm_tenant_id'));
+                }
+                return $response;
             }
 
             return $next($request);

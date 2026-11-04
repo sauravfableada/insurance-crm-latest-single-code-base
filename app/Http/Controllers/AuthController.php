@@ -15,6 +15,17 @@ class AuthController extends Controller
 {
     public function showLoginForm(): View|RedirectResponse
     {
+        $tenancy = app(\App\Services\Tenancy\TenantManager::class);
+        $isCentral = \App\Http\Middleware\IdentifyTenant::isCentralHost(request()->getHost());
+
+        if ($tenancy->enabled() && $isCentral) {
+            $hasTenant = session()->has('tenant_id') || request()->cookie('crm_tenant_id');
+            if (Auth::check() && $hasTenant) {
+                return redirect()->to(function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('dashboard'));
+            }
+            return view('auth.login');
+        }
+
         if (Auth::check()) {
             return redirect()->to(function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('dashboard'));
         }
