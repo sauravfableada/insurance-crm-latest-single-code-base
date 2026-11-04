@@ -127,6 +127,7 @@ class UserController extends ApiBaseController
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
+            'username' => 'nullable|string|max:100|unique:users,username',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'country_code' => ['required', 'regex:/^\+[0-9]{1,4}$/'],
@@ -155,6 +156,7 @@ class UserController extends ApiBaseController
 
         $user = User::create([
             'name' => $data['name'],
+            'username' => $request->filled('username') ? trim((string) $request->input('username')) : null,
             'email' => $data['email'],
             'type' => 'sub_agents',
             'password' => Hash::make($data['password']),
@@ -231,6 +233,7 @@ class UserController extends ApiBaseController
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
+            'username' => ['nullable', 'string', 'max:100', Rule::unique('users', 'username')->ignore($user->id)],
             'email' => ['required', 'string', 'email', Rule::in([$user->email])],
             'password' => 'nullable|string|min:8',
             'country_code' => ['required', 'regex:/^\+[0-9]{1,4}$/'],
@@ -261,6 +264,9 @@ class UserController extends ApiBaseController
         }
 
         $user->name = $data['name'];
+        if ($request->has('username')) {
+            $user->username = $request->filled('username') ? trim((string) $request->input('username')) : null;
+        }
         $user->type = 'sub_agents';
         $user->phone = $data['country_code'] . $data['phone'];
         $user->country_code = $data['country_code'];

@@ -105,7 +105,7 @@ class TeamMemberController extends Controller
             ], 404);
         }
 
-        $payload = $this->validatedPayload($request, true);
+        $payload = $this->validatedPayload($request, true, $id);
 
         if ($this->teamMemberService->emailExists($payload['email'], $id)) {
             return response()->json([
@@ -174,7 +174,7 @@ class TeamMemberController extends Controller
         ]);
     }
 
-    private function validatedPayload(Request $request, bool $isUpdate = false): array
+    private function validatedPayload(Request $request, bool $isUpdate = false, ?int $memberId = null): array
     {
         $request->merge(['role' => 5]);
         $passwordRule = $isUpdate
@@ -184,6 +184,7 @@ class TeamMemberController extends Controller
         $payload = $request->validate([
             'first_name' => ['required', 'string', 'max:50'],
             'last_name' => ['nullable', 'string', 'max:50'],
+            'username' => ['nullable', 'string', 'max:100', Rule::unique('users', 'username')->ignore($isUpdate ? $memberId : null)],
             'email' => ['required', 'email', 'max:255'],
             'password' => $passwordRule,
             'mobile' => ['nullable', 'string', 'max:10'],
@@ -195,7 +196,7 @@ class TeamMemberController extends Controller
             'profile_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
 
-        $payload['username'] = null;
+        $payload['username'] = $request->filled('username') ? trim((string) $request->input('username')) : null;
 
         return $payload;
     }

@@ -109,7 +109,10 @@ class AuthController extends ApiBaseController
 
         // Check if customer exists (by email, phone, or whatsapp)
         $customer = \App\Models\Customer::where(function ($query) use ($loginInput, $digitsOnly) {
-            $query->where('email', $loginInput);
+            if (\Illuminate\Support\Facades\Schema::hasColumn('customers', 'username')) {
+                $query->where('username', $loginInput);
+            }
+            $query->orWhere('email', $loginInput);
             if (!empty($digitsOnly)) {
                 $query->orWhere('phone', $loginInput)
                       ->orWhere('phone', 'like', '%' . $digitsOnly)

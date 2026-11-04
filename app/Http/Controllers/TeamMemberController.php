@@ -190,6 +190,7 @@ class TeamMemberController extends Controller
         $payload = $request->validate([
             'first_name' => ['required', 'string', 'max:50'],
             'last_name' => ['nullable', 'string', 'max:50'],
+            'username' => ['nullable', 'string', 'max:100', Rule::unique('users', 'username')->ignore($isUpdate ? $memberId : null)],
             'email' => ['required', 'email', 'max:255'],
             'password' => $passwordRule,
             'country_code' => ['required', 'regex:/^\+[0-9]{1,4}$/'],
@@ -202,7 +203,7 @@ class TeamMemberController extends Controller
             'profile_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
 
-        $payload['username'] = null;
+        $payload['username'] = $request->filled('username') ? trim((string) $request->input('username')) : null;
 
         return $payload;
     }

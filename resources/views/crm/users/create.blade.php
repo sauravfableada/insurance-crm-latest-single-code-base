@@ -52,7 +52,7 @@
                     <div class="row g-3">
                         <!-- Name -->
                         @if($isVisible('name', true))
-                        <div class="col-12">
+                        <div class="col-12 col-md-6">
                             <label class="form-label d-flex align-items-center gap-2" for="name">
                                 <i class="bi bi-person-fill"></i> {{ $fieldLabel('name', 'Name') }} @if($isRequired('name', true))<span class="text-danger">*</span>@endif
                             </label>
@@ -62,6 +62,17 @@
                             @enderror
                         </div>
                         @endif
+
+                        <!-- Username -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label d-flex align-items-center gap-2" for="username">
+                                <i class="bi bi-at"></i> Username <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="username" name="username" class="form-control @error('username') is-invalid @enderror" value="{{ old('username') }}" placeholder="Username" autocomplete="off" required>
+                            @error('username')
+                                <div class="staff-validation">{{ $message }}</div>
+                            @enderror
+                        </div>
 
                         <!-- Email -->
                         @if($isVisible('email', true))

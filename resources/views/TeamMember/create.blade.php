@@ -49,11 +49,10 @@
                         <label class="form-label fw-semibold">Last Name</label>
                         <input type="text" name="last_name" id="last_name" class="form-control" placeholder="Last name">
                     </div>
-                    {{-- Username is intentionally disabled for team members.
                     <div class="col-md-6 col-12">
-                        <label class="form-label fw-semibold">Username</label>
-                        <input type="text" name="username" id="username" class="form-control" placeholder="Username">
-                    </div> --}}
+                        <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                        <input type="text" name="username" id="username" class="form-control" placeholder="Username" autocomplete="off" required>
+                    </div>
                     <div class="col-md-6 col-12">
                         <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
                         <input type="email" name="email" id="email" class="form-control" placeholder="email@example.com" autocomplete="new-password" required>

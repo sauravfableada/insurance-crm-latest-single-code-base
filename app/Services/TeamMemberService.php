@@ -445,7 +445,7 @@ class TeamMemberService
             $payload['type'] = 'staff';
         }
         if ($this->hasUsersColumn('username')) {
-            $payload['username'] = null;
+            $payload['username'] = !empty($input['username']) ? trim((string) $input['username']) : null;
         }
         $payload['password'] = Hash::make((string) ($input['password'] ?? ''));
 
@@ -532,7 +532,7 @@ class TeamMemberService
             $payload['type'] = 'staff';
         }
         if ($this->hasUsersColumn('username')) {
-            $payload['username'] = null;
+            $payload['username'] = !empty($input['username']) ? trim((string) $input['username']) : null;
         }
 
         $password = (string) ($input['password'] ?? '');
@@ -675,7 +675,7 @@ class TeamMemberService
             'id' => (int) ($row['id'] ?? 0),
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'username' => null,
+            'username' => $row['username'] ?? null,
             'email' => $email,
             'type' => $row['type'] ?? null,
             'mobile' => $mobile !== '' ? (string) $mobile : '--',

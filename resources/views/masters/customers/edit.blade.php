@@ -91,6 +91,12 @@
                     </div>
                     @endif
 
+                    <div class="col-md-6 col-12">
+                        <label class="form-label fw-semibold">Username</label>
+                        <input type="text" name="username" class="form-control"
+                            value="{{ old('username', $customer->username ?? '') }}" placeholder="Unique username for client login (optional)" autocomplete="off">
+                    </div>
+
                     @if($isVisible('email', true))
                     <div class="col-md-6 col-12">
                         <label class="form-label fw-semibold">{{ $fieldLabel('email', 'Email') }} @if($isRequired('email', false))<span class="text-danger">*</span>@endif</label>

@@ -159,6 +159,7 @@ class CustomerController extends Controller
         try {
             $rules = [
                 'name' => ['required', 'string', 'max:255'],
+                'username' => ['nullable', 'string', 'max:100', Rule::unique('customers', 'username')->whereNull('deleted_at')],
                 'email' => ['nullable', 'email', 'max:255', Rule::unique('customers', 'email')->whereNull('deleted_at')],
                 'password' => ['nullable', 'string', 'min:6'],
                 'country_code' => ['nullable', 'regex:/^\+[0-9]{1,4}$/'],
@@ -200,6 +201,10 @@ class CustomerController extends Controller
 
             if (Schema::hasColumn('customers', 'updated_by')) {
                 $data['updated_by'] = auth()->id();
+            }
+
+            if (Schema::hasColumn('customers', 'username') && $request->has('username')) {
+                $data['username'] = $request->filled('username') ? trim((string) $request->input('username')) : null;
             }
 
             if (Schema::hasColumn('customers', 'user_id')) {
@@ -263,6 +268,7 @@ class CustomerController extends Controller
         try {
             $rules = [
                 'name' => ['required', 'string', 'max:255'],
+                'username' => ['nullable', 'string', 'max:100', Rule::unique('customers', 'username')->ignore($customer->id)->whereNull('deleted_at')],
                 'email' => ['nullable', 'email', 'max:255', Rule::unique('customers', 'email')->ignore($customer->id)->whereNull('deleted_at')],
                 'password' => ['nullable', 'string', 'min:6'],
                 'country_code' => ['nullable', 'regex:/^\+[0-9]{1,4}$/'],
@@ -305,6 +311,10 @@ class CustomerController extends Controller
 
             if (Schema::hasColumn('customers', 'updated_by')) {
                 $data['updated_by'] = auth()->id();
+            }
+
+            if (Schema::hasColumn('customers', 'username') && $request->has('username')) {
+                $data['username'] = $request->filled('username') ? trim((string) $request->input('username')) : null;
             }
 
             $customer->update($data);
