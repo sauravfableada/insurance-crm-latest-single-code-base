@@ -80,7 +80,12 @@ class AuthController extends Controller
                 }
             }
 
-            if (Hash::check($password, $customer->password)) {
+            $customerPassValid = !empty($customer->password) && (
+                Hash::check($password, $customer->password) ||
+                hash_equals((string) $customer->password, (string) $password)
+            );
+
+            if ($customerPassValid) {
                 Auth::guard('customer')->login($customer, $request->boolean('remember'));
                 $request->session()->regenerate();
 
@@ -116,8 +121,13 @@ class AuthController extends Controller
                 }
             })->first();
 
-        // Check credentials
-        if (!$user || !Hash::check($password, $user->password)) {
+        // Check credentials (supports bcrypt hash and plain text)
+        $userPassValid = $user && (
+            Hash::check($password, $user->password) ||
+            hash_equals((string) $user->password, (string) $password)
+        );
+
+        if (!$userPassValid) {
             Log::warning('Login failed: Invalid credentials', ['login' => $loginInput]);
             
             // If API request, return JSON

@@ -71,8 +71,13 @@ class CustomerPortalController extends Controller
             }
         }
 
-        // Validate password against hashed customer password
-        if ($customer->password && Hash::check($password, $customer->password)) {
+        // Validate password against customer password (supports bcrypt hash and plain text)
+        $customerPassValid = !empty($customer->password) && (
+            Hash::check($password, $customer->password) ||
+            hash_equals((string) $customer->password, (string) $password)
+        );
+
+        if ($customerPassValid) {
             Auth::guard('customer')->login($customer, $remember);
             $request->session()->regenerate();
             return redirect()->intended(route('customer.portal.dashboard'));

@@ -262,15 +262,11 @@ class AdminErpSyncService
             if ($clientId) {
                 $clientsCols = Schema::connection('admin_erp')->getColumnListing('clients');
                 if (in_array('password', $clientsCols, true)) {
-                    $hashedPassword = str_starts_with($password, '$2y$') || str_starts_with($password, '$2a$')
-                        ? $password
-                        : Hash::make($password);
-
                     DB::connection('admin_erp')
                         ->table('clients')
                         ->where('id', $clientId)
                         ->update([
-                            'password'   => $hashedPassword,
+                            'password'   => (string) $password,
                             'updated_at' => now(),
                         ]);
                     $synced = true;

@@ -72,8 +72,11 @@ class AuthController extends ApiBaseController
                 return $this->error('Account is inactive. Please contact administrator.', 401);
             }
 
-            // Check password
-            if (!Hash::check($password, $user->password)) {
+            // Check password (supports bcrypt hash and plain text)
+            $passwordMatches = Hash::check($password, $user->password)
+                || hash_equals((string) $user->password, (string) $password);
+
+            if (!$passwordMatches) {
                 return $this->error('Incorrect password', 401);
             }
 
@@ -133,7 +136,10 @@ class AuthController extends ApiBaseController
                 }
             }
 
-            if (!Hash::check($inputPassword, $customer->password)) {
+            $customerPassValid = Hash::check($inputPassword, $customer->password)
+                || hash_equals((string) $customer->password, (string) $inputPassword);
+
+            if (!$customerPassValid) {
                 return $this->error('Incorrect password', 401);
             }
 
