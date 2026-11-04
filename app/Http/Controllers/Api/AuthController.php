@@ -101,6 +101,7 @@ class AuthController extends ApiBaseController
             if ($tenantId) {
                 $response->cookie('crm_tenant_id', (string) $tenantId, 43200, '/', null, false, false);
             }
+            $response->cookie('crm_auth_token', (string) $token, 43200, '/', null, false, false);
 
             return $response;
         }
@@ -156,6 +157,7 @@ class AuthController extends ApiBaseController
             if ($tenantId) {
                 $response->cookie('crm_tenant_id', (string) $tenantId, 43200, '/', null, false, false);
             }
+            $response->cookie('crm_auth_token', (string) $token, 43200, '/', null, false, false);
 
             return $response;
         }

@@ -47,6 +47,11 @@ class AuthenticateApi
             $source = 'cookie';
             Log::debug('AuthenticateApi: Found cookie token', ['token_start' => substr($token, 0, 20)]);
         }
+        elseif (!empty($_COOKIE['crm_auth_token'])) {
+            $token = (string) $_COOKIE['crm_auth_token'];
+            $source = 'cookie';
+            Log::debug('AuthenticateApi: Found $_COOKIE token', ['token_start' => substr($token, 0, 20)]);
+        }
 
         // If we have a token, try to authenticate
         if ($token) {
@@ -91,6 +96,10 @@ class AuthenticateApi
                         // Set the user with the access token
                         $resolvedUser = $user->withAccessToken($accessToken);
                         Auth::setUser($resolvedUser);
+                        Auth::guard('web')->setUser($resolvedUser);
+                        if ($request->hasSession()) {
+                            Auth::guard('web')->login($user);
+                        }
                         $request->setUserResolver(static fn () => $resolvedUser);
                         Log::info('AuthenticateApi: User authenticated successfully', [
                             'user_id' => $user->id,
@@ -112,6 +121,9 @@ class AuthenticateApi
                 } elseif ($user instanceof \App\Models\Customer) {
                     $resolvedCustomer = $user->withAccessToken($accessToken);
                     Auth::guard('customer')->setUser($resolvedCustomer);
+                    if ($request->hasSession()) {
+                        Auth::guard('customer')->login($user);
+                    }
                     $request->setUserResolver(static fn () => $resolvedCustomer);
                     Log::info('AuthenticateApi: Customer authenticated successfully', [
                         'customer_id' => $user->id,

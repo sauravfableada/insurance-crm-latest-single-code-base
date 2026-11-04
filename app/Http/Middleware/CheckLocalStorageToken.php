@@ -40,6 +40,10 @@ class CheckLocalStorageToken
             $token = $request->cookie('crm_auth_token');
             $source = 'cookie';
         }
+        elseif (!empty($_COOKIE['crm_auth_token'])) {
+            $token = (string) $_COOKIE['crm_auth_token'];
+            $source = 'cookie';
+        }
 
         // If we have a token, try to authenticate
         if ($token) {
@@ -69,6 +73,10 @@ class CheckLocalStorageToken
                         // Set the user with the access token
                         $resolvedUser = $user->withAccessToken($accessToken);
                         Auth::setUser($resolvedUser);
+                        Auth::guard('web')->setUser($resolvedUser);
+                        if ($request->hasSession()) {
+                            Auth::guard('web')->login($user);
+                        }
                         $request->setUserResolver(static fn () => $resolvedUser);
                         Log::debug('User authenticated from token', [
                             'user_id' => $user->id, 
@@ -88,6 +96,9 @@ class CheckLocalStorageToken
                 } elseif ($user instanceof \App\Models\Customer) {
                     $resolvedCustomer = $user->withAccessToken($accessToken);
                     Auth::guard('customer')->setUser($resolvedCustomer);
+                    if ($request->hasSession()) {
+                        Auth::guard('customer')->login($user);
+                    }
                     $request->setUserResolver(static fn () => $resolvedCustomer);
                     Log::debug('Customer authenticated from token', [
                         'customer_id' => $user->id,

@@ -13,5 +13,6 @@ class EncryptCookies extends Middleware
      */
     protected $except = [
         'crm_auth_token',
+        'crm_tenant_id',
     ];
 }

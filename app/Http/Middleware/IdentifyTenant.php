@@ -34,6 +34,8 @@ class IdentifyTenant
             $activeTenantId = (int) $request->header('X-Tenant-Id');
         } elseif ($request->cookie('crm_tenant_id')) {
             $activeTenantId = (int) $request->cookie('crm_tenant_id');
+        } elseif (!empty($_COOKIE['crm_tenant_id']) && is_numeric($_COOKIE['crm_tenant_id'])) {
+            $activeTenantId = (int) $_COOKIE['crm_tenant_id'];
         }
 
         if ($activeTenantId) {
@@ -140,14 +142,7 @@ class IdentifyTenant
             }
 
             if (!$request->is('/') && !$request->is('login')) {
-                $response = redirect()->route('login');
-                if ($request->cookie('crm_auth_token')) {
-                    $response->cookie(cookie()->forget('crm_auth_token'));
-                }
-                if ($request->cookie('crm_tenant_id')) {
-                    $response->cookie(cookie()->forget('crm_tenant_id'));
-                }
-                return $response;
+                return redirect()->route('login');
             }
 
             return $next($request);

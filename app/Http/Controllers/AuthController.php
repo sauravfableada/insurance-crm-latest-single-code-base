@@ -245,9 +245,10 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // Clear the auth token cookie
+        // Clear the auth token and tenant cookies
         $response = redirect()->route('login');
         $response->cookie(cookie()->forget('crm_auth_token'));
+        $response->cookie(cookie()->forget('crm_tenant_id'));
         
         return $response;
     }
