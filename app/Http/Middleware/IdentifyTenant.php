@@ -26,14 +26,26 @@ class IdentifyTenant
             return $next($request);
         }
 
-        // 1. If an active tenant session already exists, restore and re-validate
+        // 1. If an active tenant session, header, or cookie exists, restore and re-validate
+        $activeTenantId = null;
         if ($request->hasSession() && $request->session()->has('tenant_id')) {
+            $activeTenantId = (int) $request->session()->get('tenant_id');
+        } elseif ($request->header('X-Tenant-Id')) {
+            $activeTenantId = (int) $request->header('X-Tenant-Id');
+        } elseif ($request->cookie('crm_tenant_id')) {
+            $activeTenantId = (int) $request->cookie('crm_tenant_id');
+        }
+
+        if ($activeTenantId) {
             try {
-                $tenantId = (int) $request->session()->get('tenant_id');
+                $tenantId = $activeTenantId;
                 $forceFresh = $request->has('refresh_tenant') || $request->has('refresh_permissions');
 
                 $tenant = $this->tenancy->resolveById($tenantId, $forceFresh);
-                $request->session()->put('tenant', $tenant);
+                if ($request->hasSession()) {
+                    $request->session()->put('tenant', $tenant);
+                    $request->session()->put('tenant_id', $tenantId);
+                }
 
                 return $next($request);
             } catch (TenantResolutionException $e) {
@@ -93,12 +105,17 @@ class IdentifyTenant
             $request->is('customer/login') ||
             $request->is('customer/logout') ||
             $request->is('api/login') ||
+            $request->is('api/v1/login') ||
+            $request->is('api/*/login') ||
             $request->is('api/customer-login') ||
+            $request->is('api/v1/customer-login') ||
+            $request->is('api/*/customer-login') ||
             $request->is('storage/*') ||
             $request->is('public/storage/*') ||
             $request->is('uploads/*') ||
             $request->is('public/uploads/*') ||
-            $request->is('webhook/*')
+            $request->is('webhook/*') ||
+            $request->is('api/webhook/*')
         ) {
             if (!$centralHost) {
                 // On client subdomain, resolve that tenant

@@ -23,16 +23,25 @@ class AuthController extends ApiBaseController
         }
 
         $tenancy = app(\App\Services\Tenancy\TenantManager::class);
+        $resolvedTenant = null;
         if ($tenancy->enabled()) {
             try {
                 if (\App\Http\Middleware\IdentifyTenant::isCentralHost($request->getHost())) {
-                    $tenancy->resolveByEmail($loginInput, true);
+                    $resolvedTenant = $tenancy->resolveByEmail($loginInput, true);
+                    if ($request->hasSession()) {
+                        $request->session()->put('tenant_id', $resolvedTenant['id'] ?? null);
+                        $request->session()->put('tenant', $resolvedTenant);
+                    }
                 } else {
                     try {
-                        $tenancy->resolveByHost($request->getHost(), true);
+                        $resolvedTenant = $tenancy->resolveByHost($request->getHost(), true);
                     } catch (\App\Exceptions\TenantResolutionException $hostErr) {
                         if ($hostErr->reason === 'NOT_FOUND') {
-                            $tenancy->resolveByEmail($loginInput, true);
+                            $resolvedTenant = $tenancy->resolveByEmail($loginInput, true);
+                            if ($request->hasSession()) {
+                                $request->session()->put('tenant_id', $resolvedTenant['id'] ?? null);
+                                $request->session()->put('tenant', $resolvedTenant);
+                            }
                         } else {
                             throw $hostErr;
                         }
@@ -73,9 +82,11 @@ class AuthController extends ApiBaseController
                 ?: SanctumLogin::defaultDeviceName($request, 'web-app');
             
             $token = SanctumLogin::issueToken($user, $deviceName);
+            $tenantId = $resolvedTenant['id'] ?? ($tenancy->id() ?? ($user->tenant_id ?? null));
 
-            return $this->success([
+            $response = $this->success([
                 'token' => $token,
+                'tenant_id' => $tenantId,
                 'redirect_url' => '/dashboard',
                 'user' => [
                     'id' => $user->id,
@@ -86,6 +97,12 @@ class AuthController extends ApiBaseController
                     'is_active' => (bool) ($user->is_active ?? true),
                 ],
             ], 'Login successful');
+
+            if ($tenantId) {
+                $response->cookie('crm_tenant_id', (string) $tenantId, 43200, '/', null, false, false);
+            }
+
+            return $response;
         }
 
         // Check if customer exists (by email, phone, or whatsapp)
@@ -117,12 +134,14 @@ class AuthController extends ApiBaseController
 
             $deviceName = $request->string('device_name')->toString() ?: 'customer-web';
             $token = $customer->createToken($deviceName)->plainTextToken;
+            $tenantId = $resolvedTenant['id'] ?? ($tenancy->id() ?? null);
 
             // Log customer into customer session guard as well
             \Illuminate\Support\Facades\Auth::guard('customer')->login($customer);
 
-            return $this->success([
+            $response = $this->success([
                 'token' => $token,
+                'tenant_id' => $tenantId,
                 'redirect_url' => '/customer/dashboard',
                 'user' => [
                     'id' => $customer->id,
@@ -133,6 +152,12 @@ class AuthController extends ApiBaseController
                     'is_active' => true,
                 ],
             ], 'Login successful');
+
+            if ($tenantId) {
+                $response->cookie('crm_tenant_id', (string) $tenantId, 43200, '/', null, false, false);
+            }
+
+            return $response;
         }
 
         return $this->error('No account found with this email', 401);

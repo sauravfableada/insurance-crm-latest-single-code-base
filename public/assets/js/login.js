@@ -74,6 +74,10 @@
 
                     // Also set cookie for web route access
                     document.cookie = 'crm_auth_token=' + encodeURIComponent(res.data.token) + '; path=/; max-age=86400; SameSite=Lax';
+                    if (res.data.tenant_id) {
+                        document.cookie = 'crm_tenant_id=' + encodeURIComponent(res.data.tenant_id) + '; path=/; max-age=86400; SameSite=Lax';
+                        localStorage.setItem('crm_tenant_id', res.data.tenant_id);
+                    }
 
                     console.log('Login successful. Token stored.', {
                         userId: res.data.user.id,
