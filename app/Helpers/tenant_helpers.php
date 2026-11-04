@@ -288,7 +288,7 @@ if (!function_exists('tenant_default_landing_url')) {
         if (tenant_has_module(['Policies', 'Policy Center'])) {
             return route('policies.index');
         }
-        if (tenant_has_module(['Customers', 'Clients', 'Client Manage'])) {
+        if (tenant_has_module(['Customers', 'Clients', 'Client Manage', 'All Clients', 'Family Groups'])) {
             return route('masters.customers.index');
         }
         if (tenant_has_module('Prospects')) {
