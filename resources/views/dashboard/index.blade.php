@@ -1138,6 +1138,7 @@
             </div>
         </div>
     </div>
+    @endif
     <footer class="dashboard-footer text-center py-2 mt-4">
         © {{ date('Y') }} Copyright - <a href="https://www.fableadtechnolabs.com/" target="_blank"
             rel="noopener noreferrer" style="color: inherit; text-decoration: none;">Fablead Developers Technolab</a>
