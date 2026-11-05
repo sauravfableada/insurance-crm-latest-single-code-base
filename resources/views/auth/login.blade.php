@@ -2,7 +2,7 @@
 
 @section('content')
     <style>
-    </style>
+    </style> 
     <div class="min-vh-100 d-flex align-items-center position-relative overflow-hidden"
         style="background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);">
 
