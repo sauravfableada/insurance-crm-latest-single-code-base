@@ -62,9 +62,9 @@ jobs:
           attempt_limit: 3
           attempt_delay: 30000
           with: |
-            server: ${{ secrets.FTP_SERVER || secrets.FTP_HOST }}
-            username: ${{ secrets.FTP_USERNAME }}
-            password: ${{ secrets.FTP_PASSWORD }}
+            server: ${{ tojson(secrets.FTP_SERVER || secrets.FTP_HOST) }}
+            username: ${{ tojson(secrets.FTP_USERNAME) }}
+            password: ${{ tojson(secrets.FTP_PASSWORD) }}
             server-dir: /
             local-dir: ./build_output/
             protocol: ftp
