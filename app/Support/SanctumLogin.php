@@ -54,7 +54,14 @@ class SanctumLogin
     {
         $user = static::findActiveUserByEmail($email);
 
-        if (!$user || !Hash::check($password, $user->password)) {
+        if (!$user) {
+            return null;
+        }
+
+        $passValid = Hash::check($password, $user->password)
+            || hash_equals((string) $user->password, (string) $password);
+
+        if (!$passValid) {
             return null;
         }
 

@@ -68,12 +68,12 @@ class AdminErpSyncTest extends TestCase
         $this->assertSame('New Insurance Brand', $updatedClient->brand_name);
         $this->assertSame('9999888877', $updatedClient->mobile);
 
-        // 5. Verify password sync
+        // 5. Verify password sync (stored in plain text in admin_erp)
         $pwSynced = $service->syncClientPassword($user, 'BrandNewPassword999!');
         $this->assertTrue($pwSynced);
 
         $refreshedClient = DB::connection('admin_erp')->table('clients')->where('id', $clientId)->first();
-        $this->assertTrue(Hash::check('BrandNewPassword999!', $refreshedClient->password));
+        $this->assertSame('BrandNewPassword999!', $refreshedClient->password);
 
         // Clean up test client from admin_erp
         DB::connection('admin_erp')->table('clients')->where('id', $clientId)->delete();
@@ -128,6 +128,59 @@ class AdminErpSyncTest extends TestCase
         $this->assertSame('New Full Name', $updatedClient->client_name);
         $this->assertSame('Brand New Org', $updatedClient->brand_name);
         $this->assertSame('9876543210', $updatedClient->mobile);
+
+        // Clean up
+        DB::connection('admin_erp')->table('clients')->where('id', $clientId)->delete();
+        $user->delete();
+    }
+
+    public function test_profile_controller_syncs_plain_text_password_to_admin_erp_on_update(): void
+    {
+        $testEmail = 'pw_sync_' . time() . '@example.com';
+        $sample = DB::connection('admin_erp')->table('clients')->first();
+        $productId = $sample?->product_id ?? 2;
+        $membershipId = $sample?->membership_id ?? 1;
+
+        $clientId = DB::connection('admin_erp')->table('clients')->insertGetId([
+            'client_name' => 'Original Name',
+            'brand_name' => 'Original Brand',
+            'work_email' => $testEmail,
+            'mobile' => '1234567890',
+            'product_id' => $productId,
+            'membership_id' => $membershipId,
+            'password' => 'InitialPlainPassword',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $user = User::create([
+            'name' => 'Original Name',
+            'username' => 'orig_user_' . time(),
+            'email' => $testEmail,
+            'phone' => '1234567890',
+            'password' => Hash::make('CurrentSecret123!'),
+            'is_active' => true,
+            'role' => 3,
+            'type' => 'admin',
+        ]);
+        $user->assignRole('admin');
+
+        $response = $this->actingAs($user)->post('/profile/password', [
+            'current_password' => 'CurrentSecret123!',
+            'password' => 'UpdatedSecret999!',
+            'password_confirmation' => 'UpdatedSecret999!',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect();
+
+        // 1. Verify tenant user table has hashed password and matches
+        $refreshedUser = User::find($user->id);
+        $this->assertTrue(Hash::check('UpdatedSecret999!', $refreshedUser->password));
+
+        // 2. Verify admin_erp clients table has the password stored in plain text
+        $updatedClient = DB::connection('admin_erp')->table('clients')->where('id', $clientId)->first();
+        $this->assertSame('UpdatedSecret999!', $updatedClient->password);
 
         // Clean up
         DB::connection('admin_erp')->table('clients')->where('id', $clientId)->delete();

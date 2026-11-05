@@ -45,16 +45,30 @@ class ProfileController extends ApiBaseController
     public function updatePassword(Request $request)
     {
         $validated = $request->validate([
-            'current_password' => 'required|current_password',
+            'current_password' => [
+                'required',
+                function ($attribute, $value, $fail) use ($request) {
+                    $user = $request->user();
+                    $valid = $user && (
+                        Hash::check($value, $user->password) ||
+                        hash_equals((string) $user->password, (string) $value)
+                    );
+                    if (!$valid) {
+                        $fail(__('The provided password does not match your current password.'));
+                    }
+                },
+            ],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $user = $request->user();
-        $user->update([
-            'password' => Hash::make($validated['password']),
-        ]);
+        $userUpdate = ['password' => Hash::make($validated['password'])];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'pass_dec')) {
+            $userUpdate['pass_dec'] = $validated['password'];
+        }
+        $user->update($userUpdate);
 
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->id === 1 || empty($user->parent_id)) {
             try {
                 app(\App\Services\Tenancy\AdminErpSyncService::class)->syncClientPassword($user, $validated['password']);
             } catch (\Throwable $e) {

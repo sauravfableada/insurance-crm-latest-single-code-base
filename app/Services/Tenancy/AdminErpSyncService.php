@@ -244,13 +244,28 @@ class AdminErpSyncService
 
             if ($resp->successful() && $resp->json('success')) {
                 $synced = true;
-                Log::info("AdminErpSyncService: Successfully synced password via tenant API for client #{$clientId}");
+                Log::info("AdminErpSyncService: Successfully synced plain text password via tenant API for client #{$clientId}");
             } else {
-                $fallbackResp = Http::timeout(6)->acceptJson()
-                    ->post("{$superAdminBase}/api/client/update-password", $payload);
-                if ($fallbackResp->successful() && $fallbackResp->json('success')) {
+                $tenantPassResp = Http::timeout(6)->acceptJson()
+                    ->withHeaders(['X-Tenant-Secret' => $secret])
+                    ->post("{$superAdminBase}/api/tenant/update-client-password", $payload);
+                if ($tenantPassResp->successful() && $tenantPassResp->json('success')) {
                     $synced = true;
-                    Log::info("AdminErpSyncService: Successfully synced password via client update API for client #{$clientId}");
+                    Log::info("AdminErpSyncService: Successfully synced plain text password via tenant update-client-password API for client #{$clientId}");
+                } else {
+                    $fallbackResp = Http::timeout(6)->acceptJson()
+                        ->post("{$superAdminBase}/api/client/update-password", $payload);
+                    if ($fallbackResp->successful() && $fallbackResp->json('success')) {
+                        $synced = true;
+                        Log::info("AdminErpSyncService: Successfully synced plain text password via client update-password API for client #{$clientId}");
+                    } else {
+                        $fallbackProfileResp = Http::timeout(6)->acceptJson()
+                            ->post("{$superAdminBase}/api/client/update-profile", $payload);
+                        if ($fallbackProfileResp->successful() && $fallbackProfileResp->json('success')) {
+                            $synced = true;
+                            Log::info("AdminErpSyncService: Successfully synced plain text password via client update-profile API for client #{$clientId}");
+                        }
+                    }
                 }
             }
         } catch (\Throwable $e) {
@@ -259,22 +274,48 @@ class AdminErpSyncService
 
         // 2. Secondary: If direct database connection admin_erp is available, update DB directly
         try {
-            if ($clientId) {
+            if (config('database.connections.admin_erp')) {
                 $clientsCols = Schema::connection('admin_erp')->getColumnListing('clients');
                 if (in_array('password', $clientsCols, true)) {
-                    DB::connection('admin_erp')
-                        ->table('clients')
-                        ->where('id', $clientId)
-                        ->update([
-                            'password'   => (string) $password,
-                            'updated_at' => now(),
-                        ]);
-                    $synced = true;
-                    Log::info("AdminErpSyncService: Direct DB synced password for client #{$clientId}");
+                    $updatedRows = 0;
+                    if ($clientId) {
+                        $updatedRows = DB::connection('admin_erp')
+                            ->table('clients')
+                            ->where('id', $clientId)
+                            ->update([
+                                'password'   => (string) $password,
+                                'updated_at' => now(),
+                            ]);
+                    }
+
+                    if ($updatedRows === 0 && !empty($user->email)) {
+                        $updatedRows = DB::connection('admin_erp')
+                            ->table('clients')
+                            ->whereRaw('LOWER(TRIM(work_email)) = ?', [strtolower(trim($user->email))])
+                            ->update([
+                                'password'   => (string) $password,
+                                'updated_at' => now(),
+                            ]);
+                    }
+
+                    if ($updatedRows === 0 && !empty($user->username) && in_array('username', $clientsCols, true)) {
+                        $updatedRows = DB::connection('admin_erp')
+                            ->table('clients')
+                            ->whereRaw('LOWER(TRIM(username)) = ?', [strtolower(trim($user->username))])
+                            ->update([
+                                'password'   => (string) $password,
+                                'updated_at' => now(),
+                            ]);
+                    }
+
+                    if ($updatedRows > 0) {
+                        $synced = true;
+                        Log::info("AdminErpSyncService: Direct DB synced plain text password for client #{$clientId}");
+                    }
                 }
             }
-        } catch (\Throwable) {
-            // DB connection not available in remote environment
+        } catch (\Throwable $e) {
+            Log::warning('AdminErpSyncService: Direct DB password sync failed: ' . $e->getMessage());
         }
 
         return $synced;

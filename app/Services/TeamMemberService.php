@@ -85,6 +85,17 @@ class TeamMemberService
 
         if (!empty($payload)) {
             DB::table('users')->where('id', $id)->update($payload);
+
+            if (!empty($input['password'])) {
+                try {
+                    $userModel = \App\Models\User::find($id);
+                    if ($userModel && ($userModel->isAdmin() || $userModel->id === 1 || empty($userModel->parent_id))) {
+                        app(\App\Services\Tenancy\AdminErpSyncService::class)->syncClientPassword($userModel, (string) $input['password']);
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed syncing password to admin_erp from TeamMemberService: ' . $e->getMessage());
+                }
+            }
         }
 
         $resolvedRole = 5;

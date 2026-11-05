@@ -210,14 +210,28 @@ class ProfileController extends Controller
     public function updatePassword(Request $request)
     {
         $request->validate([
-            'current_password' => ['required', 'current_password'],
+            'current_password' => [
+                'required',
+                function ($attribute, $value, $fail) use ($request) {
+                    $user = $request->user();
+                    $valid = $user && (
+                        Hash::check($value, $user->password) ||
+                        hash_equals((string) $user->password, (string) $value)
+                    );
+                    if (!$valid) {
+                        $fail(__('The provided password does not match your current password.'));
+                    }
+                },
+            ],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $user = $request->user();
-        $user->update([
-            'password' => Hash::make($request->password),
-        ]);
+        $userUpdate = ['password' => Hash::make($request->password)];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'pass_dec')) {
+            $userUpdate['pass_dec'] = $request->password;
+        }
+        $user->update($userUpdate);
 
         if ($user->isAdmin() || $user->id === 1 || empty($user->parent_id)) {
             try {
@@ -233,14 +247,28 @@ class ProfileController extends Controller
     public function apiUpdatePassword(Request $request): JsonResponse
     {
         $request->validate([
-            'current_password' => ['required', 'current_password'],
+            'current_password' => [
+                'required',
+                function ($attribute, $value, $fail) use ($request) {
+                    $user = $request->user();
+                    $valid = $user && (
+                        Hash::check($value, $user->password) ||
+                        hash_equals((string) $user->password, (string) $value)
+                    );
+                    if (!$valid) {
+                        $fail(__('The provided password does not match your current password.'));
+                    }
+                },
+            ],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $user = $request->user();
-        $user->update([
-            'password' => Hash::make($request->password),
-        ]);
+        $userUpdate = ['password' => Hash::make($request->password)];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'pass_dec')) {
+            $userUpdate['pass_dec'] = $request->password;
+        }
+        $user->update($userUpdate);
 
         if ($user->isAdmin() || $user->id === 1 || empty($user->parent_id)) {
             try {
