@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -121,25 +122,95 @@ class UsernameCheckController extends Controller
             }
         }
 
-        // 3. Check in Super Admin (admin_erp)
+        // 3. Resolve Current Tenant & Client ID
         $superAdminBase = $this->getSuperAdminBase();
         $secret = config('tenant.secret') ?: 'fab_erp_tenant_secret_key_8f7b2c9d1e4a6053';
 
-        $clientId = null;
-        if ($context === 'profile' || auth()->user()?->isAdmin() || auth()->id() === 1) {
-            $tenant = function_exists('tenant') ? tenant() : session('tenant');
-            $clientId = is_array($tenant) ? ($tenant['client_id'] ?? ($tenant['id'] ?? null)) : null;
-        }
+        $tenant = function_exists('tenant') ? tenant() : session('tenant');
+        $currentClientId = is_array($tenant) ? ($tenant['client_id'] ?? ($tenant['id'] ?? null)) : null;
+        $currentHost = strtolower(trim((string) request()->getHost()));
 
-        if ($superAdminBase) {
+        // 4. Check against Super Admin active setups via public endpoint (api/setup/search)
+        // Completely public, live, and contains all tenant client usernames & emails.
+        $bases = array_unique(array_filter([
+            $superAdminBase,
+            'https://admin-products.fableadtech.com/services/public',
+        ]));
+
+        foreach ($bases as $adminBase) {
             try {
-                $resp = Http::timeout(3)->acceptJson()->withHeaders([
-                    'X-Tenant-Secret' => $secret,
-                ])->post("{$superAdminBase}/api/tenant/check-username", array_filter([
-                    'username'  => $username,
-                    'client_id' => $clientId,
-                ]));
+                $cacheKey = 'super_admin_setups_search_' . md5($adminBase);
+                $setups = Cache::remember($cacheKey, 20, function () use ($adminBase) {
+                    $resp = Http::timeout(4)->acceptJson()->get("{$adminBase}/api/setup/search");
+                    if ($resp->successful() && is_array($resp->json('data'))) {
+                        return $resp->json('data');
+                    }
+                    return null;
+                });
 
+                if (!empty($setups) && is_array($setups)) {
+                    foreach ($setups as $s) {
+                        $client = $s['client'] ?? [];
+                        $cId = $client['id'] ?? ($s['client_id'] ?? null);
+                        $cDomain = strtolower(trim((string)($s['domain'] ?? '')));
+                        $cUsername = strtolower(trim((string)($client['username'] ?? '')));
+                        $cEmail = strtolower(trim((string)($client['work_email'] ?? '')));
+                        $cName = $client['client_name'] ?? 'Super Admin Client';
+
+                        $isCurrentTenant = false;
+                        if (!empty($currentClientId) && !empty($cId) && (string)$cId === (string)$currentClientId) {
+                            $isCurrentTenant = true;
+                        } elseif (!empty($currentHost) && !empty($cDomain) && !in_array($currentHost, ['localhost', '127.0.0.1'], true) && ($currentHost === $cDomain || str_contains($cDomain, $currentHost))) {
+                            $isCurrentTenant = true;
+                        }
+
+                        if ($isCurrentTenant && empty($currentClientId) && !empty($cId)) {
+                            $currentClientId = $cId;
+                        }
+
+                        // If it belongs to another tenant/client in Super Admin
+                        if (!$isCurrentTenant) {
+                            if (($cUsername !== '' && $cUsername === $username) || ($cEmail !== '' && $cEmail === $username)) {
+                                return response()->json([
+                                    'success'   => true,
+                                    'available' => false,
+                                    'source'    => 'admin_erp',
+                                    'message'   => "Username is already taken in Super Admin ({$cName}).",
+                                ]);
+                            }
+                        } else {
+                            // If it belongs to current tenant
+                            if ($context === 'profile') {
+                                if (($cUsername !== '' && $cUsername === $username) || ($cEmail !== '' && $cEmail === $username)) {
+                                    return response()->json([
+                                        'success'   => true,
+                                        'available' => true,
+                                        'message'   => 'Current username (available).',
+                                    ]);
+                                }
+                            } else {
+                                if (($cUsername !== '' && $cUsername === $username) || ($cEmail !== '' && $cEmail === $username)) {
+                                    return response()->json([
+                                        'success'   => true,
+                                        'available' => false,
+                                        'source'    => 'admin_erp',
+                                        'message'   => "Username is assigned to this tenant's primary admin in Super Admin.",
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Super Admin setup/search check failed: ' . $e->getMessage());
+            }
+
+            // 5. Check against Super Admin check-username endpoint (full database check)
+            try {
+                $resp = Http::timeout(3)->acceptJson()->post("{$adminBase}/api/check-username", array_filter([
+                    'username'  => $username,
+                    'client_id' => $currentClientId,
+                ]));
                 if ($resp->successful()) {
                     $data = $resp->json();
                     if (isset($data['available']) && $data['available'] === false) {
@@ -152,25 +223,26 @@ class UsernameCheckController extends Controller
                     }
                 }
             } catch (\Throwable $e) {
-                // Fallback to public check-username endpoint if tenant-secret call fails
                 try {
-                    $respPub = Http::timeout(2)->acceptJson()->post("{$superAdminBase}/api/check-username", array_filter([
+                    $respSecret = Http::timeout(2)->acceptJson()->withHeaders([
+                        'X-Tenant-Secret' => $secret,
+                    ])->post("{$adminBase}/api/tenant/check-username", array_filter([
                         'username'  => $username,
-                        'client_id' => $clientId,
+                        'client_id' => $currentClientId,
                     ]));
-                    if ($respPub->successful()) {
-                        $dataPub = $respPub->json();
-                        if (isset($dataPub['available']) && $dataPub['available'] === false) {
+                    if ($respSecret->successful()) {
+                        $dataSecret = $respSecret->json();
+                        if (isset($dataSecret['available']) && $dataSecret['available'] === false) {
                             return response()->json([
                                 'success'   => true,
                                 'available' => false,
                                 'source'    => 'admin_erp',
-                                'message'   => $dataPub['message'] ?? 'Username is already taken in Central Portal.',
+                                'message'   => $dataSecret['message'] ?? 'Username is already taken in Central Portal.',
                             ]);
                         }
                     }
                 } catch (\Throwable $ex) {
-                    Log::warning('Super Admin check-username endpoint unavailable: ' . $ex->getMessage());
+                    Log::warning('Super Admin check-username endpoints unavailable: ' . $ex->getMessage());
                 }
             }
         }
@@ -182,4 +254,5 @@ class UsernameCheckController extends Controller
         ]);
     }
 }
+
 

@@ -205,6 +205,22 @@ class CustomerController extends Controller
 
             if (Schema::hasColumn('customers', 'username') && $request->has('username')) {
                 $data['username'] = $request->filled('username') ? trim((string) $request->input('username')) : null;
+                if ($data['username']) {
+                    $checkResp = app(\App\Http\Controllers\UsernameCheckController::class)->check(new Request([
+                        'username'           => $data['username'],
+                        'ignore_customer_id' => $customer->id,
+                        'context'            => 'customer',
+                    ]));
+                    $resData = $checkResp->getData(true);
+                    if (!empty($resData) && isset($resData['available']) && $resData['available'] === false) {
+                        return response()->json([
+                            'message' => $resData['message'] ?? 'This username is already taken.',
+                            'errors'  => [
+                                'username' => [$resData['message'] ?? 'This username is already taken.']
+                            ]
+                        ], 422);
+                    }
+                }
             }
 
             if (Schema::hasColumn('customers', 'user_id')) {
@@ -315,6 +331,22 @@ class CustomerController extends Controller
 
             if (Schema::hasColumn('customers', 'username') && $request->has('username')) {
                 $data['username'] = $request->filled('username') ? trim((string) $request->input('username')) : null;
+                if ($data['username']) {
+                    $checkResp = app(\App\Http\Controllers\UsernameCheckController::class)->check(new Request([
+                        'username'           => $data['username'],
+                        'ignore_customer_id' => $customer->id,
+                        'context'            => 'customer',
+                    ]));
+                    $resData = $checkResp->getData(true);
+                    if (!empty($resData) && isset($resData['available']) && $resData['available'] === false) {
+                        return response()->json([
+                            'message' => $resData['message'] ?? 'This username is already taken.',
+                            'errors'  => [
+                                'username' => [$resData['message'] ?? 'This username is already taken.']
+                            ]
+                        ], 422);
+                    }
+                }
             }
 
             $customer->update($data);

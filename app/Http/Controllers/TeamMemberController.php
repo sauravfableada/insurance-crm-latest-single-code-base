@@ -205,6 +205,20 @@ class TeamMemberController extends Controller
 
         $payload['username'] = $request->filled('username') ? trim((string) $request->input('username')) : null;
 
+        if ($payload['username']) {
+            $checkResp = app(\App\Http\Controllers\UsernameCheckController::class)->check(new Request([
+                'username'       => $payload['username'],
+                'ignore_user_id' => $memberId,
+                'context'        => 'team_member',
+            ]));
+            $resData = $checkResp->getData(true);
+            if (!empty($resData) && isset($resData['available']) && $resData['available'] === false) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'username' => [$resData['message'] ?? 'This username is already taken.'],
+                ]);
+            }
+        }
+
         return $payload;
     }
 }

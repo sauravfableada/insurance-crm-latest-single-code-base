@@ -154,6 +154,22 @@ class UserController extends ApiBaseController
             $avatarPath = $request->file('image')->store('users', 'public');
         }
 
+        if ($request->filled('username')) {
+            $checkResp = app(\App\Http\Controllers\UsernameCheckController::class)->check(new Request([
+                'username' => $request->input('username'),
+                'context'  => 'user',
+            ]));
+            $resData = $checkResp->getData(true);
+            if (!empty($resData) && isset($resData['available']) && $resData['available'] === false) {
+                return response()->json([
+                    'message' => $resData['message'] ?? 'This username is already taken.',
+                    'errors'  => [
+                        'username' => [$resData['message'] ?? 'This username is already taken.']
+                    ]
+                ], 422);
+            }
+        }
+
         $user = User::create([
             'name' => $data['name'],
             'username' => $request->filled('username') ? trim((string) $request->input('username')) : null,
@@ -266,6 +282,22 @@ class UserController extends ApiBaseController
         $user->name = $data['name'];
         if ($request->has('username')) {
             $user->username = $request->filled('username') ? trim((string) $request->input('username')) : null;
+            if ($user->username) {
+                $checkResp = app(\App\Http\Controllers\UsernameCheckController::class)->check(new Request([
+                    'username'       => $user->username,
+                    'ignore_user_id' => $user->id,
+                    'context'        => 'user',
+                ]));
+                $resData = $checkResp->getData(true);
+                if (!empty($resData) && isset($resData['available']) && $resData['available'] === false) {
+                    return response()->json([
+                        'message' => $resData['message'] ?? 'This username is already taken.',
+                        'errors'  => [
+                            'username' => [$resData['message'] ?? 'This username is already taken.']
+                        ]
+                    ], 422);
+                }
+            }
         }
         $user->type = 'sub_agents';
         $user->phone = $data['country_code'] . $data['phone'];
