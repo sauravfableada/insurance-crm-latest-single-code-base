@@ -1434,6 +1434,7 @@
         }
     </script>
     @include('crm.partials.add-staff-modal')
+    @include('partials.username-checker-script')
 </body>
 
 </html>

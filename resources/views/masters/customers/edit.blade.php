@@ -94,7 +94,8 @@
                     <div class="col-md-6 col-12">
                         <label class="form-label fw-semibold">Username</label>
                         <input type="text" name="username" class="form-control"
-                            value="{{ old('username', $customer->username ?? '') }}" placeholder="Unique username for client login (optional)" autocomplete="off">
+                            value="{{ old('username', $customer->username ?? '') }}" data-original-value="{{ $customer->username ?? '' }}" data-ignore-customer-id="{{ $customer->id }}" data-context="customer" placeholder="Unique username for client login (optional)" autocomplete="off">
+                        <div class="username-availability-feedback mt-1"></div>
                     </div>
 
                     @if($isVisible('email', true))

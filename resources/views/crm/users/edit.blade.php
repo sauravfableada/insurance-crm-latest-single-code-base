@@ -73,7 +73,8 @@
                             <label class="form-label d-flex align-items-center gap-2" for="username">
                                 <i class="bi bi-at"></i> Username <span class="text-danger">*</span>
                             </label>
-                            <input type="text" id="username" name="username" class="form-control @error('username') is-invalid @enderror" value="{{ old('username', $user->username) }}" placeholder="Username" autocomplete="off" required>
+                            <input type="text" id="username" name="username" class="form-control @error('username') is-invalid @enderror" value="{{ old('username', $user->username) }}" data-original-value="{{ $user->username }}" data-ignore-user-id="{{ $user->id }}" data-context="user" placeholder="Username" autocomplete="off" required>
+                            <div class="username-availability-feedback mt-1"></div>
                             @error('username')
                                 <div class="staff-validation">{{ $message }}</div>
                             @enderror

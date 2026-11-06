@@ -324,6 +324,20 @@ class ProfileController extends Controller
             'short_company_logo_path.max' => 'Short company logo must not be larger than 2 MB.',
         ]);
 
+        if ($request->filled('username')) {
+            $checkResp = app(\App\Http\Controllers\UsernameCheckController::class)->check(new Request([
+                'username' => $request->input('username'),
+                'ignore_user_id' => $user->id,
+                'context' => 'profile',
+            ]));
+            $resData = $checkResp->getData(true);
+            if (!empty($resData) && isset($resData['available']) && $resData['available'] === false) {
+                throw ValidationException::withMessages([
+                    'username' => [$resData['message'] ?? 'This username is already taken.'],
+                ]);
+            }
+        }
+
         if ($request->hasFile('avatar')) {
             if ($user->avatar_path && Storage::disk('public')->exists($user->avatar_path)) {
                 Storage::disk('public')->delete($user->avatar_path);

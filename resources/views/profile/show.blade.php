@@ -100,7 +100,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">User Name</label>
-                                    <input type="text" name="username" value="{{ old('username', $user->username) }}" class="form-control @error('username') is-invalid @enderror" placeholder="Enter username">
+                                    <input type="text" name="username" value="{{ old('username', $user->username) }}" data-original-value="{{ $user->username }}" data-ignore-user-id="{{ $user->id }}" data-context="profile" class="form-control @error('username') is-invalid @enderror" placeholder="Enter username" autocomplete="off">
+                                    <div class="username-availability-feedback mt-1"></div>
                                     @error('username')<div class="profile-field-error">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-md-6">

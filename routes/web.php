@@ -116,6 +116,7 @@ Route::get('/profile/short-company-logo-image', [App\Http\Controllers\ProfileCon
 Route::get('/profile/company-signature-image', [App\Http\Controllers\ProfileController::class, 'companySignatureImage'])->name('profile.company_signature.image');
 Route::get('/settings/signature-image', [App\Http\Controllers\SettingController::class, 'signatureImage'])->name('settings.signature.image');
 Route::get('/settings/dsc-stamp-image', [App\Http\Controllers\SettingController::class, 'dscStampImage'])->name('settings.dsc_stamp.image');
+Route::match(['get', 'post'], '/check-username', [\App\Http\Controllers\UsernameCheckController::class, 'check'])->name('check_username');
 
 Route::middleware('auth')->group(function () {
     Route::redirect('/sms-marketing', '/marketing/sms-marketing');

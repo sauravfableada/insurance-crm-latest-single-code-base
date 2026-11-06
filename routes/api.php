@@ -52,6 +52,7 @@ use App\Http\Controllers\CalendarController;
 |--------------------------------------------------------------------------
 */
 // Public Document Master and Document Type Master Routes (No Auth Required)
+Route::match(['get', 'post'], '/check-username', [\App\Http\Controllers\UsernameCheckController::class, 'check'])->name('api.check_username');
 Route::prefix('document-types')->group(function () {
     Route::get('list', [DocumentTypeMasterController::class, 'list'])->name('api.document_types.list.public');
     Route::post('check-name', [DocumentTypeMasterController::class, 'checkName'])->name('api.document_types.check_name.public');

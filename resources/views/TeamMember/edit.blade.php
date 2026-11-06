@@ -57,7 +57,8 @@
                     </div>
                     <div class="col-md-6 col-12">
                         <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
-                        <input type="text" name="username" id="username" class="form-control" value="{{ $user['username'] ?? '' }}" placeholder="Username" autocomplete="off" required>
+                        <input type="text" name="username" id="username" class="form-control" value="{{ $user['username'] ?? '' }}" data-original-value="{{ $user['username'] ?? '' }}" data-ignore-user-id="{{ $user['id'] ?? '' }}" data-context="team_member" placeholder="Username" autocomplete="off" required>
+                        <div class="username-availability-feedback mt-1"></div>
                     </div>
                     <div class="col-md-6 col-12">
                         <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
