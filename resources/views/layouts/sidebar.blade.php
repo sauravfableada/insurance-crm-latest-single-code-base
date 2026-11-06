@@ -21,7 +21,7 @@
     @if(!$isCustomerUser)
     <div class="sidenav-header" style="padding: 0px 8px;">
         <div class="profile-card brand-card">
-            <img src="{{ $shortCompanyLogoUrl ?? (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/images/template/akpfavicon.png' : '/images/template/akpfavicon.png') }}"
+            <img src="{{ $shortCompanyLogoUrl ?? (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/images/template/akpfavicon.png' : '/images/template/crmfavicon.png') }}"
                 class="brand-logo-icon" alt="CRM Logo">
             <span class="brand-logo-text capitalize" title="{{ strtoupper($authUser?->name ?? 'FableadCRM') }}">{{ strtoupper($authUser?->name ?? 'FableadCRM') }}</span>
         </div>
