@@ -30,6 +30,39 @@ class AuthController extends Controller
             return redirect()->to(function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('dashboard'));
         }
 
+        // On tenant domains (e.g. insurance-crm.fableadtech.com), automatically authenticate
+        // the tenant's primary admin so the user never sees a login page.
+        if ($tenancy->enabled() && $tenancy->current() && !$isCentral) {
+            if (!session('explicitly_logged_out') && !request()->has('login')) {
+                $tenant = $tenancy->current();
+                $clientEmail = $tenant['client']['work_email'] ?? null;
+                $clientUser = $tenant['client']['username'] ?? null;
+
+                $admin = null;
+                if ($clientEmail) {
+                    $admin = User::where('email', $clientEmail)->first();
+                }
+                if (!$admin && $clientUser) {
+                    $admin = User::where('username', $clientUser)->first();
+                }
+                if (!$admin) {
+                    $admin = User::where(function ($q) {
+                        $q->where('role', 1)->orWhere('role', '1')->orWhere('type', 'admin');
+                    })->first();
+                }
+                if (!$admin) {
+                    $admin = User::orderBy('id')->first();
+                }
+
+                if ($admin) {
+                    Auth::login($admin, true);
+                    session(['tenant_id' => $tenant['id'], 'tenant' => $tenant]);
+                    session()->regenerate();
+                    return redirect()->to(function_exists('tenant_default_landing_url') ? tenant_default_landing_url() : route('dashboard'));
+                }
+            }
+        }
+
         return view('auth.login');
     }
 
@@ -140,6 +173,7 @@ class AuthController extends Controller
         // Authenticate user (session-based)
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+        $request->session()->forget('explicitly_logged_out');
 
         $tenancy = app(\App\Services\Tenancy\TenantManager::class);
         if ($tenancy->enabled() && $tenancy->current()) {
@@ -257,6 +291,7 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        $request->session()->put('explicitly_logged_out', true);
 
         // Clear the auth token and tenant cookies
         $response = redirect()->route('login');

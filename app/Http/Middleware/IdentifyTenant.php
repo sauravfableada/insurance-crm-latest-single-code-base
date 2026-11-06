@@ -126,11 +126,43 @@ class IdentifyTenant
                 // On client subdomain, resolve that tenant
                 try {
                     $this->tenancy->resolveByHost($request->getHost());
+
+                    // Auto-authenticate tenant admin on dedicated tenant domains so no login is required
+                    if (!Auth::guard('web')->check() && !session('explicitly_logged_out') && !$request->is('logout') && !$request->has('login')) {
+                        $tenant = $this->tenancy->current();
+                        if ($tenant) {
+                            $clientEmail = $tenant['client']['work_email'] ?? null;
+                            $clientUser = $tenant['client']['username'] ?? null;
+
+                            $admin = null;
+                            if ($clientEmail) {
+                                $admin = \App\Models\User::where('email', $clientEmail)->first();
+                            }
+                            if (!$admin && $clientUser) {
+                                $admin = \App\Models\User::where('username', $clientUser)->first();
+                            }
+                            if (!$admin) {
+                                $admin = \App\Models\User::where(function ($q) {
+                                    $q->where('role', 1)->orWhere('role', '1')->orWhere('type', 'admin');
+                                })->first();
+                            }
+                            if (!$admin) {
+                                $admin = \App\Models\User::orderBy('id')->first();
+                            }
+
+                            if ($admin) {
+                                Auth::guard('web')->login($admin, true);
+                                if ($request->hasSession()) {
+                                    $request->session()->put('tenant_id', $tenant['id']);
+                                    $request->session()->put('tenant', $tenant);
+                                }
+                            }
+                        }
+                    }
                 } catch (TenantResolutionException $e) {
                     // Non-fatal on public landing/login so user sees the login view
                 }
             }
-
             return $next($request);
         }
 
@@ -154,6 +186,39 @@ class IdentifyTenant
         // 5. Otherwise, resolve by incoming domain host (subdomain-based access)
         try {
             $this->tenancy->resolveByHost($request->getHost());
+
+            // Auto-authenticate tenant admin on dedicated tenant domains so no login is required
+            if (!Auth::guard('web')->check() && !session('explicitly_logged_out') && !$request->is('logout') && !$request->has('login')) {
+                $tenant = $this->tenancy->current();
+                if ($tenant) {
+                    $clientEmail = $tenant['client']['work_email'] ?? null;
+                    $clientUser = $tenant['client']['username'] ?? null;
+
+                    $admin = null;
+                    if ($clientEmail) {
+                        $admin = \App\Models\User::where('email', $clientEmail)->first();
+                    }
+                    if (!$admin && $clientUser) {
+                        $admin = \App\Models\User::where('username', $clientUser)->first();
+                    }
+                    if (!$admin) {
+                        $admin = \App\Models\User::where(function ($q) {
+                            $q->where('role', 1)->orWhere('role', '1')->orWhere('type', 'admin');
+                        })->first();
+                    }
+                    if (!$admin) {
+                        $admin = \App\Models\User::orderBy('id')->first();
+                    }
+
+                    if ($admin) {
+                        Auth::guard('web')->login($admin, true);
+                        if ($request->hasSession()) {
+                            $request->session()->put('tenant_id', $tenant['id']);
+                            $request->session()->put('tenant', $tenant);
+                        }
+                    }
+                }
+            }
         } catch (TenantResolutionException $e) {
             return $this->deny($request, $e);
         }

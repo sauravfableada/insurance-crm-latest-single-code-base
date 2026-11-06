@@ -3,11 +3,19 @@
     'use strict';
 
     function initUsernameCheckers() {
+        // Never run on login, auth, or guest pages
+        if (document.querySelector('#login-form, .login-page, form[action*="login"]')) {
+            return;
+        }
+
         const usernameInputs = document.querySelectorAll('input[name="username"], input#username, input[data-check-username="true"]');
         
         usernameInputs.forEach(function(input) {
-            // Ignore hidden fake autofill inputs
+            // Ignore hidden fake autofill inputs and login inputs
             if (input.type === 'hidden' || input.style.position === 'absolute' || input.classList.contains('d-none')) {
+                return;
+            }
+            if (input.closest('#login-form, .login-page, form[action*="login"], .auth-card')) {
                 return;
             }
 
