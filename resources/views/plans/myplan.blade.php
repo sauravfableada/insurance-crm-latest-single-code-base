@@ -500,7 +500,12 @@
                                                 <strong>{{ !empty($tx['created_at']) ? \Carbon\Carbon::parse($tx['created_at'])->format('d M Y, h:i A') : 'N/A' }}</strong>
                                             </td>
                                             <td>
-                                                <div class="fw-bold text-dark text-capitalize">{{ $displayPlanName }}</div>
+                                                @php
+                                                    $rowPlanName = !empty($tx['plan_name']) && !in_array(strtolower(trim($tx['plan_name'])), ['starter plan', 'free plan', 'plan', 'basic plan'])
+                                                        ? $tx['plan_name']
+                                                        : $displayPlanName;
+                                                @endphp
+                                                <div class="fw-bold text-dark text-capitalize">{{ $rowPlanName }}</div>
                                                 <small class="text-muted">{{ $tx['description'] ?? ($tx['razorpay_order_id'] ?? '-') }}</small>
                                             </td>
                                             <td>
@@ -512,7 +517,14 @@
                                                 <i class="fas fa-credit-card me-1 text-muted"></i> {{ $tx['payment_method'] ?? 'Razorpay' }}
                                             </td>
                                             <td class="fw-bold text-dark">
-                                                ₹{{ number_format((float) ($tx['amount'] ?? 0), 2) }}
+                                                @php
+                                                    $rowAmount = (float)($tx['amount'] ?? 0);
+                                                    $isInitialPurchase = ($tx['payment_type'] ?? '') !== 'renewal' && empty($tx['razorpay_payment_id']);
+                                                    if ($isInitialPurchase && $displayTotalAmount > 0) {
+                                                        $rowAmount = $displayTotalAmount;
+                                                    }
+                                                @endphp
+                                                ₹{{ number_format($rowAmount, 2) }}
                                             </td>
                                             <td>
                                                 @php

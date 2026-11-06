@@ -627,6 +627,46 @@ class PlanController extends Controller
     }
 
     /**
+     * Normalize payment history transactions to ensure correct amounts and plan names.
+     */
+    protected function normalizePaymentHistory(array $history, array $tenant = [], ?Plan $activePlan = null): array
+    {
+        if (empty($history)) {
+            return [];
+        }
+
+        $configuredAmount = 0.0;
+        $rawTenantAmount = $tenant['amount'] ?? ($tenant['total_amount'] ?? null);
+        if ($rawTenantAmount !== null && $rawTenantAmount !== '') {
+            $configuredAmount = (float) (is_array($rawTenantAmount) ? ($rawTenantAmount[0] ?? 0) : $rawTenantAmount);
+        }
+
+        if ($configuredAmount <= 0 && $activePlan) {
+            $configuredAmount = (float) ($activePlan->total_amount ?: ($activePlan->price ?: 0));
+        }
+
+        $activePlanName = $tenant['plan_name'] ?? ($activePlan?->name ?? null);
+
+        foreach ($history as &$tx) {
+            $isRenewal = ($tx['payment_type'] ?? '') === 'renewal';
+            $isInitialPurchase = !$isRenewal && empty($tx['razorpay_payment_id']);
+
+            if ($isInitialPurchase && $configuredAmount > 0) {
+                $tx['amount'] = $configuredAmount;
+            }
+
+            if (!empty($activePlanName) && (empty($tx['plan_name']) || in_array(strtolower(trim($tx['plan_name'])), ['starter plan', 'free plan', 'plan', 'basic plan']))) {
+                if (!empty($tenant['plan_name'])) {
+                    $tx['plan_name'] = $tenant['plan_name'];
+                }
+            }
+        }
+        unset($tx);
+
+        return $history;
+    }
+
+    /**
      * Multi-tier fetcher for billing & payment history to guarantee modals display complete history.
      */
     protected function fetchPaymentHistory(?int $clientId, string $superAdminBase, array $tenant = [], ?Plan $activePlan = null): array
@@ -642,7 +682,7 @@ class PlanController extends Controller
                 ]));
 
                 if ($resp->successful() && !empty($resp->json('data'))) {
-                    return $resp->json('data');
+                    return $this->normalizePaymentHistory($resp->json('data'), $tenant, $activePlan);
                 }
             } catch (\Throwable $e) {
                 Log::warning('PlanController: Public billing-history GET failed: ' . $e->getMessage());
@@ -655,7 +695,7 @@ class PlanController extends Controller
                 ]));
 
                 if ($resp->successful() && !empty($resp->json('data'))) {
-                    return $resp->json('data');
+                    return $this->normalizePaymentHistory($resp->json('data'), $tenant, $activePlan);
                 }
             } catch (\Throwable $e) {
                 Log::warning('PlanController: Public billing-history POST failed: ' . $e->getMessage());
@@ -674,7 +714,7 @@ class PlanController extends Controller
                 ]);
 
                 if ($resp->successful() && !empty($resp->json('data'))) {
-                    return $resp->json('data');
+                    return $this->normalizePaymentHistory($resp->json('data'), $tenant, $activePlan);
                 }
             } catch (\Throwable $e) {
                 Log::warning('PlanController: Tenant billing-history with secret failed: ' . $e->getMessage());
@@ -710,7 +750,7 @@ class PlanController extends Controller
                             $tx['period_end'] = $pEnd;
                             $history[] = $tx;
                         }
-                        return $history;
+                        return $this->normalizePaymentHistory($history, $tenant, $activePlan);
                     }
                 }
             } catch (\Throwable $e) {
@@ -727,7 +767,7 @@ class PlanController extends Controller
                     ->get();
 
                 if ($dbTx->isNotEmpty()) {
-                    return $dbTx->map(fn($t) => (array) $t)->toArray();
+                    return $this->normalizePaymentHistory($dbTx->map(fn($t) => (array) $t)->toArray(), $tenant, $activePlan);
                 }
             }
         } catch (\Throwable) {
@@ -737,10 +777,18 @@ class PlanController extends Controller
         // Tier 5: Local synthesis from active plan so table is NEVER blank and always displays valid purchase
         $plan = $activePlan ?? auth()->user()->getActivePlan() ?? Plan::latest('id')->first();
         if ($plan) {
+            $rawTenantAmount = $tenant['amount'] ?? ($tenant['total_amount'] ?? null);
+            $configuredAmount = 0.0;
+            if ($rawTenantAmount !== null && $rawTenantAmount !== '') {
+                $configuredAmount = (float) (is_array($rawTenantAmount) ? ($rawTenantAmount[0] ?? 0) : $rawTenantAmount);
+            }
+            if ($configuredAmount <= 0) {
+                $configuredAmount = (float) ($plan->total_amount ?: ($plan->price ?: 50.00));
+            }
             return [[
                 'id'             => $plan->id,
                 'client_id'      => $clientId,
-                'amount'         => (float) ($plan->total_amount ?: ($plan->price ?: 50.00)),
+                'amount'         => $configuredAmount,
                 'currency'       => 'INR',
                 'status'         => 'paid',
                 'payment_method' => 'Cash',
@@ -749,7 +797,7 @@ class PlanController extends Controller
                 'created_at'     => $plan->created_at ? $plan->created_at->toISOString() : now()->toISOString(),
                 'period_start'   => $plan->start_date ? Carbon::parse($plan->start_date)->format('Y-m-d') : date('Y-m-d'),
                 'period_end'     => $plan->end_date ? Carbon::parse($plan->end_date)->format('Y-m-d') : date('Y-m-d', strtotime('+1 month')),
-                'plan_name'      => $plan->name ?: 'Insurance-CRM Plan',
+                'plan_name'      => $tenant['plan_name'] ?? ($plan->name ?: 'Insurance-CRM Plan'),
                 'billing_cycle'  => str_contains(strtolower($plan->duration ?? ''), 'month') ? 'Month' : 'Year',
             ]];
         }
@@ -1172,7 +1220,21 @@ class PlanController extends Controller
 
         if ($transactionData) {
             $plan = clone $plan;
-            if (!empty($transactionData['amount'])) {
+            $rawTenantAmount = $tenant['amount'] ?? ($tenant['total_amount'] ?? null);
+            $confAmount = 0.0;
+            if ($rawTenantAmount !== null && $rawTenantAmount !== '') {
+                $confAmount = (float) (is_array($rawTenantAmount) ? ($rawTenantAmount[0] ?? 0) : $rawTenantAmount);
+            }
+            $isInitialPurchase = ($transactionData['payment_type'] ?? '') !== 'renewal' && empty($transactionData['razorpay_payment_id']);
+            $finalAmount = (float) ($transactionData['amount'] ?? 0);
+            if ($isInitialPurchase && $confAmount > 0) {
+                $finalAmount = $confAmount;
+            }
+
+            if ($finalAmount > 0) {
+                $plan->total_amount = $finalAmount;
+                $plan->price = $finalAmount;
+            } elseif (!empty($transactionData['amount'])) {
                 $plan->total_amount = (float) $transactionData['amount'];
                 $plan->price = (float) $transactionData['amount'];
             }
