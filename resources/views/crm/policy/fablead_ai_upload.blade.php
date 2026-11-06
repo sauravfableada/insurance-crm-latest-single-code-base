@@ -2,6 +2,18 @@
 @extends('layouts.masters')
 @section('page_title', 'Fablead AI — Upload Policy')
 @section('masters_content')
+@if($renewalPolicy)
+@php
+    $renewalSourceValues = [
+        'renewal_holder_name'=>$renewalPolicy->holder?->name,
+        'policy_number'=>$renewalPolicy->policy_number_no ?: $renewalPolicy->policy_number,
+        'company_id'=>$renewalPolicy->company_id, 'policy_type_id'=>$renewalPolicy->policy_type_id,
+        'start_date'=>substr((string)$renewalPolicy->start_date,0,10), 'end_date'=>substr((string)$renewalPolicy->end_date,0,10),
+        'premium'=>$renewalPolicy->premium_amount, 'sum_assured'=>$renewalPolicy->sum_assured,
+    ];
+@endphp
+<div class="alert alert-light border m-3 d-flex justify-content-between align-items-center gap-2 flex-wrap"><div><strong>AI renewal · {{ $renewalPolicy->policy_number_no ?: $renewalPolicy->policy_number }}</strong><div class="small text-muted">Upload the renewed PDF for {{ $renewalPolicy->holder?->name }}. Review the old and new terms before saving.</div></div><a class="btn btn-sm btn-outline-secondary" href="{{ route('policies.legacy.view',$renewalPolicy->id) }}">Back to policy</a></div>
+@endif
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
@@ -36,6 +48,13 @@
 /* Page chrome */
 .ai-page-wrap        { background: var(--ai-bg); min-height: 100vh; padding: 0; }
 .ai-page-header      { background: #fff; border-bottom: 1px solid var(--ai-border); padding: 22px 32px; }
+.ai-header-top      { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; }
+.ai-header-actions  { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.btn-ai-renew       { display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 10px 18px; border: 1px solid #245388; border-radius: 10px; background: linear-gradient(135deg, #15385e, #245388); color: #fff; font-size: .88rem; font-weight: 600; box-shadow: 0 3px 9px rgba(21, 56, 94, .16); transition: background .15s ease, box-shadow .15s ease; }
+.btn-ai-renew:hover { background: #15385e; border-color: #15385e; color: #fff; box-shadow: 0 4px 12px rgba(21, 56, 94, .24); }
+.btn-ai-renew:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
+html[data-theme="dark"] .btn-ai-renew { background: linear-gradient(135deg, #1e4776, #2c6197); border-color: #4776a6; color: #fff; }
+@media (max-width: 575.98px) { .ai-header-actions { width: 100%; } .ai-header-actions > a { flex: 1 1 auto; justify-content: center; } }
 .ai-badge-label      { display: inline-flex; align-items: center; gap: 6px; background: var(--ai-brown-lt); color: var(--ai-brown); font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border-radius: 20px; padding: 3px 12px; border: 1px solid #f0d5c4; }
 .ai-page-title       { font-size: 1.55rem; font-weight: 700; color: var(--ai-navy); line-height: 1.2; }
 .ai-page-sub         { color: #64748b; font-size: .9rem; }
@@ -129,28 +148,6 @@
 .ai-filled { border-color: #93c5fd !important; background: #eff6ff !important; }
 .ai-filled:focus { border-color: var(--ai-navy) !important; background: #fff !important; }
 
-/* Small Add Icon Button next to dropdowns */
-.btn-ai-add {
-    width: 38px;
-    min-width: 38px;
-    height: 38px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 7px;
-    font-size: 13px;
-    flex-shrink: 0;
-    background: var(--ai-navy);
-    color: #fff;
-    border: none;
-    transition: all 0.2s ease;
-}
-.btn-ai-add:hover {
-    background: var(--ai-navy-mid);
-    color: #fff;
-}
-
 /* PDF panel */
 .ai-pdf-panel        { background: #fff; border: 1px solid var(--ai-border); border-radius: var(--ai-radius); box-shadow: var(--ai-shadow); position: sticky; top: 20px; }
 .ai-pdf-header       { padding: 14px 16px; border-bottom: 1px solid var(--ai-border); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
@@ -219,16 +216,23 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
 
     {{-- ── PAGE HEADER ──────────────────────────────────────────────────── --}}
     <div class="ai-page-header">
-        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+        <div class="ai-header-top">
+            <div class="ai-badge-label"><i class="fas fa-magic"></i> Fablead AI</div>
+            <div class="ai-header-actions">
+                @if(!$renewalPolicy && (auth()->user()->isAdmin() || auth()->user()->hasMatrixPermission('edit_policies')))
+                    <a class="btn btn-ai-renew" href="{{ route('fablead.ai.renewal.choose') }}">
+                        <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Renew an existing policy with AI
+                    </a>
+                @endif
+                <a href="{{ route('policies.legacy.index') }}" class="btn-ai-outline btn d-flex align-items-center gap-2">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Policies
+                </a>
+            </div>
+        </div>
             <div>
-                <div class="ai-badge-label mb-2"><i class="fas fa-magic"></i> Fablead AI</div>
                 <h1 class="ai-page-title mb-1">Upload policy documents. Fablead AI does the rest.</h1>
                 <p class="ai-page-sub mb-0">Extract policy information automatically, review the results, and save verified data to your insurance CRM.</p>
             </div>
-            <a href="{{ route('policies.legacy.index') }}" class="btn-ai-outline btn d-flex align-items-center gap-2">
-                <i class="fas fa-arrow-left"></i> Back to Policies
-            </a>
-        </div>
     </div>
 
     {{-- ── STEP TRACKER ─────────────────────────────────────────────────── --}}
@@ -255,7 +259,8 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
         {{-- ═══ STATE 1: UPLOAD ═══════════════════════════════════════════════ --}}
         <div id="view_upload">
             <div class="ai-upload-card">
-                <div class="p-5 pb-0 text-center">
+                <div class="ai-upload-heading text-center">
+                    <span class="ai-upload-kicker"><i class="bi bi-stars me-1" aria-hidden="true"></i>SMART POLICY IMPORT</span>
                     <h5 class="fw-bold" style="color:var(--ai-navy)">Upload a policy document</h5>
                     <p class="ai-review-notice mb-2" role="note">
                         <i class="fas fa-exclamation-triangle me-1"></i>
@@ -265,7 +270,7 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
                 </div>
 
                 <div class="ai-drop-zone" id="drop_zone">
-                    <div class="ai-drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                    <div class="ai-drop-icon"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i></div>
                     <div class="ai-drop-title">Drag &amp; drop your PDF here</div>
                     <div class="ai-drop-sub mb-3">or click to browse</div>
                     <label for="pdf_file_input" class="btn-ai-outline btn" style="cursor:pointer;">
@@ -339,11 +344,21 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
                 <div class="ai-form-panel">
                     <div class="ai-form-header">
                         <div class="ai-form-header-title"><i class="fas fa-clipboard-list me-2" style="color:var(--ai-brown)"></i> AI Extracted Data</div>
+                        <div class="d-flex gap-2"><a id="aiViewJson" class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener" hidden>View JSON</a><a id="aiDownloadJson" class="btn btn-sm btn-outline-secondary" hidden>Download JSON</a></div>
                     </div>
 
-                    <form id="policy_ai_form" action="javascript:void(0);" method="POST" onsubmit="return false;">
+                    <form id="policy_ai_form" data-quick-add-url="{{ url('fablead-ai/quick-add') }}">
+                        @if($renewalPolicy)
+                        <div class="ai-renewal-review p-3 m-3 border rounded-3 bg-light">
+                            <h3 class="h6 fw-bold">Renewal of {{ $renewalPolicy->policy_number_no ?: $renewalPolicy->policy_number }}</h3>
+                            <p class="small text-muted">Existing holder: <strong>{{ $renewalPolicy->holder?->name }}</strong>. A new linked term will be created; previous details remain unchanged.</p>
+                            <label class="small form-label" for="renewalHolderName">Policyholder name on renewed PDF</label><input class="form-control" id="renewalHolderName" name="renewal_holder_name" required>
+                            <div id="aiRenewalComparison" class="mt-3 small" aria-live="polite"></div>
+                        </div>
+                        @endif
+                        <div id="aiExtractionNotice" class="alert alert-warning small mx-3 mt-3" hidden role="status"></div>
                         @csrf
-                        <input type="hidden" name="base_url" id="base_url" value="{{ url('/') }}/">
+                        <input type="hidden" name="base_url" id="base_url" value="<?= base_url(); ?>">
                         <input type="hidden" name="upload_id" id="upload_id_input">
 
                         <div class="ai-form-body">
@@ -368,19 +383,12 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
                                     <?php $s = session(); ?>
                                     <div class="ai-field-wrap">
                                         <div class="ai-field-label">SELF / SUB AGENT</div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="flex-grow-1" style="min-width: 0;">
-                                                <select class="form-control select2-ai" name="staff_id" id="staff_id">
-                                                    <option value="">-- Select Staff --</option>
-                                                    <?php foreach ($staffs as $staff): ?>
-                                                        <option value="<?= $staff['id'] ?>" <?= $staff['id'] == Auth::id() ? 'selected' : '' ?>><?= $staff['name'] ?? 'Unknown' ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <button type="button" class="btn btn-dark-blue btn-ai-add" data-bs-toggle="modal" data-bs-target="#modalStaff" title="Add Sub Agent / Staff">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        <select class="form-control select2-ai" name="staff_id" id="staff_id">
+                                            <option value="">-- Select Staff --</option>
+                                            <?php foreach ($staffs as $staff): ?>
+                                                <option value="<?= $staff['id'] ?>" <?= $staff['id'] == Auth::id() ? 'selected' : '' ?>><?= $staff['name'] ?? 'Unknown' ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -394,38 +402,24 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
                                 <div class="col-md-6">
                                     <div class="ai-field-wrap">
                                         <div class="ai-field-label">FAMILY GROUP <span class="text-muted">(Optional)</span></div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="flex-grow-1" style="min-width: 0;">
-                                                <select class="form-control select2-ai" name="family_group_id" id="family_group_id">
-                                                    <option value="">-- Select Family Group --</option>
-                                                    <?php foreach ($familyGroups as $fg): ?>
-                                                        <option value="<?= $fg['id'] ?>"><?= $fg['group_name'] ?? 'Unnamed' ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <button type="button" class="btn btn-dark-blue btn-ai-add" data-bs-toggle="modal" data-bs-target="#modalFamilyGroup" title="Add Family Group">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        <select class="form-control select2-ai" name="family_group_id" id="family_group_id">
+                                            <option value="">-- Select Family Group --</option>
+                                            <?php foreach ($familyGroups as $fg): ?>
+                                                <option value="<?= $fg['id'] ?>"><?= $fg['group_name'] ?? 'Unnamed' ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="ai-field-wrap">
                                         <div class="ai-field-label">POLICY HOLDER NAME <span class="text-danger">*</span></div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="flex-grow-1" style="min-width: 0;">
-                                                <select class="form-control select2-ai" name="user_id" id="user_id" required>
-                                                    <option value="">-- Select Holder --</option>
-                                                    <?php foreach ($customers as $c): ?>
-                                                        <option value="<?= $c['id'] ?>"><?= $c['name'] ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <button type="button" class="btn btn-dark-blue btn-ai-add" data-bs-toggle="modal" data-bs-target="#modalPolicyHolder" title="Add Policy Holder">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        <select class="form-control select2-ai" name="user_id" id="user_id" required>
+                                            <option value="">-- Select Holder --</option>
+                                            <?php foreach ($customers as $c): ?>
+                                                <option value="<?= $c['id'] ?>"><?= $c['name'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -450,38 +444,24 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
                                 <div class="col-md-6">
                                     <div class="ai-field-wrap" id="wrap_policy_type_id">
                                         <div class="ai-field-label">POLICY TYPE <span class="text-danger">*</span> <span class="ai-conf-badge ai-conf-none" id="conf_policy_type"></span></div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="flex-grow-1" style="min-width: 0;">
-                                                <select class="form-control select2-ai" name="policy_type_id" id="policy_type_id" required>
-                                                    <option value="">-- Select Policy Type --</option>
-                                                    <?php foreach ($policyTypes as $pt): ?>
-                                                        <option value="<?= $pt['id'] ?>"><?= $pt['name'] ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <button type="button" class="btn btn-dark-blue btn-ai-add" data-bs-toggle="modal" data-bs-target="#modalPolicyType" title="Add Policy Type">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        <select class="form-control select2-ai" name="policy_type_id" id="policy_type_id" required>
+                                            <option value="">-- Select Policy Type --</option>
+                                            <?php foreach ($policyTypes as $pt): ?>
+                                                <option value="<?= $pt['id'] ?>"><?= $pt['name'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="ai-field-wrap">
                                         <div class="ai-field-label">POLICY SUB TYPE <span class="text-muted">(Optional)</span></div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="flex-grow-1" style="min-width: 0;">
-                                                <select class="form-control select2-ai" name="sub_type_id" id="sub_type_id">
-                                                    <option value="">-- Select Sub Type --</option>
-                                                    <?php foreach ($subTypes as $st): ?>
-                                                        <option value="<?= $st['id'] ?>"><?= $st['name'] ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <button type="button" class="btn btn-dark-blue btn-ai-add" data-bs-toggle="modal" data-bs-target="#modalPolicySubType" title="Add Policy Sub Type">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        <select class="form-control select2-ai" name="sub_type_id" id="sub_type_id">
+                                            <option value="">-- Select Sub Type --</option>
+                                            <?php foreach ($subTypes as $st): ?>
+                                                <option value="<?= $st['id'] ?>"><?= $st['name'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -522,57 +502,36 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
                                 <div class="col-md-6">
                                     <div class="ai-field-wrap">
                                         <div class="ai-field-label">SEGMENT</div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="flex-grow-1" style="min-width: 0;">
-                                                <select class="form-control select2-ai" name="segment_id" id="segment_id">
-                                                    <option value="">-- Select Segment --</option>
-                                                    <?php foreach ($segments as $seg): ?>
-                                                        <option value="<?= $seg['id'] ?>"><?= $seg['name'] ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <button type="button" class="btn btn-dark-blue btn-ai-add" data-bs-toggle="modal" data-bs-target="#modalSegment" title="Add Segment">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        <select class="form-control select2-ai" name="segment_id" id="segment_id">
+                                            <option value="">-- Select Segment --</option>
+                                            <?php foreach ($segments as $seg): ?>
+                                                <option value="<?= $seg['id'] ?>"><?= $seg['name'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="ai-field-wrap" id="wrap_company_id">
                                         <div class="ai-field-label">INSURANCE COMPANY <span class="text-danger">*</span> <span class="ai-conf-badge ai-conf-none" id="conf_company"></span></div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="flex-grow-1" style="min-width: 0;">
-                                                <select class="form-control select2-ai" name="company_id" id="company_id" required>
-                                                    <option value="">-- Select Company --</option>
-                                                    <?php foreach ($companies as $c): ?>
-                                                        <option value="<?= $c['id'] ?>"><?= $c['name'] ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <button type="button" class="btn btn-dark-blue btn-ai-add" data-bs-toggle="modal" data-bs-target="#modalInsuranceCompany" title="Add Insurance Company">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        <select class="form-control select2-ai" name="company_id" id="company_id" required>
+                                            <option value="">-- Select Company --</option>
+                                            <?php foreach ($companies as $c): ?>
+                                                <option value="<?= $c['id'] ?>"><?= $c['name'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <div class="ai-field-wrap">
                                         <div class="ai-field-label">BRANCH</div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="flex-grow-1" style="min-width: 0;">
-                                                <select class="form-control select2-ai" name="branch_id" id="branch_id">
-                                                    <option value="">-- Select Branch --</option>
-                                                    <?php foreach ($branches as $b): ?>
-                                                        <option value="<?= $b['id'] ?>"><?= $b['name'] ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <button type="button" class="btn btn-dark-blue btn-ai-add" data-bs-toggle="modal" data-bs-target="#modalBranch" title="Add Branch">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        <select class="form-control select2-ai" name="branch_id" id="branch_id">
+                                            <option value="">-- Select Branch --</option>
+                                            <?php foreach ($branches as $b): ?>
+                                                <option value="<?= $b['id'] ?>"><?= $b['name'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -584,19 +543,12 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
                                 <div class="col-md-12">
                                     <div class="ai-field-wrap">
                                         <div class="ai-field-label">MAP TO A SAVED BROKER</div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <div class="flex-grow-1" style="min-width: 0;">
-                                                <select class="form-control select2-ai" name="broker_id" id="broker_id">
-                                                    <option value="">-- Select Broker --</option>
-                                                    <?php foreach ($brokers as $br): ?>
-                                                        <option value="<?= $br['id'] ?>"><?= $br['broker_name'] ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <button type="button" class="btn btn-dark-blue btn-ai-add" data-bs-toggle="modal" data-bs-target="#modalBroker" title="Add Broker">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        <select class="form-control select2-ai" name="broker_id" id="broker_id">
+                                            <option value="">-- Select Broker --</option>
+                                            <?php foreach ($brokers as $br): ?>
+                                                <option value="<?= $br['id'] ?>"><?= $br['broker_name'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -831,6 +783,7 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
                                 <div id="covered_members_container" class="mb-3">
                                     <!-- Dynamic members added here -->
                                 </div>
+                                <p class="small text-muted"><i class="bi bi-people me-1" aria-hidden="true"></i>When family members are covered, saving creates or reuses this customer's family group and adds these reviewed members. Existing family details are preserved. For multiple groups, select the correct family group above.</p>
                                 <input type="hidden" name="covered_members" id="covered_members_input">
                             </div>
 
@@ -982,6 +935,11 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
                     <div class="fw-bold" id="success_type">—</div>
                 </div>
                 <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a id="aiSuccessJson" class="btn-ai-outline btn" target="_blank" rel="noopener" hidden><i class="bi bi-braces me-1" aria-hidden="true"></i>View extraction JSON</a>
+                    <div id="success_family_group" class="w-100 small text-success mb-2" hidden role="status"></div>
+                    @if(auth()->user()->isAdmin() || auth()->user()->hasMatrixPermission('view_family_groups'))
+                        <a id="btn_view_family_group" href="{{ route('masters.family_groups.index') }}" class="btn-ai-outline btn" style="display:none"><i class="bi bi-people me-2"></i>Family Groups</a>
+                    @endif
                     <a id="btn_view_policy" href="#" class="btn-ai-primary btn">
                         <i class="fas fa-eye me-2"></i> View Policy
                     </a>
@@ -1045,355 +1003,6 @@ html[data-theme="dark"] .ai-stats-bar { border-color: #334155; }
     </div>
 </div>
 
-{{-- ===================== ADD MASTER MODALS ===================== --}}
-
-{{-- Modal: Add Family Group --}}
-<div class="modal fade" id="modalFamilyGroup" tabindex="-1" aria-labelledby="modalFamilyGroupLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:#0a2540;">
-                <h5 class="modal-title text-white fw-bold" id="modalFamilyGroupLabel">Add Family Group</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formFamilyGroup" action="javascript:void(0);" method="POST" onsubmit="return false;">
-                @csrf
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Family Group Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="fg_group_name" name="group_name" placeholder="Enter group name" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Policy Holder <span class="text-danger">*</span></label>
-                            <select class="form-control" id="fg_holder_id" name="policy_holder_id" required>
-                                <option value="">Select Policy Holder</option>
-                                @if(isset($customers) && count($customers) > 0)
-                                    @foreach($customers as $c)
-                                        <option value="{{ $c->id }}">{{ $c->name }}</option>
-                                    @endforeach
-                                @endif
-                            </select>
-                        </div>
-                    </div>
-                    <h6 class="fw-bold mt-2">Members</h6>
-                    <div id="fg_members_container">
-                        <div class="fg-member-row d-flex gap-2 mb-2 align-items-center">
-                            <input type="text" class="form-control" name="member_name[]" placeholder="Member Name">
-                            <input type="text" class="form-control" name="member_relation[]" placeholder="Relation">
-                            <input type="text" class="form-control" name="member_contact[]" placeholder="Contact">
-                            <input type="date" class="form-control" name="member_dob[]" placeholder="DOB" max="{{ \Carbon\Carbon::yesterday()->format('Y-m-d') }}">
-                            <input type="date" class="form-control" name="member_anniversary[]" placeholder="Anniversary">
-                            <button type="button" class="btn btn-link text-danger p-0 fg-remove-member"><i class="fas fa-trash text-danger"></i></button>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-secondary btn-sm mt-1" id="fg_add_member">Add More Members</button>
-                    <div class="mt-3">
-                        <label class="form-label fw-bold">Remarks</label>
-                        <textarea class="form-control" name="remarks" id="fg_remarks" rows="2" placeholder="Any remarks"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark-blue btn-submit-modal" onclick="submitModalAjax('#formFamilyGroup', '#modalFamilyGroup', 'family-groups/store')">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal: Add Policy Holder (Customer) --}}
-<div class="modal fade" id="modalPolicyHolder" tabindex="-1" aria-labelledby="modalPolicyHolderLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:#0a2540;">
-                <h5 class="modal-title text-white fw-bold" id="modalPolicyHolderLabel">Add Policy Holder</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formPolicyHolder" action="javascript:void(0);" method="POST" onsubmit="return false;">
-                @csrf
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="name" placeholder="Full name" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Email</label>
-                            <input type="email" class="form-control" name="email" placeholder="Email address">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Phone</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control flex-grow-0" name="country_code" value="+91" style="width:85px" readonly>
-                                <input type="tel" class="form-control" name="phone" placeholder="Phone number" maxlength="15">
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">WhatsApp</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control flex-grow-0" name="whatsapp_country_code" value="+91" style="width:85px" readonly>
-                                <input type="tel" class="form-control" name="whatsapp" placeholder="WhatsApp number" maxlength="15">
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Company Name</label>
-                            <input type="text" class="form-control" name="company_name" placeholder="Company name">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Address</label>
-                            <input type="text" class="form-control" name="address" placeholder="Address">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark-blue btn-submit-modal" onclick="submitModalAjax('#formPolicyHolder', '#modalPolicyHolder', 'save-customer')">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal: Add Policy Type --}}
-<div class="modal fade" id="modalPolicyType" tabindex="-1" aria-labelledby="modalPolicyTypeLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:#0a2540;">
-                <h5 class="modal-title text-white fw-bold" id="modalPolicyTypeLabel">Add Policy Type</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formPolicyType" action="javascript:void(0);" method="POST" onsubmit="return false;">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Policy Type Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="policy_type_name" placeholder="Enter policy type name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Description</label>
-                        <textarea class="form-control" name="policy_description" rows="2" placeholder="Description (optional)"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark-blue btn-submit-modal" onclick="submitModalAjax('#formPolicyType', '#modalPolicyType', 'policy-type/store')">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal: Add Policy Sub Type --}}
-<div class="modal fade" id="modalPolicySubType" tabindex="-1" aria-labelledby="modalPolicySubTypeLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:#0a2540;">
-                <h5 class="modal-title text-white fw-bold" id="modalPolicySubTypeLabel">Add Policy Sub Type</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formPolicySubType" action="javascript:void(0);" method="POST" onsubmit="return false;">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Policy Type <span class="text-danger">*</span></label>
-                        <select class="form-control" name="type_id" id="pst_type_id" required>
-                            <option value="">-- Select Policy Type --</option>
-                            @if(isset($policyTypes) && count($policyTypes) > 0)
-                                @foreach($policyTypes as $pt)
-                                    <option value="{{ $pt->id }}">{{ $pt->name }}</option>
-                                @endforeach
-                            @endif
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Sub Type Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="name" placeholder="Enter sub type name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Description</label>
-                        <textarea class="form-control" name="description" rows="2" placeholder="Description (optional)"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark-blue btn-submit-modal" onclick="submitModalAjax('#formPolicySubType', '#modalPolicySubType', 'policy-sub-type/store')">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal: Add Segment --}}
-<div class="modal fade" id="modalSegment" tabindex="-1" aria-labelledby="modalSegmentLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:#0a2540;">
-                <h5 class="modal-title text-white fw-bold" id="modalSegmentLabel">Add Segment</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formSegment" action="javascript:void(0);" method="POST" onsubmit="return false;">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Policy Type <span class="text-danger">*</span></label>
-                        <select class="form-control" name="insurance_type_id" id="seg_type_id" required>
-                            <option value="">-- Select Policy Type --</option>
-                            @if(isset($policyTypes) && count($policyTypes) > 0)
-                                @foreach($policyTypes as $pt)
-                                    <option value="{{ $pt->id }}">{{ $pt->name }}</option>
-                                @endforeach
-                            @endif
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Segment Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="name" placeholder="Enter segment name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Description</label>
-                        <textarea class="form-control" name="description" rows="2" placeholder="Description (optional)"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark-blue btn-submit-modal" onclick="submitModalAjax('#formSegment', '#modalSegment', 'store-segment')">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal: Add Insurance Company --}}
-<div class="modal fade" id="modalInsuranceCompany" tabindex="-1" aria-labelledby="modalInsuranceCompanyLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:#0a2540;">
-                <h5 class="modal-title text-white fw-bold" id="modalInsuranceCompanyLabel">Add Insurance Company</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formInsuranceCompany" action="javascript:void(0);" method="POST" onsubmit="return false;">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Company Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="name" placeholder="Enter company name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Description</label>
-                        <textarea class="form-control" name="description" rows="2" placeholder="Description (optional)"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark-blue btn-submit-modal" onclick="submitModalAjax('#formInsuranceCompany', '#modalInsuranceCompany', 'store-company')">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal: Add Branch --}}
-<div class="modal fade" id="modalBranch" tabindex="-1" aria-labelledby="modalBranchLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:#0a2540;">
-                <h5 class="modal-title text-white fw-bold" id="modalBranchLabel">Add Branch</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formBranch" action="javascript:void(0);" method="POST" onsubmit="return false;">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Insurance Company <span class="text-danger">*</span></label>
-                        <select class="form-control" name="company_id" id="branch_company_id" required>
-                            <option value="">-- Select Company --</option>
-                            @if(isset($companies) && count($companies) > 0)
-                                @foreach($companies as $cmp)
-                                    <option value="{{ $cmp->id }}">{{ $cmp->name }}</option>
-                                @endforeach
-                            @endif
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Branch Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="branch_name" placeholder="Enter branch name" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark-blue btn-submit-modal" onclick="submitModalAjax('#formBranch', '#modalBranch', 'branch/store')">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal: Add Broker --}}
-<div class="modal fade" id="modalBroker" tabindex="-1" aria-labelledby="modalBrokerLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:#0a2540;">
-                <h5 class="modal-title text-white fw-bold" id="modalBrokerLabel">Add Broker</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formBroker" action="javascript:void(0);" method="POST" onsubmit="return false;">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Broker Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="broker_name" placeholder="Enter broker name" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark-blue btn-submit-modal" onclick="submitModalAjax('#formBroker', '#modalBroker', 'api/masters/brokers')">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal: Add Staff / Sub Agent --}}
-<div class="modal fade" id="modalStaff" tabindex="-1" aria-labelledby="modalStaffLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background:#0a2540;">
-                <h5 class="modal-title text-white fw-bold" id="modalStaffLabel">Add Sub Agent / Staff</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formStaff" action="javascript:void(0);" method="POST" onsubmit="return false;">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="name" placeholder="Enter full name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Email <span class="text-danger">*</span></label>
-                        <input type="email" class="form-control" name="email" placeholder="Enter email address" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Phone Number <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <input type="text" class="form-control flex-grow-0" name="country_code" value="+91" style="width:85px" readonly>
-                            <input type="tel" class="form-control" name="phone" placeholder="10-digit phone" maxlength="15" required>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Password <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" name="password" value="Staff@123" placeholder="Enter password" required>
-                        <div class="form-text text-muted">Default: Staff@123</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-dark-blue btn-submit-modal" onclick="submitModalAjax('#formStaff', '#modalStaff', 'api/users')">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
 {{-- SCRIPTS --}}
 {{-- ══════════════════════════════════════════════════════════════════════════ --}}
@@ -1409,8 +1018,8 @@ var AI_UPLOAD_URL   = "{{ route('fablead.ai.upload') }}";
 var AI_EXTRACT_URL  = "{{ route('fablead.ai.extract') }}";
 var AI_SAVE_URL     = "{{ route('fablead.ai.save') }}";
 var AI_PDF_URL      = "{{ route('fablead.ai.pdf') }}";
-var CSRF_TOKEN      = "{{ csrf_token() }}";
-var BASE_URL        = "{{ url('/') }}/";
+var CSRF_TOKEN      = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+var BASE_URL        = document.getElementById('base_url').value.replace(/\/+$/, '') + '/';
 
 var selectedFiles   = [];
 var currentUploadId = null;
@@ -1418,167 +1027,9 @@ var extractedData   = null;
 var currentFileIndex= 0;
 
 // ── Toastr config ──────────────────────────────────────────────────────────
-if (typeof toastr !== 'undefined') {
-    toastr.options = { positionClass: 'toast-top-right', timeOut: 4000, progressBar: true };
-}
+toastr.options = { positionClass: 'toast-top-right', timeOut: 4000, progressBar: true };
 
-// ════════════════════════════════════════════════════════════════════════
-// GLOBAL MODAL HELPERS (AVAILABLE IMMEDIATELY BEFORE ANY CLICKS)
-// ════════════════════════════════════════════════════════════════════════
-
-window.appendAndSelect = function(selectId, id, label, extraAttrs) {
-    var $sel = $(selectId);
-    $sel.find('option[value="' + id + '"]').remove();
-    var $opt = $('<option>', { value: id, text: label });
-    if (extraAttrs) {
-        $.each(extraAttrs, function (attr, val) {
-            $opt.attr('data-' + attr, val);
-        });
-    }
-    $sel.append($opt);
-    $sel.val(id);
-    $sel.trigger('change');
-    if ($sel.data('select2')) {
-        $sel.trigger('change.select2');
-    }
-};
-
-window.populateSelect = function(selectId, url, valueFn, labelFn, placeholder, selectedVal) {
-    var $sel = $(selectId);
-    $.getJSON(url, function (data) {
-        if (!data || !data.length) return;
-        var existingVal = selectedVal || $sel.val();
-        $sel.html('<option value="">' + (placeholder || '-- Select --') + '</option>');
-        $.each(data, function (i, row) {
-            var val = valueFn(row);
-            var isSel = (existingVal && existingVal == val) ? ' selected' : '';
-            $sel.append('<option value="' + val + '"' + isSel + '>' + labelFn(row) + '</option>');
-        });
-        if (existingVal) { $sel.val(existingVal); }
-        if ($sel.data('select2')) { $sel.trigger('change.select2'); }
-    });
-};
-
-window.submitModalAjax = function (formId, modalId, url) {
-    var $form = $(formId);
-    var formEl = document.querySelector(formId);
-    if (!formEl) return false;
-
-    if (formEl.checkValidity && !formEl.checkValidity()) {
-        formEl.reportValidity();
-        return false;
-    }
-
-    var $modal = $(modalId);
-    var $btn = $modal.find('.btn-submit-modal');
-    var origHtml = $btn.html();
-    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Saving...');
-
-    var endpoint = (typeof BASE_URL !== 'undefined' ? BASE_URL : '{{ url("/") }}/').replace(/\/+$/, '') + '/' + url.replace(/^\/+/, '');
-    var token = (typeof CSRF_TOKEN !== 'undefined' && CSRF_TOKEN) ? CSRF_TOKEN : '{{ csrf_token() }}';
-
-    $.ajax({
-        url: endpoint,
-        type: 'POST',
-        data: $form.serialize(),
-        headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-        dataType: 'json',
-        success: function (res) {
-            $btn.prop('disabled', false).html(origHtml);
-            var ok = res.status === 'success' || res.status === true || res.success === true || (res.id && !res.error);
-            if (ok) {
-                if (typeof toastr !== 'undefined') {
-                    toastr.success(res.message || 'Saved successfully.');
-                }
-
-                if (modalId === '#modalFamilyGroup') {
-                    appendAndSelect('#family_group_id', res.id, res.group_name || $form.find('[name="group_name"]').val(), { 'holder-id': res.holder_id || '' });
-                } else if (modalId === '#modalPolicyHolder') {
-                    var label = res.name || (res.data ? res.data.name : '') || $form.find('[name="name"]').val();
-                    appendAndSelect('#user_id', res.id, label);
-                    $('#fg_holder_id').append('<option value="' + res.id + '">' + label + '</option>');
-                    if (res.email && !$('#customer_email').val()) { $('#customer_email').val(res.email); }
-                    if (res.phone && !$('#customer_phone').val()) { $('#customer_phone').val(res.phone); }
-                    if (res.address && !$('#customer_address').val()) { $('#customer_address').val(res.address); }
-                } else if (modalId === '#modalPolicyType') {
-                    var label = res.name || $form.find('[name="policy_type_name"]').val();
-                    appendAndSelect('#policy_type_id', res.id, label);
-                    $('#pst_type_id').append('<option value="' + res.id + '">' + label + '</option>');
-                    $('#seg_type_id').append('<option value="' + res.id + '">' + label + '</option>');
-                } else if (modalId === '#modalPolicySubType') {
-                    var label = res.name || $form.find('[name="name"]').val();
-                    var selectedType = $('#policy_type_id').val();
-                    var typeId = res.type_id || res.insurance_policy_types_id || $form.find('[name="type_id"]').val();
-                    if (!selectedType || selectedType == typeId) {
-                        appendAndSelect('#sub_type_id', res.id, label);
-                    } else {
-                        if (typeof toastr !== 'undefined') {
-                            toastr.info('Sub type saved. Select the matching policy type to see it in the list.');
-                        }
-                    }
-                } else if (modalId === '#modalSegment') {
-                    var label = res.name || $form.find('[name="name"]').val();
-                    var selectedType = $('#policy_type_id').val();
-                    var typeId = res.insurance_type_id || $form.find('[name="insurance_type_id"]').val();
-                    if (!selectedType || selectedType == typeId) {
-                        appendAndSelect('#segment_id', res.id, label);
-                    } else {
-                        if (typeof toastr !== 'undefined') {
-                            toastr.info('Segment saved. Select the matching policy type to see it in the list.');
-                        }
-                    }
-                } else if (modalId === '#modalInsuranceCompany') {
-                    var label = res.name || $form.find('[name="name"]').val();
-                    appendAndSelect('#company_id', res.id, label);
-                    $('#branch_company_id').append('<option value="' + res.id + '">' + label + '</option>');
-                } else if (modalId === '#modalBranch') {
-                    var label = res.name || $form.find('[name="branch_name"]').val();
-                    var selectedCompany = $('#company_id').val();
-                    var compId = res.company_id || $form.find('[name="company_id"]').val();
-                    if (!selectedCompany || selectedCompany == compId) {
-                        appendAndSelect('#branch_id', res.id, label);
-                    }
-                } else if (modalId === '#modalBroker') {
-                    var broker = res.data || res;
-                    var label = broker.broker_name || broker.name || $form.find('[name="broker_name"]').val();
-                    appendAndSelect('#broker_id', broker.id, label);
-                } else if (modalId === '#modalStaff') {
-                    var user = res.data || res.user || res;
-                    var label = user.name || $form.find('[name="name"]').val();
-                    appendAndSelect('#staff_id', user.id, label);
-                }
-
-                var modalEl = document.querySelector(modalId);
-                if (modalEl) {
-                    var bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                    bsModal.hide();
-                }
-                formEl.reset();
-            } else {
-                if (typeof toastr !== 'undefined') {
-                    toastr.error(res.message || 'Failed. Please try again.');
-                }
-            }
-        },
-        error: function (xhr) {
-            $btn.prop('disabled', false).html(origHtml);
-            var msg = 'Failed to save.';
-            try {
-                var parsed = JSON.parse(xhr.responseText);
-                msg = parsed.message || (parsed.errors ? Object.values(parsed.errors).flat().join('<br>') : msg);
-            } catch (e) {}
-            if (typeof toastr !== 'undefined') {
-                toastr.error(msg);
-            } else {
-                alert(msg);
-            }
-        }
-    });
-
-    return false;
-};
-
-// ── Init Select2 & Event Handlers ─────────────────────────────────────────
+// ── Init Select2 ──────────────────────────────────────────────────────────
 $(document).ready(function() {
     $('.select2-ai').select2({ width: '100%' });
 
@@ -1648,77 +1099,6 @@ $(document).ready(function() {
         $('#amount').val(p.toFixed(2));
     }
     $('#premium').on('input', recalcTotal);
-
-    // ════════════════════════════════════════════════════════════════════════
-    // MODAL EVENT LISTENERS & AUTO-SELECTORS
-    // ════════════════════════════════════════════════════════════════════════
-
-    $('#modalFamilyGroup').on('show.bs.modal', function () {
-        var currentUId = $('#user_id').val();
-        if (currentUId) {
-            $('#fg_holder_id').val(currentUId);
-        }
-    });
-
-    $('#fg_add_member').on('click', function () {
-        $('#fg_members_container').append(
-            '<div class="fg-member-row d-flex gap-2 mb-2 align-items-center">' +
-            '<input type="text" class="form-control" name="member_name[]" placeholder="Member Name">' +
-            '<input type="text" class="form-control" name="member_relation[]" placeholder="Relation">' +
-            '<input type="text" class="form-control" name="member_contact[]" placeholder="Contact">' +
-            '<input type="date" class="form-control" name="member_dob[]">' +
-            '<input type="date" class="form-control" name="member_anniversary[]">' +
-            '<button type="button" class="btn btn-link text-danger p-0 fg-remove-member"><i class="fas fa-trash text-danger"></i></button>' +
-            '</div>'
-        );
-    });
-    $(document).on('click', '.fg-remove-member', function () {
-        if ($('.fg-member-row').length > 1) $(this).closest('.fg-member-row').remove();
-    });
-
-    $('#modalPolicySubType').on('show.bs.modal', function () {
-        var currentPtId = $('#policy_type_id').val();
-        if (currentPtId) {
-            $('#pst_type_id').val(currentPtId);
-        }
-    });
-
-    $('#modalSegment').on('show.bs.modal', function () {
-        var currentPtId = $('#policy_type_id').val();
-        if (currentPtId) {
-            $('#seg_type_id').val(currentPtId);
-        }
-    });
-
-    $('#modalBranch').on('show.bs.modal', function () {
-        var currentCId = $('#company_id').val();
-        if (currentCId) {
-            $('#branch_company_id').val(currentCId);
-        }
-    });
-
-    // Universal form submit blocker (Prevents any form from causing page reloads)
-    $(document).on('submit', 'form', function (e) {
-        e.preventDefault();
-        return false;
-    });
-
-    // Enter key handling: In modals, trigger the modal submit button; in main form, prevent reload
-    $(document).on('keydown', '.modal form input', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            var $btn = $(this).closest('.modal').find('.btn-submit-modal');
-            if ($btn.length) { $btn.click(); }
-            return false;
-        }
-    });
-
-    $(document).on('keydown', '#policy_ai_form input', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            return false;
-        }
-    });
 });
 
 // ── Drag & Drop ────────────────────────────────────────────────────────────
@@ -1778,6 +1158,7 @@ function processNextFile() {
     var fd = new FormData();
     fd.append('pdf', file);
     fd.append('_token', CSRF_TOKEN);
+    @if($renewalPolicy) fd.append('renewal_policy_id', @json($renewalPolicy->id)); @endif
 
     fetch(AI_UPLOAD_URL, { method: 'POST', body: fd })
         .then(r => r.json())
@@ -1812,8 +1193,23 @@ function processNextFile() {
 
 // ── Fill form from AI response ─────────────────────────────────────────────
 function fillForm(data) {
+    const jsonUrl = @json(url('fablead-ai/extraction')) + '/' + currentUploadId;
+    $('#aiViewJson').attr('href', jsonUrl).prop('hidden', false);
+    $('#aiDownloadJson').attr('href', jsonUrl + '?download=1').prop('hidden', false);
+    $('#aiSuccessJson').attr('href', jsonUrl).prop('hidden', false);
+    const meta = data.extraction_metadata || {};
+    const warning = document.getElementById('aiExtractionNotice');
+    warning.hidden = meta.complete !== false && !(data.conflicts || []).length && !(data.needs_review_fields || []).length;
+    warning.textContent = (meta.complete === false ? 'Some pages or text sections could not be extracted completely. ' : '')
+        + ((data.conflicts || []).length ? 'Conflicting values were found. ' : '')
+        + ((data.needs_review_fields || []).length ? 'Important fields need review; check suggestions below those fields. ' : '')
+        + 'Review the original PDF and JSON before saving.';
     var f = data.fields || {};
     var r = data.resolved || {};
+    $('#company_id').val(r.company_id || '').trigger('change.select2');
+    $('#policy_type_id').val(r.policy_type_id || '').trigger('change.select2');
+    showConfBadge('company_id', f.insurance_company?.confidence || 0, f.insurance_company?.source_text || '');
+    showConfBadge('policy_type_id', f.policy_type?.confidence || 0, f.policy_type?.source_text || '');
 
     // Simple text fields
     var textMap = {
@@ -1869,6 +1265,8 @@ function fillForm(data) {
 
     Object.keys(textMap).forEach(function(id) {
         var field = textMap[id];
+        var input = document.getElementById(id);
+        if (input) { input.value = ''; input.classList.remove('ai-filled'); showConfBadge(id, 0, ''); }
         if (field && field.value !== null && field.value !== '') {
             var el = document.getElementById(id);
             if (el) {
@@ -1973,10 +1371,12 @@ function fillForm(data) {
 
     // Run FableadAI Validations
     runValidations(data);
+    if (window.renderPolicySuggestions) window.renderPolicySuggestions(data);
+    if (window.fillAiRenewal) window.fillAiRenewal(data);
 }
 
 function showConfBadge(fieldId, confidence, sourceText) {
-    var badgeEl = document.getElementById('conf_' + fieldId);
+    var badgeEl = document.getElementById('conf_' + fieldId) || document.getElementById(({ company_id: 'conf_company', policy_type_id: 'conf_policy_type' })[fieldId] || '');
     if (!badgeEl) return;
     var cls, label;
     if (confidence >= 95) { cls = 'ai-conf-high'; label = '✓ ' + confidence + '%'; }
@@ -2202,6 +1602,7 @@ function resetToUpload() {
 
 // ── SAVE ──────────────────────────────────────────────────────────────────
 document.getElementById('btn_save_policy').addEventListener('click', function() {
+    if (window.prepareAiRenewal) { window.prepareAiRenewal(); return; }
     var modal = new bootstrap.Modal(document.getElementById('confirmSaveModal'));
     modal.show();
 });
@@ -2227,7 +1628,28 @@ document.getElementById('btn_confirm_save').addEventListener('click', function()
         document.getElementById('btn_confirm_save').disabled = false;
         document.getElementById('btn_confirm_save').innerHTML = '<i class="fas fa-database me-2"></i> Save Policy';
 
+        if (res.duplicate) {
+            Swal.fire({
+                title: 'Policy already exists',
+                html: '<div class="ai-duplicate-icon"><i class="bi bi-file-earmark-check" aria-hidden="true"></i></div>'
+                    + '<div class="ai-duplicate-eyebrow">DUPLICATE DETECTED</div>'
+                    + '<p class="ai-duplicate-description">This policy is already saved with the same insurer and coverage dates.</p>'
+                    + '<div class="ai-duplicate-note"><i class="bi bi-shield-check" aria-hidden="true"></i><span>Your existing policy is safe. No duplicate was created.</span></div>',
+                showCancelButton: true, confirmButtonText: 'Go to policies', cancelButtonText: 'Upload another policy',
+                buttonsStyling: false, width: 450, allowOutsideClick: false,
+                customClass: { popup: 'ai-duplicate-dialog', title: 'ai-duplicate-title', htmlContainer: 'ai-duplicate-content', actions: 'ai-duplicate-actions', confirmButton: 'ai-duplicate-primary', cancelButton: 'ai-duplicate-secondary' }
+            }).then(function (choice) {
+                if (choice.isConfirmed) window.location.href = res.redirect_url;
+                else resetToUpload();
+            });
+            return;
+        }
         if (res.status) {
+            var familySummary = document.getElementById('success_family_group');
+            familySummary.hidden = !res.family_group_id;
+            familySummary.textContent = res.family_group_id ? 'Covered members saved to ' + res.family_group_name + '.' : '';
+            var familyButton = document.getElementById('btn_view_family_group');
+            if (familyButton) familyButton.style.display = res.family_group_id ? '' : 'none';
             document.getElementById('success_policy_number').textContent = res.policy_number || '—';
             document.getElementById('success_company').textContent = $('#company_id option:selected').text() || '—';
             document.getElementById('success_type').textContent = $('#policy_type_id option:selected').text() || '—';
@@ -2362,4 +1784,76 @@ function updateAddonsInput() {
 </script>
 
 @endsection
+@push('styles')
+<style>
+.ai-quick-add { float: right; display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 23px; padding: 0; border: 1px solid #c9d9eb; border-radius: 6px; background: #edf3fa; color: #426b96; font-size: 11px; cursor: pointer; }
+.ai-quick-add:hover { background: #dde9f8; border-color: #9fb9d9; }
+.ai-quick-add:focus-visible { outline: 2px solid #82acd9; outline-offset: 2px; }
+#ai_steps.ai-steps { padding: 17px 26px; background: #f8fafd; }
+#ai_steps .ai-step { font-size: .77rem; gap: 9px; }
+#ai_steps .ai-step-dot { width: 30px; height: 30px; border: 1px solid #dce4ef; border-radius: 10px; background: #eef2f7; color: #94a4b8; }
+#ai_steps .ai-step.active .ai-step-dot { background: #214669; border-color: #214669; color: #fff; box-shadow: 0 3px 8px #21466920; }
+#ai_steps .ai-step.done .ai-step-dot { background: #e7f3ed; border-color: #cce4d6; color: #44866b; }
+#ai_steps .ai-step-line { height: 1px; margin: 0 16px; background: #dfe7f1; }
+#view_upload { padding: 28px 18px; background: linear-gradient(145deg,#f3f6fa,#eaf0f6); }
+#view_upload .ai-upload-card { max-width: 720px; margin: 0 auto; background: #fff; border: 1px solid #e0e7f1; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px #233e5e08; }
+.ai-upload-heading { padding: 26px 24px 0; }
+.ai-upload-kicker { display: inline-flex; align-items: center; font-size: .61rem; font-weight: 700; letter-spacing: .1em; color: #6784a6; background: #eef4fb; padding: 6px 10px; border-radius: 6px; margin-bottom: 13px; }
+#view_upload .ai-upload-heading h5 { font-size: 1.16rem; margin-bottom: 10px; }
+#view_upload .ai-page-sub { font-size: .79rem; color: #8697ac; }
+#view_upload .ai-review-notice { display: inline-flex; align-items: center; font-size: .7rem; font-weight: 500; color: #94784c; }
+#view_upload .ai-drop-zone { margin: 20px 24px 24px; padding: 28px 20px; border: 1.5px dashed #b8cce4; border-radius: 15px; background: linear-gradient(130deg,#f6f9fe,#edf4fc); }
+#view_upload .ai-drop-zone:hover,#view_upload .ai-drop-zone.drag-over { background: #eaf2fd; border-color: #779ec9; }
+#view_upload .ai-drop-icon { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; margin: 0 auto 17px; border: 1px solid #d4e2f4; border-radius: 19px; background: #e5effc; color: #547fae; font-size: 1.9rem; }
+#view_upload .ai-drop-title { font-size: 1rem; color: #294a6b; margin-bottom: 5px; }
+#view_upload .ai-drop-sub { font-size: .75rem; color: #8499b1; }
+#view_upload label.btn-ai-outline { padding: 10px 18px; border: 1px solid #234c76; border-radius: 9px; color: #fff; background: #234c76; box-shadow: 0 3px 8px #234c7615; font-size: .8rem; }
+#view_upload label.btn-ai-outline:hover { background: #315f8e; }
+[data-theme="dark"] #view_upload { background: #182638; }
+[data-theme="dark"] #view_upload .ai-upload-card { background: #213146; border-color: #3c4e67; }
+[data-theme="dark"] #view_upload .ai-drop-zone { background: #263b54; border-color: #506d90; }
+[data-theme="dark"] #view_upload .ai-drop-title { color: #d7e5f7; }
+@media(max-width:575.98px) { #ai_steps.ai-steps { padding: 14px 12px; } #ai_steps .ai-step { font-size: .65rem; gap: 5px; } #ai_steps .ai-step-line { margin: 0 5px; min-width: 6px; } #view_upload { padding: 18px 10px; } .ai-upload-heading { padding: 20px 14px 0; } #view_upload .ai-drop-zone { margin: 16px 14px; padding: 24px 12px; } }
+.swal2-popup.ai-duplicate-dialog { border-radius: 20px; padding: 28px 26px 24px; border: 1px solid #e0e7f1; box-shadow: 0 20px 65px #0b213b30; font-family: inherit; }
+.ai-duplicate-dialog .ai-duplicate-title { padding: 0; margin: 100px 0 0; font-size: 1.3rem; font-weight: 700; color: #203e5d; }
+.ai-duplicate-dialog .ai-duplicate-content { margin: 14px 0 0; overflow: visible; font-size: .86rem; }
+.ai-duplicate-icon { position: absolute; top: 27px; left: calc(50% - 29px); width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; background: #eaf1fb; border: 1px solid #dbe7f6; border-radius: 17px; color: #4d78a8; font-size: 1.65rem; }
+.ai-duplicate-eyebrow { position: absolute; top: 102px; left: 0; right: 0; font-size: .6rem; letter-spacing: .12em; color: #8c9cb0; font-weight: 700; }
+.ai-duplicate-description { color: #75869b; font-size: .84rem; line-height: 1.65; margin: 0 0 16px; }
+.ai-duplicate-note { display: flex; align-items: center; gap: 9px; padding: 11px 12px; background: #f0f7f3; border: 1px solid #dfece4; border-radius: 10px; color: #54816c; text-align: left; font-size: .72rem; line-height: 1.5; }
+.ai-duplicate-note i { flex-shrink: 0; font-size: 1rem; }
+.ai-duplicate-dialog .ai-duplicate-actions { display: flex; flex-wrap: wrap; width: 100%; gap: 8px; margin: 22px 0 0; }
+.ai-duplicate-primary,.ai-duplicate-secondary { flex: 1 1 auto; border-radius: 9px; padding: 10px 13px; font-family: inherit; font-size: .77rem; font-weight: 600; line-height: 1.4; cursor: pointer; }
+.ai-duplicate-primary { background: #1c4166; border: 1px solid #1c4166; color: #fff; }
+.ai-duplicate-primary:hover { background: #2a527c; }
+.ai-duplicate-secondary { background: #f5f8fc; border: 1px solid #dce5f0; color: #546e8c; }
+.ai-duplicate-secondary:hover { background: #eaf1fa; }
+.ai-duplicate-primary:focus-visible,.ai-duplicate-secondary:focus-visible { outline: 3px solid #8eb8ec; outline-offset: 3px; }
+[data-theme="dark"] .swal2-popup.ai-duplicate-dialog { background: #1e2d41; border-color: #3a4c65; }
+[data-theme="dark"] .ai-duplicate-dialog .ai-duplicate-title { color: #dce8f7; }
+[data-theme="dark"] .ai-duplicate-description { color: #aebfd4; }
+[data-theme="dark"] .ai-duplicate-note { background: #243c34; border-color: #3b5748; color: #a1c9b5; }
+.ai-field-suggestions { margin-top: 9px; padding: 9px; border: 1px solid #e5dcc7; border-radius: 8px; background: #fffbf1; }
+.ai-suggestion-label { color: #8b733e; font-size: .68rem; margin-bottom: 6px; }
+.ai-suggestion-choice { display: inline-block; max-width: 100%; text-align: left; margin: 3px 4px 3px 0; border: 1px solid #cfdae9; border-radius: 6px; padding: 5px 8px; background: #fff; color: #385f89; font-size: .73rem; cursor: pointer; overflow-wrap: anywhere; }
+.ai-suggestion-choice:hover, .ai-suggestion-choice.is-selected { background: #e7f0fc; border-color: #8eafd4; }
+.ai-suggestion-evidence { display: block; color: #8c8271; font-size: .64rem; line-height: 1.5; margin: 2px 0 6px; overflow-wrap: anywhere; }
+[data-theme="dark"] .ai-field-suggestions { background: #302f2a; border-color: #615742; }
+[data-theme="dark"] .ai-suggestion-choice { background: #293e56; color: #d1e2f7; border-color: #476281; }
+</style>
+@endpush
+@push('scripts')
+@if($renewalPolicy)
+<script>
+window.aiRenewalConfig = {
+    sourceId: @json($renewalPolicy->id), reviewUrl: @json(route('fablead.ai.renewal.review',$renewalPolicy)), saveUrl: @json(route('fablead.ai.renewal.save',$renewalPolicy)),
+    source: @json($renewalSourceValues),
+    companyName: @json($renewalPolicy->company?->name), typeName: @json($renewalPolicy->policyType?->name)
+};
+</script>
+<script src="{{ (env('PUBLIC_PATH') ? '/'.trim(env('PUBLIC_PATH'), '/') : '').'/js/ai-policy-renewal.js' }}?v={{ @file_exists(public_path('js/ai-policy-renewal.js')) ? filemtime(public_path('js/ai-policy-renewal.js')) : time() }}"></script>
+@endif
+<script src="{{ (env('PUBLIC_PATH') ? '/'.trim(env('PUBLIC_PATH'), '/') : '').'/js/ai-policy-quick-add.js' }}?v={{ @file_exists(public_path('js/ai-policy-quick-add.js')) ? filemtime(public_path('js/ai-policy-quick-add.js')) : time() }}"></script>
+<script src="{{ (env('PUBLIC_PATH') ? '/'.trim(env('PUBLIC_PATH'), '/') : '').'/js/ai-policy-suggestions.js' }}?v={{ @file_exists(public_path('js/ai-policy-suggestions.js')) ? filemtime(public_path('js/ai-policy-suggestions.js')) : time() }}"></script>
+@endpush
 {{-- ===== FABLEAD AI POLICY UPLOAD: END ===== --}}

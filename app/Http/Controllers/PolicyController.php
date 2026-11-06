@@ -799,7 +799,35 @@ class PolicyController extends Controller
             $familyMembers = FamilyGroupMember::where('family_group_id', $policy->family_group_id)->get();
         }
 
-        return view('crm.policy.view', [
+        $viewer = auth()->user();
+        $membersAvailable = Schema::hasTable('policy_members');
+        $policy->setRelation('members', $membersAvailable ? $policy->members()->get() : collect());
+        $policy->setRelation('addons', Schema::hasTable('policy_addons') ? $policy->addons()->get() : collect());
+        $claims = Schema::hasTable('claim_trackers') ? \App\Models\ClaimTracker::with('insuredMember')->where('policy_id', $policy->id)->latest()->get() : collect();
+        $commissions = ($viewer && ($viewer->isAdmin() || $viewer->hasMatrixPermission('view_commission_rules'))) && Schema::hasTable('commission_entries')
+            ? $policy->commissionEntries()->latest()->get() : collect();
+        $kyc = Schema::hasTable('kyc_documents') ? $policy->kycDocument()->first() : null;
+
+        $policyTerms = collect();
+        $term = $policy; $seenTerms = [];
+        while ($term && !isset($seenTerms[$term->id])) {
+            $seenTerms[$term->id] = true;
+            $term->load(['company','policyType']); $policyTerms->push($term);
+            $parentId = $term->renewal_of_policy_id ?: $term->renew_id;
+            $term = $parentId ? Policy::whereKey($parentId)->where('holder_id',$policy->holder_id)->first() : null;
+        }
+        if (Schema::hasColumn('policies','renewal_of_policy_id')) {
+            $pending = $policyTerms->pluck('id')->all();
+            while ($pending) {
+                $children = Policy::with(['company','policyType'])->whereIn('renewal_of_policy_id',$pending)->where('holder_id',$policy->holder_id)->whereNull('deleted_at')->get();
+                $pending = [];
+                foreach ($children as $child) if (!isset($seenTerms[$child->id])) { $seenTerms[$child->id] = true; $policyTerms->push($child); $pending[] = $child->id; }
+            }
+        }
+        if (Schema::hasTable('claim_trackers')) $claims = \App\Models\ClaimTracker::with(['insuredMember','policy'])->whereIn('policy_id',$policyTerms->pluck('id'))->latest()->get();
+
+        $viewName = view()->exists('crm.policy.policy-dashboard') ? 'crm.policy.policy-dashboard' : 'crm.policy.view';
+        return view($viewName, [
             'policy' => $policy,
             'assignedStaff' => $assignedStaff,
             'familyGroup' => $policy->familyGroup,
@@ -812,6 +840,11 @@ class PolicyController extends Controller
             'vehicleDetails' => $vehicleDetails,
             'policy_holder' => $policy->holder,
             'policyDocuments' => $policyDocuments,
+            'policyTerms' => $policyTerms->sortByDesc('start_date'),
+            'membersAvailable' => $membersAvailable,
+            'claims' => $claims,
+            'commissions' => $commissions,
+            'kyc' => $kyc,
         ]);
     }
 
@@ -971,14 +1004,54 @@ class PolicyController extends Controller
             $newPolicyData['is_renew'] = 1;
         }
 
+        $manualRenewalFile = null;
         try {
-            $newPolicy = DB::transaction(function () use ($request, $policy, $newPolicyData) {
-                $policy->update($newPolicyData);
-                $this->storePolicyPdf($policy, $request->file('policy_pdf'), 'renewal', 'Renewed Policy PDF');
-
-                return $policy->fresh();
+            $newPolicy = DB::transaction(function () use ($request, $policy, $newPolicyData, &$manualRenewalFile) {
+                if (Schema::hasColumn('policies', 'renewal_of_policy_id')) {
+                    CompanyMaster::whereKey($newPolicyData['company_id'])->lockForUpdate()->firstOrFail();
+                    $source = Policy::whereKey($policy->id)->lockForUpdate()->firstOrFail();
+                    if (class_exists(\App\Services\AiPolicyRenewal::class)) {
+                        app(\App\Services\AiPolicyRenewal::class)->authorize($source, auth()->user());
+                    }
+                    $hash = hash_file('sha256', $request->file('policy_pdf')->getRealPath());
+                    if ((Schema::hasColumn('policies', 'renewal_document_hash') && Policy::where('renewal_document_hash', $hash)->exists())
+                        || (class_exists(\App\Services\PolicyDuplicateCheck::class) && app(\App\Services\PolicyDuplicateCheck::class)->find($newPolicyData))) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['duplicate' => 'This policy term or renewal PDF already exists.']);
+                    }
+                    if (Policy::where('renewal_of_policy_id', $source->id)->whereNull('deleted_at')->exists()) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['renewal' => 'This term has already been renewed. Open its latest term first.']);
+                    }
+                    $new = $source->replicate(['policy_pdf', 'renewal_document_hash', 'renewal_review']);
+                    $new->fill($newPolicyData);
+                    $new->policy_number = 'POL-' . now()->format('Ymd') . '-' . strtoupper(Str::random(10));
+                    $new->renewal_of_policy_id = $source->id;
+                    if (Schema::hasColumn('policies', 'renew_id')) $new->renew_id = $source->id;
+                    $new->created_by = auth()->id();
+                    if (Schema::hasColumn('policies', 'renewal_document_hash')) $new->renewal_document_hash = $hash;
+                    $new->save();
+                    $history = $this->storePolicyPdf($new, $request->file('policy_pdf'), 'renewal', 'Renewed Policy PDF');
+                    $manualRenewalFile = 'policies/' . basename($history->file_name);
+                    foreach (['members' => 'policy_members', 'addons' => 'policy_addons'] as $relation => $table) {
+                        if (Schema::hasTable($table)) {
+                            foreach ($source->$relation as $record) {
+                                $copy = $record->replicate();
+                                $copy->policy_id = $new->id;
+                                $copy->save();
+                            }
+                        }
+                    }
+                    return $new->fresh();
+                } else {
+                    $policy->update($newPolicyData);
+                    $this->storePolicyPdf($policy, $request->file('policy_pdf'), 'renewal', 'Renewed Policy PDF');
+                    return $policy->fresh();
+                }
             });
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            if ($manualRenewalFile) Storage::disk('public')->delete($manualRenewalFile);
+            throw $exception;
         } catch (\Throwable $exception) {
+            if ($manualRenewalFile) Storage::disk('public')->delete($manualRenewalFile);
             report($exception);
 
             return response()->json([
