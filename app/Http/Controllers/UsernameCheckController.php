@@ -182,3 +182,4 @@ class UsernameCheckController extends Controller
         ]);
     }
 }
+
