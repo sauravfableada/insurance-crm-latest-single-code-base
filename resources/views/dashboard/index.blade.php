@@ -6,12 +6,73 @@
 @php
     $canViewPolicies = tenant_has_module(['Policies', 'Insurance', 'Policy Center']) && (auth()->user()?->isAdmin() || auth()->user()?->hasMatrixPermission('view_policies'));
     $canViewCustomers = tenant_has_module(['Customers', 'Clients', 'All Clients']) && (auth()->user()?->isAdmin() || auth()->user()?->hasMatrixPermission('view_customers'));
+    $hasDashboardWidgets = $canViewPolicies || $canViewCustomers;
     $shouldShowRenewalModal = $canViewPolicies && !empty($showRenewalPoliciesModal);
+    $activePlan = auth()->user()?->getActivePlan();
+    $currentPlanDisplayName = (function_exists('tenant') && tenant('plan_name')) ? tenant('plan_name') : ($activePlan?->name ?? 'Free Plan');
+    $currentCompanyName = function_exists('tenant') ? (tenant('brand_name') ?: tenant('client_name')) : null;
 @endphp
 <div class="container-fluid p-0 dashboard-page" id="dashboardPage" data-user-id="{{ auth()->id() }}"
     data-show-renewal-modal="{{ $shouldShowRenewalModal ? '1' : '0' }}"
     data-has-policies="{{ $canViewPolicies ? '1' : '0' }}">
 
+    @if(!$hasDashboardWidgets)
+    {{-- Classy Welcome Hero Card (Shown when no module permissions are granted) --}}
+    <div class="classy-welcome-card card border-0 mb-4 overflow-hidden position-relative">
+        <div class="ambient-glow ambient-glow--1"></div>
+        <div class="ambient-glow ambient-glow--2"></div>
+        <div class="ambient-glow ambient-glow--3"></div>
+
+        <div class="card-body p-4 p-md-5 position-relative" style="z-index: 1;">
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-4">
+                <div class="flex-grow-1">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3 classy-status-pill">
+                        <i class="fa-solid fa-crown text-warning"></i>
+                        <span class="fw-semibold text-white">{{ $currentPlanDisplayName }}</span>
+                        <span class="status-indicator-dot"></span>
+                        <span class="badge-status-text">Active</span>
+                    </div>
+
+                    <h1 class="classy-hero-title mb-2">Welcome to CRM Dashboard</h1>
+
+                    <p class="classy-hero-desc mb-3">
+                        Your workspace is active and securely configured. Explore your available tools, review your active subscription features, or request additional CRM modules from Super Admin to unlock more capabilities.
+                    </p>
+
+                    <div class="d-flex flex-wrap align-items-center gap-3 pt-1 classy-meta-strip">
+                        <span class="meta-item">
+                            <i class="bi bi-person-circle text-info"></i>
+                            <span>Logged in as <strong class="text-white">{{ auth()->user()->name }}</strong></span>
+                        </span>
+                        <span class="meta-divider">•</span>
+                        <span class="meta-item">
+                            <i class="bi bi-shield-check text-success"></i>
+                            <span>Role: <strong class="text-white">{{ auth()->user()->isAdmin() ? 'Administrator' : 'Staff' }}</strong></span>
+                        </span>
+                        @if($currentCompanyName)
+                        <span class="meta-divider">•</span>
+                        <span class="meta-item">
+                            <i class="bi bi-building text-warning"></i>
+                            <span>{{ $currentCompanyName }}</span>
+                        </span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row flex-lg-column gap-2 flex-shrink-0">
+                    <a href="{{ route('plans.myplan') }}" class="btn classy-btn-gold">
+                        <i class="fa-solid fa-crown"></i>
+                        <span>My Subscription</span>
+                    </a>
+                    <a href="{{ route('profile.show') }}" class="btn classy-btn-glass">
+                        <i class="bi bi-person-gear"></i>
+                        <span>Account Profile</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    @else
     <div class="row g-3 mb-2" id="dashboardStats">
         @if($canViewCustomers)
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_customers">
@@ -70,6 +131,7 @@
         </div>
         @endif
     </div>
+    @endif
 
     {{-- Lead status board hidden for the insurance-focused dashboard.
     <div class="lead-board-wrapper p-0" id="leadBoardWrapper">
@@ -1193,6 +1255,147 @@
         @media (max-width: 575.98px) {
             .renewal-reminder-item { align-items: flex-start !important; }
             .renewal-reminder-date-wrap { text-align: left !important; margin-top: 8px; }
+        }
+
+        /* Classy Executive Welcome Hero */
+        .classy-welcome-card {
+            border-radius: 20px;
+            background: radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.22), transparent 45%),
+                        radial-gradient(circle at 15% 85%, rgba(245, 158, 11, 0.15), transparent 45%),
+                        linear-gradient(135deg, #0b1329 0%, #111d40 50%, #0b1329 100%);
+            box-shadow: 0 20px 45px -10px rgba(11, 19, 41, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        .ambient-glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(65px);
+            pointer-events: none;
+            opacity: 0.45;
+        }
+
+        .ambient-glow--1 {
+            width: 320px;
+            height: 320px;
+            background: #3b82f6;
+            top: -120px;
+            right: -60px;
+        }
+
+        .ambient-glow--2 {
+            width: 250px;
+            height: 250px;
+            background: #f59e0b;
+            bottom: -90px;
+            left: 8%;
+        }
+
+        .ambient-glow--3 {
+            width: 200px;
+            height: 200px;
+            background: #6366f1;
+            top: 25%;
+            right: 22%;
+        }
+
+        .classy-status-pill {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(10px);
+            font-size: 0.82rem;
+            font-weight: 500;
+        }
+
+        .status-indicator-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        .badge-status-text {
+            color: #a7f3d0;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .classy-hero-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffffff !important;
+            letter-spacing: -0.025em;
+            line-height: 1.25;
+        }
+
+        .classy-hero-desc {
+            color: rgba(226, 232, 240, 0.88) !important;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            max-width: 680px;
+        }
+
+        .classy-meta-strip {
+            font-size: 0.85rem;
+            color: rgba(203, 213, 225, 0.85);
+        }
+
+        .classy-meta-strip .meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .classy-meta-strip .meta-divider {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        .classy-btn-gold {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+            color: #ffffff !important;
+            border: none !important;
+            font-weight: 700;
+            padding: 0.7rem 1.4rem;
+            border-radius: 50px;
+            box-shadow: 0 10px 22px rgba(245, 158, 11, 0.35);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .classy-btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(245, 158, 11, 0.48);
+            color: #ffffff !important;
+        }
+
+        .classy-btn-glass {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+            padding: 0.7rem 1.25rem;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .classy-btn-glass:hover {
+            background: rgba(255, 255, 255, 0.16) !important;
+            color: #ffffff !important;
+            transform: translateY(-2px);
         }
     </style>
 @endpush
