@@ -73,17 +73,35 @@
         </div>
     </div>
     @else
+    <div class="dashboard-overview-header d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="dashboard-overview-title mb-1">Overview</h2>
+            <p class="dashboard-overview-subtitle mb-0">Your customers, policies and upcoming renewals at a glance.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            @if($canViewPolicies)
+            <button type="button" class="btn dashboard-renewal-button" id="openRenewalReminders" data-bs-toggle="modal" data-bs-target="#renewalPoliciesModal">
+                <span class="dashboard-renewal-button-icon"><i class="bi bi-calendar2-check" aria-hidden="true"></i></span>Renewal Reminders
+            </button>
+            @endif
+            <button type="button" class="btn dashboard-renewal-button" data-bs-toggle="modal" data-bs-target="#todaysOverviewModal">
+                <span class="dashboard-renewal-button-icon"><i class="bi bi-calendar-day" aria-hidden="true"></i></span>Today's Overview
+            </button>
+        </div>
+    </div>
+
     <div class="row g-3 mb-2" id="dashboardStats">
         @if($canViewCustomers)
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_customers">
             <a href="{{ route('masters.customers.index') }}" class="text-decoration-none">
-                <div class="metric-card card border-0 shadow-sm h-100">
+                <div class="metric-card metric-card-customers card shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Customers</p>
                         <div class="d-flex justify-content-between align-items-center">
                             <h3 class="metric-value mb-0" id="metricCustomers">0</h3>
                             <span class="metric-icon icon-customers"><i class="bi bi-people-fill"></i></span>
                         </div>
+                        <p class="metric-description mb-0">Your customer base</p>
                     </div>
                 </div>
             </a>
@@ -92,39 +110,42 @@
         @if($canViewPolicies)
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_policies">
             <a href="{{ route('policies.legacy.index') }}" class="text-decoration-none">
-                <div class="metric-card card border-0 shadow-sm h-100">
+                <div class="metric-card metric-card-policies card shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Total Policies</p>
                         <div class="d-flex justify-content-between align-items-center">
                             <h3 class="metric-value mb-0" id="metricTotalPolicies">0</h3>
                             <span class="metric-icon icon-followups"><i class="bi bi-shield-check"></i></span>
                         </div>
+                        <p class="metric-description mb-0">All insurance policies</p>
                     </div>
                 </div>
             </a>
         </div>
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_policies">
             <a href="{{ route('policies.legacy.index') }}" class="text-decoration-none">
-                <div class="metric-card card border-0 shadow-sm h-100">
+                <div class="metric-card metric-card-active card shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Active Policies</p>
                         <div class="d-flex justify-content-between align-items-center">
                             <h3 class="metric-value mb-0" id="metricActivePolicies">0</h3>
                             <span class="metric-icon icon-leads"><i class="bi bi-file-earmark-check-fill"></i></span>
                         </div>
+                        <p class="metric-description mb-0">Currently active coverage</p>
                     </div>
                 </div>
             </a>
         </div>
         <div class="col-6 col-sm-6 col-md-3 col-lg-3" data-perm="view_policies">
             <a href="{{ route('policies.legacy.index') }}" class="text-decoration-none">
-                <div class="metric-card card border-0 shadow-sm h-100">
+                <div class="metric-card metric-card-renewals card shadow-sm h-100">
                     <div class="card-body">
                         <p class="metric-label mb-1">Renewal Due</p>
                         <div class="d-flex justify-content-between align-items-center">
                             <h3 class="metric-value mb-0" id="metricRenewalDue">0</h3>
                             <span class="metric-icon icon-deals"><i class="bi bi-calendar2-week-fill"></i></span>
                         </div>
+                        <p class="metric-description mb-0">Expiring within 30 days</p>
                     </div>
                 </div>
             </a>
@@ -1234,11 +1255,14 @@
     </div>
 </div>
 @endif
+@if(!empty($todaysOverview))
+@include('dashboard.partials.todays-overview')
+@endif
 @endsection
 
 @push('styles')
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="{{ (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/css/dashboard.css' : '/css/dashboard.css') }}?v={{ filemtime(public_path('css/dashboard.css')) }}">
+    <link rel="stylesheet" href="{{ (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/css/dashboard.css' : '/css/dashboard.css') }}?v={{ @file_exists(public_path('css/dashboard.css')) ? filemtime(public_path('css/dashboard.css')) : time() }}">
     <style>
         .dashboard-link-disabled { pointer-events: none; }
         [data-perm][style*="display: none"], [data-perm-btn][style*="display: none"] { display: none !important; }
@@ -1404,6 +1428,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-    <script src="{{ (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/js/dashboard.js' : '/js/dashboard.js') }}?v={{ filemtime(public_path('js/dashboard.js')) }}"></script>
+    <script src="{{ (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/js/dashboard.js' : '/js/dashboard.js') }}?v={{ @file_exists(public_path('js/dashboard.js')) ? filemtime(public_path('js/dashboard.js')) : time() }}"></script>
     <!-- Dashboard permissions auto-applied by DashboardAPI -->
 @endpush

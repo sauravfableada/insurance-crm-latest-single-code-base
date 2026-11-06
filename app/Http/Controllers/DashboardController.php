@@ -61,7 +61,131 @@ class DashboardController extends Controller
         $insuranceTypes = InsurancePolicyType::where('status', true)
             ->get(['id', 'name']);
 
-        return view('dashboard.index', compact('allPolicies', 'insuranceTypes', 'showRenewalPoliciesModal'));
+        $todaysOverview = $this->buildTodaysOverview();
+
+        return view('dashboard.index', compact('allPolicies', 'insuranceTypes', 'showRenewalPoliciesModal', 'todaysOverview'));
+    }
+
+    private function buildTodaysOverview(): array
+    {
+        $today = today();
+        $user = auth()->user();
+        $sections = [
+            'meetings' => ['title' => "Today's meetings", 'icon' => 'calendar-event', 'items' => collect(), 'empty' => 'No meetings scheduled today.'],
+            'followups' => ['title' => "Today's follow-ups", 'icon' => 'telephone', 'items' => collect(), 'empty' => 'No follow-ups scheduled today.'],
+            'attention' => ['title' => 'Work needing attention', 'icon' => 'exclamation-circle', 'items' => collect(), 'empty' => 'You are all caught up.'],
+            'birthdays' => ['title' => "Today's birthdays", 'icon' => 'gift', 'items' => collect(), 'empty' => 'No birthdays today.'],
+            'anniversaries' => ['title' => "Today's anniversaries", 'icon' => 'heart', 'items' => collect(), 'empty' => 'No anniversaries today.'],
+        ];
+
+        foreach ([
+            ['meetings', \App\Models\Meeting::class, 'scheduled_at', 'view_meetings', 'meetings.show'],
+            ['followups', FollowUp::class, 'follow_up_at', 'view_followups', 'followups.show'],
+            ['tasks', \App\Models\Task::class, 'due_date', 'view_tasks', 'tasks.show'],
+        ] as [$key, $model, $dateColumn, $permission, $route]) {
+            if (!$user || !$user->hasMatrixPermission($permission)) {
+                continue;
+            }
+
+            $query = $this->scopeOwnedRecords($model::query())
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->whereDate($dateColumn, '<=', $today)->orderBy($dateColumn);
+            if ($key === 'meetings') {
+                $query->with('customer');
+            } elseif ($key === 'followups') {
+                $query->with('lead');
+            }
+
+            foreach ($query->get() as $record) {
+                $dateVal = $record->{$dateColumn};
+                if (!$dateVal) continue;
+                $date = $dateVal instanceof Carbon ? $dateVal : Carbon::parse($dateVal);
+                $overdue = $date->copy()->startOfDay()->lt($today);
+                $section = $key === 'tasks' || $overdue ? 'attention' : $key;
+                $sections[$section]['items']->push([
+                    'title' => $key === 'followups' ? ($record->purpose ?: 'Follow-up') : $record->title,
+                    'detail' => match ($key) {
+                        'meetings' => $record->customer?->name,
+                        'followups' => $record->lead?->name,
+                        default => null,
+                    },
+                    'date' => $date->format($key === 'tasks' ? 'd M Y' : 'd M Y, g:i A'),
+                    'sort' => $date->timestamp,
+                    'badge' => match ($key) { 'meetings' => 'Meeting', 'followups' => 'Follow-up', default => 'Task' } . ($overdue ? ' · Overdue' : ' · Today'),
+                    'overdue' => $overdue,
+                    'url' => route($route, $record->id),
+                ]);
+            }
+        }
+
+        if ($user && $user->hasMatrixPermission('view_customers')) {
+            foreach (['birthdays' => 'dob', 'anniversaries' => 'anniversary_date'] as $key => $column) {
+                if (!Schema::hasColumn('customers', $column)) continue;
+                $customers = $this->scopeOwnedRecords(Customer::query())
+                    ->whereMonth($column, $today->month)->whereDay($column, $today->day)
+                    ->orderBy('name')->get();
+                foreach ($customers as $customer) {
+                    $whatsapp = class_exists(\App\Services\CelebrationWhatsappWish::class)
+                        ? app(\App\Services\CelebrationWhatsappWish::class)->draft($key, $customer)
+                        : null;
+                    $sections[$key]['items']->push([
+                        'customer_id' => $customer->id,
+                        'whatsapp' => $whatsapp,
+                        'title' => $customer->name,
+                        'detail' => $customer->phone,
+                        'date' => $today->format('d M Y'),
+                        'badge' => $key === 'birthdays' ? 'Birthday today' : 'Anniversary today',
+                        'overdue' => false,
+                        'url' => route('masters.customers.show', $customer->id),
+                    ]);
+                }
+            }
+        }
+
+        if ($user && $user->hasMatrixPermission('view_family_groups') && Schema::hasTable('family_group_members')) {
+            foreach (['birthdays' => 'dob', 'anniversaries' => 'anniversary'] as $key => $column) {
+                if (!Schema::hasColumn('family_group_members', $column)) continue;
+                $members = \App\Models\FamilyGroupMember::query()
+                    ->with('group.holder')
+                    ->whereHas('group', function (Builder $query) use ($user) {
+                        if (!$user->isAdmin()) {
+                            $query->where(function (Builder $visible) use ($user) {
+                                $visible->where('created_by', $user->id)
+                                    ->orWhereHas('holder', fn (Builder $holders) => $holders->visibleToUser($user));
+                            });
+                        }
+                    })
+                    ->whereMonth($column, $today->month)->whereDay($column, $today->day)
+                    ->orderBy('member_name')->get();
+                foreach ($members as $member) {
+                    $holder = $member->group?->holder;
+                    $normalize = fn ($name) => mb_strtolower(preg_replace('/\s+/u', ' ', trim((string) $name)));
+                    if ($holder && $normalize($member->member_name) === $normalize($holder->name)
+                        && $sections[$key]['items']->contains('customer_id', $holder->id)) {
+                        continue;
+                    }
+                    $whatsapp = class_exists(\App\Services\CelebrationWhatsappWish::class)
+                        ? app(\App\Services\CelebrationWhatsappWish::class)->draft($key, $member, $holder)
+                        : null;
+                    $sections[$key]['items']->push([
+                        'title' => $member->member_name,
+                        'whatsapp' => $whatsapp,
+                        'detail' => implode(' · ', array_filter([
+                            $member->group?->group_name, $member->relation, $member->contactForHolder($holder),
+                        ])),
+                        'date' => $today->format('d M Y'),
+                        'badge' => $key === 'birthdays' ? 'Birthday today' : 'Anniversary today',
+                        'overdue' => false,
+                        'url' => route('masters.family_groups.index'),
+                    ]);
+                }
+                $sections[$key]['items'] = $sections[$key]['items']->sortBy('title', SORT_NATURAL | SORT_FLAG_CASE)->values();
+            }
+        }
+
+        $sections['attention']['items'] = $sections['attention']['items']->sortBy('sort')->values();
+
+        return ['date' => $today->format('d M Y'), 'sections' => $sections];
     }
 
     public function apiStats(): JsonResponse
@@ -743,7 +867,7 @@ class DashboardController extends Controller
 
             $customers = $canCustomers ? (clone $customersQuery)->count() : 0;
 
-            $policiesQuery = Policy::query()->whereNull('deleted_at');
+            $policiesQuery = Policy::query()->currentTerms();
             if (!$user?->isAdmin() || $user?->type === 'sub_agents') {
                 $currentUid = $user?->id;
                 $policiesQuery->where(function ($q) use ($currentUid) {

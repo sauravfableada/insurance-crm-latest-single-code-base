@@ -18,10 +18,22 @@ class FamilyGroupMember extends Model
         'contact',
         'dob',
         'anniversary',
+        'remarks',
         'created_by',
         'modified_by',
         'deleted_by',
     ];
+
+    public function contactForHolder(?Customer $holder): ?string
+    {
+        if (filled($this->contact)) return $this->contact;
+        $normalize = fn ($value) => mb_strtolower(preg_replace('/\s+/u', ' ', trim((string) $value)));
+        if ($holder && in_array($normalize($this->relation), ['self', 'proposer', 'policy holder', 'policyholder'], true)
+            && $normalize($this->member_name) === $normalize($holder->name)) {
+            return $holder->phone ?: null;
+        }
+        return null;
+    }
 
     // Member belongs to a group
     public function group()
