@@ -375,21 +375,23 @@
                                         </span>
                                     @endif
                                 </button>
-                                <div class="dropdown-menu dropdown-menu-end p-2 notifications-dropdown mt-2">
+                                <div class="dropdown-menu dropdown-menu-end p-0 notifications-dropdown mt-2 shadow">
                                     @forelse($recentNotifications as $item)
                                         <div class="notification-row">
                                             <span class="notification-avatar">
                                                 <i class="bi bi-bell"></i>
                                             </span>
-                                            <div class="flex-grow-1">
+                                            <div class="flex-grow-1 min-w-0" style="min-width: 0;">
                                                 <div class="notification-message">{{ $item['message'] }}</div>
-                                                <div class="d-flex align-items-center gap-1">
-                                                    <i class="bi bi-clock"></i>
+                                                <div class="d-flex align-items-center gap-1 mt-1">
+                                                    <i class="bi bi-clock text-muted" style="font-size: 0.75rem;"></i>
                                                     <div class="notification-time mt-0">{{ $item['time'] }}</div>
                                                 </div>
                                             </div>
-                                            <div class="ms-2">
-                                                <i class="fa fa-times float-right mark-as-read" data-id="{{ $item['id'] }}" style="cursor: pointer; color: #94a3b8;"></i>
+                                            <div class="ms-2 flex-shrink-0">
+                                                <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none mark-as-read text-muted" data-id="{{ $item['id'] }}" title="Mark as read" style="font-size: 0.85rem; line-height: 1;">
+                                                    <i class="fa fa-times mark-as-read" data-id="{{ $item['id'] }}"></i>
+                                                </button>
                                             </div>
                                         </div>
                                     @empty

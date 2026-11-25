@@ -488,11 +488,11 @@ a {
 
 /* Notifications dropdown */
 .notifications-dropdown {
-    width: min(92vw, 400px);
+    width: min(92vw, 420px);
     border: 1px solid var(--crm-border);
     border-radius: var(--crm-radius-lg);
     box-shadow: var(--crm-shadow-lg);
-    padding: 0;
+    padding: 0 !important;
     overflow: hidden;
     background: var(--crm-bg-card);
 }
@@ -506,7 +506,7 @@ a {
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    padding: 14px 16px;
+    padding: 12px 14px;
     border-bottom: 1px solid var(--crm-border);
     transition: background .15s ease;
 }
@@ -537,9 +537,12 @@ a {
 }
 
 .notifications-dropdown .notification-message {
-    font-size: .9rem;
+    font-size: .875rem;
     line-height: 1.4;
     color: var(--crm-text-body);
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 [data-theme="dark"] .notifications-dropdown .notification-message {
@@ -550,6 +553,7 @@ a {
     font-size: .8rem;
     color: var(--crm-text-muted);
     margin-top: 2px;
+    white-space: nowrap;
 }
 
 .notifications-dropdown .view-all-notifications {
