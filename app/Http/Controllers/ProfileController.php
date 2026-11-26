@@ -34,8 +34,97 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
         $settings = $this->profileSettings();
+        $kyc = \App\Models\KycDocumentsModel::where('user_id', $user->id)
+            ->whereNull('policy_id')
+            ->whereNull('lead_id')
+            ->first();
 
-        return view('profile.show', compact('user', 'settings'));
+        if (!$kyc) {
+            // Also fallback to any kyc record by this user
+            $kyc = \App\Models\KycDocumentsModel::where('user_id', $user->id)->latest('id')->first();
+        }
+
+        return view('profile.show', compact('user', 'settings', 'kyc'));
+    }
+
+    public function updateKyc(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'aadhaar_card.*' => 'nullable|file|mimes:jpeg,png,jpg,pdf,jfif|max:5120',
+            'pan_card.*'     => 'nullable|file|mimes:jpeg,png,jpg,pdf,jfif|max:5120',
+            'passbook.*'     => 'nullable|file|mimes:jpeg,png,jpg,pdf,jfif|max:5120',
+            'cheque.*'       => 'nullable|file|mimes:jpeg,png,jpg,pdf,jfif|max:5120',
+        ], [
+            'aadhaar_card.*.max' => 'Each Aadhaar Card file must not exceed 5 MB.',
+            'pan_card.*.max'     => 'Each PAN Card file must not exceed 5 MB.',
+            'passbook.*.max'     => 'Each Passbook file must not exceed 5 MB.',
+            'cheque.*.max'       => 'Each Cheque file must not exceed 5 MB.',
+        ]);
+
+        $uploadDir = public_path('uploads/kyc');
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $kyc = \App\Models\KycDocumentsModel::where('user_id', $user->id)
+            ->whereNull('policy_id')
+            ->whereNull('lead_id')
+            ->first();
+
+        if (!$kyc) {
+            $kyc = new \App\Models\KycDocumentsModel();
+            $kyc->user_id = $user->id;
+            $kyc->kyc_status = 'submitted';
+            $kyc->created_at = now();
+        }
+
+        $kyc->updated_at = now();
+
+        $fields = ['aadhaar_card', 'pan_card', 'passbook', 'cheque'];
+
+        foreach ($fields as $field) {
+            if ($request->hasFile($field)) {
+                $saved = [];
+                // Retrieve existing files if any
+                $existingVal = $kyc->{$field};
+                if (!empty($existingVal)) {
+                    $decoded = is_string($existingVal) ? json_decode($existingVal, true) : (array) $existingVal;
+                    if (is_array($decoded)) {
+                        $saved = $decoded;
+                    } elseif (is_string($existingVal)) {
+                        $saved = [$existingVal];
+                    }
+                }
+
+                $files = $request->file($field);
+                $filesArr = is_array($files) ? $files : [$files];
+                foreach ($filesArr as $file) {
+                    if ($file && $file->isValid()) {
+                        $ext = strtolower((string) $file->getClientOriginalExtension());
+                        $newName = \Illuminate\Support\Str::uuid() . '.' . $ext;
+                        $file->move($uploadDir, $newName);
+                        $saved[] = $newName;
+                    }
+                }
+
+                if (!empty($saved)) {
+                    $kyc->{$field} = json_encode(array_values(array_unique($saved)));
+                }
+            }
+        }
+
+        $kyc->save();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'KYC details uploaded successfully.',
+            ]);
+        }
+
+        return back()->with('success', 'KYC details uploaded successfully.');
     }
 
     public function apiShow(): JsonResponse

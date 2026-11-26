@@ -293,6 +293,7 @@ Route::middleware('auth.api')->group(function () {
     // Profile routes
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/kyc', [ProfileController::class, 'updateKyc'])->name('profile.kyc.update');
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::post('/profile/google/disconnect', [ProfileController::class, 'disconnectGoogle'])->name('profile.google.disconnect');
 

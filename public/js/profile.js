@@ -11,6 +11,7 @@
         bindPreview("company-logo-input", "company-logo-preview-small");
         bindPreview("short-company-logo-input", "short-company-logo-preview");
         bindProfileForm();
+        bindKycForm();
         bindPasswordForm();
         bindGoogleDisconnect();
         syncGoogleUi();
@@ -81,6 +82,49 @@
                 })
                 .catch(function (error) {
                     notify(error.message || "Profile update failed.", "error");
+                });
+        });
+    }
+
+    function bindKycForm() {
+        const form = document.getElementById("kycForm");
+        const config = window.profilePageConfig || {};
+        if (!form || !config.kycUrl) {
+            return;
+        }
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalBtnHtml = submitBtn ? submitBtn.innerHTML : "";
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Uploading...';
+            }
+
+            const formData = new FormData(form);
+
+            fetch(config.kycUrl, {
+                method: "POST",
+                headers: authHeaders({
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": csrf(),
+                }),
+                body: formData,
+            })
+                .then(parseJson)
+                .then(function (payload) {
+                    notify(payload.message || "KYC details uploaded successfully.", "success");
+                    window.location.reload();
+                })
+                .catch(function (error) {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnHtml;
+                    }
+                    notify(error.message || "KYC upload failed.", "error");
                 });
         });
     }
