@@ -257,15 +257,31 @@ class WhatsappConfigController extends Controller
         $baseUrl = rtrim((string) env('WHATSAPP_SESSION_URL', 'http://127.0.0.1:3001'), '/');
 
         try {
-            if ($action === 'connect') {
-                $resp = \Illuminate\Support\Facades\Http::timeout(15)
-                    ->post("{$baseUrl}/sessions/init", ['sessionId' => $sessionId]);
-            } elseif ($action === 'disconnect') {
-                $resp = \Illuminate\Support\Facades\Http::timeout(15)
-                    ->post("{$baseUrl}/sessions/{$sessionId}/logout", []);
+            $resp = null;
+            $socketPath = '/tmp/wa_session.sock';
+
+            // 1. Prefer UNIX socket on shared hosting if available
+            if (PHP_OS_FAMILY !== 'Windows' && file_exists($socketPath)) {
+                $http = \Illuminate\Support\Facades\Http::timeout(15)
+                    ->withOptions(['curl' => [CURLOPT_UNIX_SOCKET_PATH => $socketPath]]);
+                if ($action === 'connect') {
+                    $resp = $http->post('http://localhost/sessions/init', ['sessionId' => $sessionId]);
+                } elseif ($action === 'disconnect') {
+                    $resp = $http->post("http://localhost/sessions/{$sessionId}/logout", []);
+                } else {
+                    $resp = $http->get("http://localhost/sessions/{$sessionId}/status");
+                }
             } else {
-                $resp = \Illuminate\Support\Facades\Http::timeout(15)
-                    ->get("{$baseUrl}/sessions/{$sessionId}/status");
+                if ($action === 'connect') {
+                    $resp = \Illuminate\Support\Facades\Http::timeout(15)
+                        ->post("{$baseUrl}/sessions/init", ['sessionId' => $sessionId]);
+                } elseif ($action === 'disconnect') {
+                    $resp = \Illuminate\Support\Facades\Http::timeout(15)
+                        ->post("{$baseUrl}/sessions/{$sessionId}/logout", []);
+                } else {
+                    $resp = \Illuminate\Support\Facades\Http::timeout(15)
+                        ->get("{$baseUrl}/sessions/{$sessionId}/status");
+                }
             }
 
             $data = $resp->json() ?: [];
