@@ -56,6 +56,10 @@ class ProfileController extends Controller
             'pan_card.*'     => 'nullable|file|mimes:jpeg,png,jpg,pdf,jfif|max:5120',
             'passbook.*'     => 'nullable|file|mimes:jpeg,png,jpg,pdf,jfif|max:5120',
             'cheque.*'       => 'nullable|file|mimes:jpeg,png,jpg,pdf,jfif|max:5120',
+            'aadhaar_number' => 'nullable|string|max:50',
+            'pan_number'     => 'nullable|string|max:50',
+            'account_number' => 'nullable|string|max:50',
+            'cheque_number'  => 'nullable|string|max:50',
         ], [
             'aadhaar_card.*.max' => 'Each Aadhaar Card file must not exceed 5 MB.',
             'pan_card.*.max'     => 'Each PAN Card file must not exceed 5 MB.',
@@ -81,6 +85,20 @@ class ProfileController extends Controller
         }
 
         $kyc->updated_at = now();
+
+        // Update document number fields if present in request
+        if ($request->has('aadhaar_number')) {
+            $kyc->aadhaar_number = trim((string) $request->input('aadhaar_number')) ?: null;
+        }
+        if ($request->has('pan_number')) {
+            $kyc->pan_number = trim((string) $request->input('pan_number')) ?: null;
+        }
+        if ($request->has('account_number')) {
+            $kyc->account_number = trim((string) $request->input('account_number')) ?: null;
+        }
+        if ($request->has('cheque_number')) {
+            $kyc->cheque_number = trim((string) $request->input('cheque_number')) ?: null;
+        }
 
         $fields = ['aadhaar_card', 'pan_card', 'passbook', 'cheque'];
 
