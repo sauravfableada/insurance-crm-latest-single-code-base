@@ -266,6 +266,16 @@
         </li>
         @endif
 
+        @if(!$isCustomerUser && ($authUser?->isAdmin() || $authUser?->hasMatrixPermission('view_invoices') || $authUser?->type === 'admin'))
+        <!-- Company Pay-In Invoices -->
+        <li class="nav-item mt-2 sidebar-module" data-permission="view_invoices" data-requires-perm="false">
+            <a class="nav-link ccc ddd @if(request()->is('invoices*')) active @endif" href="{{ route('invoices.index') }}">
+                <i class="fa-solid fa-file-invoice-dollar me-2 text-danger"></i>
+                <span>Invoices</span>
+            </a>
+        </li>
+        @endif
+
         @php
             $operationsActive = request()->is('endorsement-management*', 'upload-document*')
                 || request()->routeIs('documents.*', 'tasks.*');
