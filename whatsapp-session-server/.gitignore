@@ -1,0 +1,6 @@
+node_modules/
+auth_sessions/
+.env
+npm-debug.log
+server.log
+*.sock
