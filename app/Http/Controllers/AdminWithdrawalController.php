@@ -861,4 +861,25 @@ class AdminWithdrawalController extends Controller
 
         return response()->json(['success' => false, 'message' => 'Record not found.'], 404);
     }
+
+    public function pdf(Request $request, $id)
+    {
+        $detailsResponse = $this->details($request, $id);
+        $payload = $detailsResponse->getData(true);
+
+        if (empty($payload['success']) || empty($payload['data'])) {
+            abort(404, $payload['message'] ?? 'Record not found.');
+        }
+
+        $record = $payload['data'];
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('crm.withdrawals.pdf', compact('record'));
+        $safeRef = preg_replace('/[^A-Za-z0-9\-_]/', '-', (string) ($record['ref_no'] ?? $id));
+        $filename = 'payout-' . trim($safeRef, '-') . '.pdf';
+
+        if ($request->boolean('view')) {
+            return $pdf->stream($filename);
+        }
+
+        return $pdf->download($filename);
+    }
 }

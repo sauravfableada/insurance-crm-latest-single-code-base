@@ -679,6 +679,7 @@ Route::middleware('auth.api')->group(function () {
         Route::post('/admin/withdrawals/create-payout', [\App\Http\Controllers\AdminWithdrawalController::class, 'storePayout'])->name('admin.withdrawals.store-payout');
         Route::get('/admin/withdrawals/user-balance/{userId}', [\App\Http\Controllers\AdminWithdrawalController::class, 'userBalance'])->name('admin.withdrawals.user-balance');
         Route::get('/admin/withdrawals/{id}/details', [\App\Http\Controllers\AdminWithdrawalController::class, 'details'])->name('admin.withdrawals.details');
+        Route::get('/admin/withdrawals/{id}/pdf', [\App\Http\Controllers\AdminWithdrawalController::class, 'pdf'])->name('admin.withdrawals.pdf');
         Route::post('/admin/withdrawals/{id}/update', [\App\Http\Controllers\AdminWithdrawalController::class, 'update'])->name('admin.withdrawals.update');
         Route::delete('/admin/withdrawals/{id}', [\App\Http\Controllers\AdminWithdrawalController::class, 'destroy'])->name('admin.withdrawals.destroy');
         Route::post('/admin/withdrawals/{id}/approve', [\App\Http\Controllers\AdminWithdrawalController::class, 'approve'])->name('admin.withdrawals.approve');

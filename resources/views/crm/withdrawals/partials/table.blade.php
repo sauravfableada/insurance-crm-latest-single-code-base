@@ -160,6 +160,21 @@
                                 @endif
                             @endif
 
+                            <!-- View PDF Button -->
+                            <a href="{{ route('admin.withdrawals.pdf', ['id' => $item->id, 'kind' => $item->kind, 'view' => 1]) }}"
+                               target="_blank"
+                               class="btn btn-sm btn-outline-primary px-2 py-1"
+                               title="View Pay-In / Pay-Out PDF">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </a>
+
+                            <!-- Download PDF Button -->
+                            <a href="{{ route('admin.withdrawals.pdf', ['id' => $item->id, 'kind' => $item->kind]) }}"
+                               class="btn btn-sm btn-outline-success px-2 py-1"
+                               title="Download Pay-In / Pay-Out PDF">
+                                <i class="fa-solid fa-download"></i>
+                            </a>
+
                             <!-- View Action Button -->
                             <button type="button" class="btn btn-sm btn-outline-info px-2 py-1 btn-view-payout"
                                     data-id="{{ $item->id }}"
