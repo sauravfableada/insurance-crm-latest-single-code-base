@@ -285,14 +285,34 @@
 
                             @php
                                 $kycFields = [
-                                    'aadhaar_card' => ['title' => 'Aadhaar Card', 'icon' => 'fa-id-card'],
-                                    'pan_card'     => ['title' => 'PAN Card',     'icon' => 'fa-address-card'],
-                                    'passbook'     => ['title' => 'Bank Passbook','icon' => 'fa-book'],
-                                    'cheque'       => ['title' => 'Bank Cheque',  'icon' => 'fa-money-check'],
+                                    'aadhaar_card' => [
+                                        'title'     => 'Aadhaar Card',
+                                        'icon'      => 'fa-id-card',
+                                        'num_field' => 'aadhaar_number',
+                                        'num_label' => 'Aadhaar No.',
+                                    ],
+                                    'pan_card'     => [
+                                        'title'     => 'PAN Card',
+                                        'icon'      => 'fa-address-card',
+                                        'num_field' => 'pan_number',
+                                        'num_label' => 'PAN No.',
+                                    ],
+                                    'passbook'     => [
+                                        'title'     => 'Bank Passbook',
+                                        'icon'      => 'fa-book',
+                                        'num_field' => 'account_number',
+                                        'num_label' => 'A/C No.',
+                                    ],
+                                    'cheque'       => [
+                                        'title'     => 'Bank Cheque',
+                                        'icon'      => 'fa-money-check',
+                                        'num_field' => 'cheque_number',
+                                        'num_label' => 'Cheque No.',
+                                    ],
                                 ];
                                 $hasAnyKyc = false;
                                 foreach (array_keys($kycFields) as $kKey) {
-                                    if (!empty($kyc?->{$kKey})) {
+                                    if (!empty($kyc?->{$kKey}) || !empty($kyc?->{$kycFields[$kKey]['num_field']})) {
                                         $hasAnyKyc = true;
                                         break;
                                     }
@@ -309,14 +329,24 @@
                                                 $decoded = is_string($val) ? json_decode($val, true) : (array) $val;
                                                 $files = is_array($decoded) ? $decoded : [$val];
                                             }
+                                            $numVal = $kyc?->{$info['num_field']};
                                         @endphp
                                         <div class="col-md-6 col-lg-3">
                                             <div class="border rounded-3 p-3 bg-light h-100 d-flex flex-column justify-content-between">
                                                 <div>
-                                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                                        <i class="fa-solid {{ $info['icon'] }} text-primary"></i>
-                                                        <span class="fw-bold text-dark">{{ $info['title'] }}</span>
+                                                    <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <i class="fa-solid {{ $info['icon'] }} text-primary"></i>
+                                                            <span class="fw-bold text-dark">{{ $info['title'] }}</span>
+                                                        </div>
                                                     </div>
+
+                                                    @if(!empty($numVal))
+                                                        <div class="p-2 mb-2 bg-white rounded border border-primary-subtle">
+                                                            <span class="text-muted small d-block" style="font-size: 0.72rem;">{{ $info['num_label'] }}</span>
+                                                            <span class="fw-bold text-dark font-monospace" style="font-size: 0.88rem;">{{ $numVal }}</span>
+                                                        </div>
+                                                    @endif
 
                                                     @if(!empty($files))
                                                         <div class="d-flex flex-column gap-2 mt-2">
@@ -349,9 +379,9 @@
                                                             @endforeach
                                                         </div>
                                                     @else
-                                                        <div class="text-center py-4 text-muted small">
-                                                            <i class="fa-solid fa-circle-xmark text-secondary opacity-50 d-block fs-4 mb-1"></i>
-                                                            Not uploaded yet
+                                                        <div class="text-center py-3 text-muted small">
+                                                            <i class="fa-solid fa-file-excel text-secondary opacity-50 d-block fs-5 mb-1"></i>
+                                                            No document file uploaded
                                                         </div>
                                                     @endif
                                                 </div>

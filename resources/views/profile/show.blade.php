@@ -203,10 +203,38 @@
                     <div class="row g-4">
                         @php
                             $kycFields = [
-                                'aadhaar_card' => ['title' => 'Aadhaar Card', 'icon' => 'fa-id-card', 'hint' => 'Upload Aadhaar Card (Front/Back)'],
-                                'pan_card'     => ['title' => 'PAN Card',     'icon' => 'fa-address-card', 'hint' => 'Upload PAN Card'],
-                                'passbook'     => ['title' => 'Bank Passbook','icon' => 'fa-book', 'hint' => 'Upload Bank Passbook (first page with account details)'],
-                                'cheque'       => ['title' => 'Bank Cheque',  'icon' => 'fa-money-check', 'hint' => 'Upload Cancelled Cheque / Cheque Leaf'],
+                                'aadhaar_card' => [
+                                    'title'       => 'Aadhaar Card',
+                                    'icon'        => 'fa-id-card',
+                                    'hint'        => 'Upload Aadhaar Card (Front/Back)',
+                                    'num_field'   => 'aadhaar_number',
+                                    'num_label'   => 'Aadhaar Number',
+                                    'num_holder'  => 'e.g. 1234 5678 9012',
+                                ],
+                                'pan_card'     => [
+                                    'title'       => 'PAN Card',
+                                    'icon'        => 'fa-address-card',
+                                    'hint'        => 'Upload PAN Card',
+                                    'num_field'   => 'pan_number',
+                                    'num_label'   => 'PAN Number',
+                                    'num_holder'  => 'e.g. ABCDE1234F',
+                                ],
+                                'passbook'     => [
+                                    'title'       => 'Bank Passbook',
+                                    'icon'        => 'fa-book',
+                                    'hint'        => 'Upload Bank Passbook (first page with account details)',
+                                    'num_field'   => 'account_number',
+                                    'num_label'   => 'Bank Account Number (A/C No.)',
+                                    'num_holder'  => 'e.g. 012345678901',
+                                ],
+                                'cheque'       => [
+                                    'title'       => 'Bank Cheque',
+                                    'icon'        => 'fa-money-check',
+                                    'hint'        => 'Upload Cancelled Cheque / Cheque Leaf',
+                                    'num_field'   => 'cheque_number',
+                                    'num_label'   => 'Cheque Number',
+                                    'num_holder'  => 'e.g. 123456',
+                                ],
                             ];
                         @endphp
 
@@ -218,6 +246,7 @@
                                     $decoded = is_string($val) ? json_decode($val, true) : (array) $val;
                                     $files = is_array($decoded) ? $decoded : [$val];
                                 }
+                                $numValue = $kyc?->{$info['num_field']};
                             @endphp
                             <div class="col-md-6">
                                 <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
@@ -260,9 +289,22 @@
                                     </div>
 
                                     <div>
-                                        <input type="file" name="{{ $fieldKey }}[]" multiple accept="image/*,application/pdf" class="form-control form-control-sm @error($fieldKey) is-invalid @enderror">
-                                        <small class="text-muted d-block mt-1" style="font-size: 0.78rem;">Images (JPG, PNG) or PDF - Max 5 MB.</small>
-                                        @error($fieldKey)<div class="profile-field-error">{{ $message }}</div>@enderror
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold text-muted mb-1">
+                                                <i class="fa-solid fa-file-arrow-up me-1"></i> Choose File(s)
+                                            </label>
+                                            <input type="file" name="{{ $fieldKey }}[]" multiple accept="image/*,application/pdf" class="form-control form-control-sm @error($fieldKey) is-invalid @enderror">
+                                            <small class="text-muted d-block mt-1" style="font-size: 0.78rem;">Images (JPG, PNG) or PDF - Max 5 MB.</small>
+                                            @error($fieldKey)<div class="profile-field-error">{{ $message }}</div>@enderror
+                                        </div>
+
+                                        <div class="mb-0">
+                                            <label class="form-label small fw-semibold text-dark mb-1">
+                                                <i class="fa-solid fa-hashtag me-1 text-primary"></i> {{ $info['num_label'] }}
+                                            </label>
+                                            <input type="text" name="{{ $info['num_field'] }}" value="{{ old($info['num_field'], $numValue) }}" class="form-control form-control-sm bg-white" placeholder="{{ $info['num_holder'] }}" autocomplete="off">
+                                            @error($info['num_field'])<div class="profile-field-error">{{ $message }}</div>@enderror
+                                        </div>
                                     </div>
                                 </div>
                             </div>
