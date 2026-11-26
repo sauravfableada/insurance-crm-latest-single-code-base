@@ -287,6 +287,7 @@ class PolicyController extends Controller
             'cng_lpg_unit'       => $request->input('cng_lpg_unit'),
             'payment_type'       => $request->input('payment_mode'),
             'payment_amount'     => $request->input('amount'),
+            'agent_commission'   => $request->input('agent_commission'),
             'remarks'            => $request->input('remarks'),
 
             'created_by'         => $userId,
@@ -683,6 +684,7 @@ class PolicyController extends Controller
             'cng_lpg_unit'       => $request->input('cng_lpg_unit'),
             'payment_type'       => $request->input('payment_mode'),
             'payment_amount'     => $request->input('amount'),
+            'agent_commission'   => $request->input('agent_commission'),
             'remarks'            => $request->input('remarks'),
 
             'modified_by'        => Auth::user()->id,

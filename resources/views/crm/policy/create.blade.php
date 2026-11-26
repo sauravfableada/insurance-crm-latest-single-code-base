@@ -154,6 +154,9 @@
     $isVisible = function(string $field, bool $default = true) use ($customService) {
         return $customService->isFieldVisible('policies', $field);
     };
+    $validationMsg = function(string $field, string $default) use ($customService) {
+        return $customService->getValidationMessage('policies', $field) ?: $default;
+    };
 @endphp
                     <form class="m-3" id="add_policy_form">
                         @csrf
@@ -563,11 +566,18 @@
                                     </select>
                                     <span id="payment_mode_err" class="text-danger"></span>
                                 </div>
-                                <div class="mb-3 col-lg-6">
+                                <div class="mb-3 col-lg-3">
                                     <label class="form-label" for="amount">Payment Amount <span class="text-muted small">(Optional)</span></label>
                                     <input type="number" step="0.01" class="form-control" name="amount" id="amount">
                                     <span id="amount_err" class="text-danger"></span>
                                 </div>
+                                @if($isVisible('agent_commission', true))
+                                <div class="mb-3 col-lg-3">
+                                    <label class="form-label" for="agent_commission">{{ $fieldLabel('agent_commission', 'Agent Commission') }} @if($isRequired('agent_commission', false))<span class="text-danger">*</span>@else<span class="text-muted small">(Optional)</span>@endif</label>
+                                    <input type="number" step="0.01" class="form-control" name="agent_commission" id="agent_commission" placeholder="{{ $fieldLabel('agent_commission', 'Enter Agent Commission') }}" {{ $isRequired('agent_commission', false) ? 'required' : '' }}>
+                                    <span id="agent_commission_err" class="text-danger"></span>
+                                </div>
+                                @endif
                             </div>
 
                             @if($isVisible('remarks', true))
@@ -1168,6 +1178,17 @@
                     $('#premium').removeClass('is-invalid');
                     $('#premium_err').text('');
                 }
+
+                @if($isRequired('agent_commission', false))
+                if (!$('#agent_commission').val()) {
+                    $('#agent_commission').addClass('is-invalid');
+                    $('#agent_commission_err').text('{{ addslashes($validationMsg("agent_commission", "Please enter " . $fieldLabel("agent_commission", "Agent Commission") . ".")) }}');
+                    isValid = false;
+                } else {
+                    $('#agent_commission').removeClass('is-invalid');
+                    $('#agent_commission_err').text('');
+                }
+                @endif
 
                 // if ($('#tax_amount').val() === '') {
                 //     $('#tax_amount').addClass('is-invalid');

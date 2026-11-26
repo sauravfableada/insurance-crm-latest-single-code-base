@@ -219,6 +219,10 @@
 
                             <div class="row g-3">
                                 <?php
+                                $customService = app(\App\Services\FieldCustomizationService::class);
+                                $fieldLabel = function(string $field, string $default) use ($customService) {
+                                    return $customService->getFieldLabel('policies', $field, $default);
+                                };
                                 $readValue = function ($source, $keys, $default = "--") {
                                     foreach ((array) $keys as $key) {
                                         $value = null;
@@ -267,6 +271,7 @@
                                     "Nominee Name" => ['icon' => 'fa-solid fa-user-check', 'value' => $readValue($policy, 'nominee_name')],
                                     "Nominee Contact Number" => ['icon' => 'fa-solid fa-phone', 'value' => $readValue($policy, 'nominee_contact')],
                                     "Payment Amount" => ['icon' => 'fa-solid fa-indian-rupee-sign', 'value' => $readValue($policy, ['payment_amount', 'amount'])],
+                                    $fieldLabel('agent_commission', 'Agent Commission') => ['icon' => 'fa-solid fa-hand-holding-dollar', 'value' => $readValue($policy, 'agent_commission')],
                                 ];
 
                                 if ($isVehicle) {
