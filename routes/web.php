@@ -609,6 +609,9 @@ Route::middleware('auth.api')->group(function () {
     Route::post('/whatsapp-templates/{template}/status', [WhatsappConfigController::class, 'updateTemplateStatus'])->name('whatsapp.templates.update_status');
     Route::post('/whatsapp-send', [WhatsappConfigController::class, 'send'])->name('whatsapp.send');
     Route::get('/whatsapp-logs', [WhatsappConfigController::class, 'logs'])->name('whatsapp.logs');
+    Route::post('/whatsapp-personal/status', [WhatsappConfigController::class, 'personalStatus'])->name('whatsapp.personal.status');
+    Route::post('/whatsapp-personal/connect', [WhatsappConfigController::class, 'personalConnect'])->name('whatsapp.personal.connect');
+    Route::post('/whatsapp-personal/disconnect', [WhatsappConfigController::class, 'personalDisconnect'])->name('whatsapp.personal.disconnect');
 
     // AI Chatbot route
     Route::post('/crm-assistant', [ChatbotController::class, 'assistant']);

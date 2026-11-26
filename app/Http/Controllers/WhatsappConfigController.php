@@ -235,4 +235,69 @@ class WhatsappConfigController extends Controller
 
         return response()->json($logs);
     }
+
+    public function personalStatus(Request $request)
+    {
+        return $this->proxyPersonalBridge($request, 'status');
+    }
+
+    public function personalConnect(Request $request)
+    {
+        return $this->proxyPersonalBridge($request, 'connect');
+    }
+
+    public function personalDisconnect(Request $request)
+    {
+        return $this->proxyPersonalBridge($request, 'disconnect');
+    }
+
+    private function proxyPersonalBridge(Request $request, string $action)
+    {
+        $userId = (int) ($request->user()?->id ?: 1);
+        $baseUrl = rtrim((string) env('WHATSAPP_BRIDGE_URL', 'http://127.0.0.1:3210'), '/');
+        $token = (string) env('WHATSAPP_BRIDGE_TOKEN', '');
+
+        if ($token === '' && file_exists(base_path('whatsapp-bridge/.env'))) {
+            $lines = file(base_path('whatsapp-bridge/.env'), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                if (str_starts_with(trim($line), 'BRIDGE_TOKEN=')) {
+                    $token = trim(substr(trim($line), strlen('BRIDGE_TOKEN=')), " \t\n\r\0\x0B\"'");
+                    break;
+                }
+            }
+        }
+
+        try {
+            $resp = \Illuminate\Support\Facades\Http::timeout(15)
+                ->withToken($token)
+                ->post("{$baseUrl}/sessions/{$userId}/{$action}", []);
+
+            $data = $resp->json() ?: [];
+            if ($resp->successful()) {
+                \App\Models\Setting::updateOrCreate(
+                    ['key' => 'whatsapp_personal_connected'],
+                    ['value' => !empty($data['connected']) ? '1' : '0']
+                );
+                if (!empty($data['account'])) {
+                    \App\Models\Setting::updateOrCreate(
+                        ['key' => 'whatsapp_personal_phone'],
+                        ['value' => (string) $data['account']]
+                    );
+                }
+                return response()->json($data);
+            }
+
+            return response()->json([
+                'connected' => false,
+                'status' => 'error',
+                'message' => $data['message'] ?? 'Bridge returned HTTP ' . $resp->status(),
+            ], $resp->status());
+        } catch (\Throwable $e) {
+            return response()->json([
+                'connected' => false,
+                'status' => 'offline',
+                'message' => 'WhatsApp bridge is offline. Run "node server.mjs" inside whatsapp-bridge.',
+            ], 503);
+        }
+    }
 }

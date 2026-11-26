@@ -1522,27 +1522,57 @@
                 ta.focus();
                 ta.selectionStart = ta.selectionEnd = start + tag.length;
             }
-            function togglePersonalWaConnection() {
+            let waPollTimer = null;
+            function renderPersonalWaState(data) {
                 const badge = document.getElementById('waPersonalStatusBadge');
                 const btn = document.getElementById('waPersonalToggleConnBtn');
                 const qrStatus = document.getElementById('waPersonalQrStatus');
                 const phoneLabel = document.getElementById('waPersonalPhoneLabel');
-                const isConnected = badge.textContent.trim() === 'Connected';
-                const nextState = isConnected ? '0' : '1';
-                const fd = new FormData();
-                fd.append('_method', 'PUT');
-                fd.append('whatsapp_personal_connected', nextState);
-                fetch("{{ route('settings.update') }}", {
+
+                if (data.connected) {
+                    if (waPollTimer) { clearInterval(waPollTimer); waPollTimer = null; }
+                    badge.textContent = 'Connected';
+                    badge.className = 'badge bg-success';
+                    btn.textContent = 'Logout';
+                    qrStatus.innerHTML = '<span class="fw-semibold text-success">Connected</span>';
+                    phoneLabel.textContent = data.account ? ('Logged in with ' + data.account) : 'Logged in with Personal WhatsApp';
+                } else if (data.qr) {
+                    badge.textContent = 'Scan QR';
+                    badge.className = 'badge bg-warning text-dark';
+                    btn.textContent = 'Cancel';
+                    qrStatus.innerHTML = '<div><img src="' + data.qr + '" alt="WhatsApp QR" style="max-width:190px;border-radius:8px;"><div class="small text-muted mt-2">Open WhatsApp &rarr; Linked Devices &rarr; Scan QR</div></div>';
+                    phoneLabel.textContent = 'Waiting for QR scan...';
+                } else {
+                    badge.textContent = data.status === 'connecting' || data.status === 'reconnecting' ? 'Connecting...' : 'Disconnected';
+                    badge.className = 'badge bg-secondary';
+                    btn.textContent = 'Connect';
+                    qrStatus.innerHTML = '<span class="fw-semibold text-muted">' + (data.message || 'Click Connect to link your WhatsApp') + '</span>';
+                    phoneLabel.textContent = 'Not linked yet';
+                }
+            }
+            function pollPersonalWaStatus() {
+                fetch("{{ route('whatsapp.personal.status') }}", {
                     method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                    body: fd
-                }).then(() => {
-                    badge.textContent = isConnected ? 'Disconnected' : 'Connected';
-                    badge.className = 'badge ' + (isConnected ? 'bg-secondary' : 'bg-success');
-                    btn.textContent = isConnected ? 'Connect' : 'Logout';
-                    qrStatus.textContent = isConnected ? 'Click Connect to link your WhatsApp' : 'Connected';
-                    qrStatus.className = 'fw-semibold ' + (isConnected ? 'text-muted' : 'text-success');
-                    phoneLabel.textContent = isConnected ? 'Not linked yet' : 'Logged in with Personal WhatsApp';
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                }).then(r => r.json()).then(renderPersonalWaState).catch(() => {});
+            }
+            function togglePersonalWaConnection() {
+                const badge = document.getElementById('waPersonalStatusBadge');
+                const qrStatus = document.getElementById('waPersonalQrStatus');
+                const isConnectedOrQr = badge.textContent.trim() === 'Connected' || badge.textContent.trim() === 'Scan QR';
+                const url = isConnectedOrQr ? "{{ route('whatsapp.personal.disconnect') }}" : "{{ route('whatsapp.personal.connect') }}";
+                qrStatus.innerHTML = '<span class="text-muted">Generating QR code...</span>';
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                }).then(r => r.json()).then(data => {
+                    renderPersonalWaState(data);
+                    if (!isConnectedOrQr && !data.connected) {
+                        if (waPollTimer) clearInterval(waPollTimer);
+                        waPollTimer = setInterval(pollPersonalWaStatus, 2500);
+                    }
+                }).catch(() => {
+                    qrStatus.innerHTML = '<span class="text-danger small">WhatsApp bridge is not running. Start node server.mjs in whatsapp-bridge.</span>';
                 });
             }
             </script>
