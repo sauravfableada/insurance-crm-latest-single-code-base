@@ -67,8 +67,11 @@
                 </div>
 
                 <div class="d-flex flex-wrap gap-2 no-print">
-                    <a href="{{ route('invoices.pdf', $invoice->id) }}" class="btn btn-outline-dark-blue btn-sm" target="_blank">
-                        <i class="fa-solid fa-file-pdf text-danger me-1"></i>Download
+                    <a href="{{ route('invoices.pdf', ['invoice' => $invoice->id, 'view' => 1]) }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                        <i class="fa-solid fa-eye me-1"></i>View PDF
+                    </a>
+                    <a href="{{ route('invoices.pdf', $invoice->id) }}" class="btn btn-outline-dark-blue btn-sm">
+                        <i class="fa-solid fa-file-pdf text-danger me-1"></i>Download PDF
                     </a>
                     <!-- <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
                         <i class="fa-solid fa-print me-1"></i>Print

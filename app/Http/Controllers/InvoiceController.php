@@ -811,7 +811,7 @@ class InvoiceController extends Controller
         return $pdf->download($filename);
     }
 
-    public function pdf(Invoice $invoice)
+    public function pdf(Request $request, Invoice $invoice)
     {
         $this->authorize('view', $invoice);
         $invoice->load(['company', 'customer', 'currency', 'items.policy', 'creator']);
@@ -916,6 +916,9 @@ class InvoiceController extends Controller
             'dscDisplayMode'
         ));
         $filename = 'invoice-' . ($invoice->number ?: $invoice->id) . '.pdf';
+        if ($request->boolean('view')) {
+            return $pdf->stream($filename);
+        }
         return $pdf->download($filename);
     }
 }
