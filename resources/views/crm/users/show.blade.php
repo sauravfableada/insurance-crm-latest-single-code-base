@@ -269,6 +269,104 @@
                             </div>
                         </div>
 
+                        <!-- KYC Documents Section -->
+                        <div class="mt-5 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold mb-1"><i class="fa-solid fa-id-card text-primary me-2"></i>KYC Documents</h5>
+                                    <p class="text-muted small mb-0">Identity and banking proofs uploaded by this sub agent</p>
+                                </div>
+                                @if(!empty($kyc?->kyc_status))
+                                    <span class="badge bg-success-subtle text-success fs-6 fw-normal px-3 py-1 border border-success-subtle rounded-pill">
+                                        {{ ucfirst($kyc->kyc_status) }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            @php
+                                $kycFields = [
+                                    'aadhaar_card' => ['title' => 'Aadhaar Card', 'icon' => 'fa-id-card'],
+                                    'pan_card'     => ['title' => 'PAN Card',     'icon' => 'fa-address-card'],
+                                    'passbook'     => ['title' => 'Bank Passbook','icon' => 'fa-book'],
+                                    'cheque'       => ['title' => 'Bank Cheque',  'icon' => 'fa-money-check'],
+                                ];
+                                $hasAnyKyc = false;
+                                foreach (array_keys($kycFields) as $kKey) {
+                                    if (!empty($kyc?->{$kKey})) {
+                                        $hasAnyKyc = true;
+                                        break;
+                                    }
+                                }
+                            @endphp
+
+                            @if($hasAnyKyc)
+                                <div class="row g-3">
+                                    @foreach($kycFields as $fieldKey => $info)
+                                        @php
+                                            $val = $kyc?->{$fieldKey};
+                                            $files = [];
+                                            if (!empty($val)) {
+                                                $decoded = is_string($val) ? json_decode($val, true) : (array) $val;
+                                                $files = is_array($decoded) ? $decoded : [$val];
+                                            }
+                                        @endphp
+                                        <div class="col-md-6 col-lg-3">
+                                            <div class="border rounded-3 p-3 bg-light h-100 d-flex flex-column justify-content-between">
+                                                <div>
+                                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                                        <i class="fa-solid {{ $info['icon'] }} text-primary"></i>
+                                                        <span class="fw-bold text-dark">{{ $info['title'] }}</span>
+                                                    </div>
+
+                                                    @if(!empty($files))
+                                                        <div class="d-flex flex-column gap-2 mt-2">
+                                                            @foreach($files as $fileName)
+                                                                @php
+                                                                    $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                                                                    $filePath = 'uploads/kyc/' . $fileName;
+                                                                    $fileUrl = asset($filePath);
+                                                                @endphp
+                                                                <div class="border rounded-2 p-2 bg-white text-center shadow-sm">
+                                                                    @if(in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'jfif']))
+                                                                        <a href="{{ $fileUrl }}" target="_blank">
+                                                                            <img src="{{ $fileUrl }}" alt="{{ $info['title'] }}" class="rounded mb-2" style="width: 100%; height: 110px; object-fit: cover;">
+                                                                        </a>
+                                                                    @elseif($ext === 'pdf')
+                                                                        <div class="d-flex flex-column align-items-center justify-content-center py-3 text-danger">
+                                                                            <i class="fa-solid fa-file-pdf fs-1 mb-1"></i>
+                                                                            <span class="small">PDF Document</span>
+                                                                        </div>
+                                                                    @else
+                                                                        <div class="d-flex flex-column align-items-center justify-content-center py-3 text-secondary">
+                                                                            <i class="fa-solid fa-file fs-1 mb-1"></i>
+                                                                            <span class="small">Attachment</span>
+                                                                        </div>
+                                                                    @endif
+                                                                    <a href="{{ $fileUrl }}" target="_blank" class="btn btn-sm btn-outline-dark-blue w-100">
+                                                                        <i class="fa-solid fa-eye me-1"></i> View Document
+                                                                    </a>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    @else
+                                                        <div class="text-center py-4 text-muted small">
+                                                            <i class="fa-solid fa-circle-xmark text-secondary opacity-50 d-block fs-4 mb-1"></i>
+                                                            Not uploaded yet
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="text-center py-4 text-muted bg-light rounded-3 border">
+                                    <i class="fa-solid fa-id-card fs-2 text-secondary opacity-50 d-block mb-2"></i>
+                                    <span>No KYC documents uploaded by this sub agent yet.</span>
+                                </div>
+                            @endif
+                        </div>
+
                     </div>
                 </div>
             </div>

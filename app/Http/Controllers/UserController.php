@@ -48,13 +48,23 @@ class UserController extends Controller
             ->latest('entry_date')
             ->get();
 
+        $kyc = \App\Models\KycDocumentsModel::where('user_id', $user->id)
+            ->whereNull('policy_id')
+            ->whereNull('lead_id')
+            ->first();
+
+        if (!$kyc) {
+            $kyc = \App\Models\KycDocumentsModel::where('user_id', $user->id)->latest('id')->first();
+        }
+
         return view('crm.users.show', compact(
             'user',
             'totalEarned',
             'totalWithdrawnApproved',
             'pendingWithdrawalAmount',
             'availableBalance',
-            'commissionEntries'
+            'commissionEntries',
+            'kyc'
         ));
     }
 

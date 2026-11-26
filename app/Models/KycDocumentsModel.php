@@ -14,6 +14,8 @@ class KycDocumentsModel extends Model
         'lead_id',
         'aadhaar_card',
         'pan_card',
+        'passbook',
+        'cheque',
         'driving_licence',
         'addr_aadhaar',
         'addr_driving_licence',

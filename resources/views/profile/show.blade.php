@@ -182,6 +182,103 @@
             </div>
         </div>
     </form>
+
+    @if(!$user->isAdmin())
+    <form id="kycForm" method="POST" action="{{ route('profile.kyc.update') }}" enctype="multipart/form-data">
+        @csrf
+        <div class="card profile-card mt-4">
+            <div class="profile-card-head d-flex justify-content-between align-items-center">
+                <span>KYC DETAILS</span>
+                @if(!empty($kyc?->kyc_status))
+                    <span class="badge bg-success-subtle text-success fs-6 fw-normal px-3 py-1">
+                        {{ ucfirst($kyc->kyc_status) }}
+                    </span>
+                @endif
+            </div>
+            <div class="card-body p-3 p-md-4">
+                <div class="profile-section">
+                    <div class="profile-section-label">IDENTITY &amp; BANKING DOCUMENTS</div>
+                    <p class="text-muted small mb-4">Upload clear scanned photos or PDF documents of your Aadhaar Card, PAN Card, Bank Passbook, and Bank Cheque.</p>
+                    
+                    <div class="row g-4">
+                        @php
+                            $kycFields = [
+                                'aadhaar_card' => ['title' => 'Aadhaar Card', 'icon' => 'fa-id-card', 'hint' => 'Upload Aadhaar Card (Front/Back)'],
+                                'pan_card'     => ['title' => 'PAN Card',     'icon' => 'fa-address-card', 'hint' => 'Upload PAN Card'],
+                                'passbook'     => ['title' => 'Bank Passbook','icon' => 'fa-book', 'hint' => 'Upload Bank Passbook (first page with account details)'],
+                                'cheque'       => ['title' => 'Bank Cheque',  'icon' => 'fa-money-check', 'hint' => 'Upload Cancelled Cheque / Cheque Leaf'],
+                            ];
+                        @endphp
+
+                        @foreach($kycFields as $fieldKey => $info)
+                            @php
+                                $val = $kyc?->{$fieldKey};
+                                $files = [];
+                                if (!empty($val)) {
+                                    $decoded = is_string($val) ? json_decode($val, true) : (array) $val;
+                                    $files = is_array($decoded) ? $decoded : [$val];
+                                }
+                            @endphp
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <i class="fa-solid {{ $info['icon'] }} text-primary fs-5"></i>
+                                            <label class="form-label fw-bold mb-0 text-dark">{{ $info['title'] }}</label>
+                                        </div>
+                                        <p class="text-muted small mb-3">{{ $info['hint'] }}</p>
+
+                                        @if(!empty($files))
+                                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                                @foreach($files as $fileName)
+                                                    @php
+                                                        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                                                        $filePath = 'uploads/kyc/' . $fileName;
+                                                        $fileUrl = asset($filePath);
+                                                    @endphp
+                                                    <div class="position-relative border rounded p-1 bg-white text-center shadow-sm" style="width: 85px;">
+                                                        @if(in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'jfif']))
+                                                            <a href="{{ $fileUrl }}" target="_blank" title="View Full Image">
+                                                                <img src="{{ $fileUrl }}" alt="{{ $info['title'] }}" class="rounded" style="width: 100%; height: 55px; object-fit: cover;">
+                                                            </a>
+                                                        @elseif($ext === 'pdf')
+                                                            <a href="{{ $fileUrl }}" target="_blank" class="d-flex flex-column align-items-center justify-content-center text-danger text-decoration-none py-1" style="height: 55px;">
+                                                                <i class="fa-solid fa-file-pdf fs-3"></i>
+                                                                <span style="font-size: 10px;">PDF</span>
+                                                            </a>
+                                                        @else
+                                                            <a href="{{ $fileUrl }}" target="_blank" class="d-flex flex-column align-items-center justify-content-center text-secondary text-decoration-none py-1" style="height: 55px;">
+                                                                <i class="fa-solid fa-file fs-3"></i>
+                                                                <span style="font-size: 10px;">File</span>
+                                                            </a>
+                                                        @endif
+                                                        <a href="{{ $fileUrl }}" target="_blank" class="btn btn-xs btn-outline-dark w-100 mt-1 py-0 px-1" style="font-size: 11px;">View</a>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <div>
+                                        <input type="file" name="{{ $fieldKey }}[]" multiple accept="image/*,application/pdf" class="form-control form-control-sm @error($fieldKey) is-invalid @enderror">
+                                        <small class="text-muted d-block mt-1" style="font-size: 0.78rem;">Images (JPG, PNG) or PDF - Max 5 MB.</small>
+                                        @error($fieldKey)<div class="profile-field-error">{{ $message }}</div>@enderror
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="profile-submit-wrap mt-4">
+                    <button type="submit" class="btn btn-dark-blue profile-submit-btn">
+                        <i class="fa-solid fa-cloud-arrow-up me-1"></i> Upload KYC Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+    @endif
 </div>
 
 <div class="modal fade profile-password-modal" id="changePasswordModal" tabindex="-1" aria-hidden="true">
@@ -232,6 +329,7 @@
 <script>
 window.profilePageConfig = {
     updateUrl: @json(route('profile.update')),
+    kycUrl: @json(route('profile.kyc.update')),
     passwordUrl: @json(route('profile.password.update')),
     disconnectGoogleUrl: @json(($googleConnectionEnabled ?? false) ? route('profile.google.disconnect') : null),
     googleStatusUrl: @json(($googleConnectionEnabled ?? false) ? url('/api/meetings/google/auth-status') : null),
