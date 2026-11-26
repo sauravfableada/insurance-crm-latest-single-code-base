@@ -1221,6 +1221,7 @@
                             $waPersonalPhone = $settings['whatsapp_personal_phone']->value ?? '';
                             $waPersonalConnected = ($settings['whatsapp_personal_connected']->value ?? '0') === '1';
                             $waPersonalMessage = $settings['whatsapp_personal_message']->value ?? "Greetings from {Firm_Name}\nWe are pleased to have you as a valuable customer. Please find the details of your policy/invoice {Invoice_No} for ₹{Invoice_Amount}.";
+                            $waPersonalLeadMessage = $settings['whatsapp_personal_lead_message']->value ?? "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}";
                         @endphp
 
                         <!-- Mode Selector Cards: WhatsApp Business API vs Personal WhatsApp -->
@@ -1301,9 +1302,24 @@
                                                     onclick="insertWaPlaceholder('{{ $tag }}')">{{ $tag }}</button>
                                             @endforeach
                                         </div>
-                                        <textarea name="whatsapp_personal_message" id="waPersonalMessageBox" rows="5" class="form-control mb-2">{{ $waPersonalMessage }}</textarea>
-                                        <div class="text-end">
+                                        <textarea name="whatsapp_personal_message" id="waPersonalMessageBox" rows="4" class="form-control mb-2">{{ $waPersonalMessage }}</textarea>
+                                        <div class="text-end mb-3">
                                             <button type="submit" class="btn btn-primary btn-sm px-3">Save Message</button>
+                                        </div>
+                                    </form>
+
+                                    <form action="{{ route('settings.update') }}" method="POST">
+                                        @csrf @method('PUT')
+                                        <label class="form-label fw-semibold small text-dark">Lead Assignment Message (to Staff)</label>
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            @foreach(['{Firm_Name}', '{Staff_Name}', '{Lead_Name}', '{Lead_Phone}', '{Lead_Email}', '{Lead_Source}'] as $tag)
+                                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
+                                                    onclick="insertWaLeadPlaceholder('{{ $tag }}')">{{ $tag }}</button>
+                                            @endforeach
+                                        </div>
+                                        <textarea name="whatsapp_personal_lead_message" id="waPersonalLeadMessageBox" rows="4" class="form-control mb-2">{{ $waPersonalLeadMessage }}</textarea>
+                                        <div class="text-end">
+                                            <button type="submit" class="btn btn-primary btn-sm px-3">Save Lead Message</button>
                                         </div>
                                     </form>
                                 </div>
@@ -1515,6 +1531,15 @@
             }
             function insertWaPlaceholder(tag) {
                 const ta = document.getElementById('waPersonalMessageBox');
+                if (!ta) return;
+                const start = ta.selectionStart || 0;
+                const end = ta.selectionEnd || 0;
+                ta.value = ta.value.substring(0, start) + tag + ta.value.substring(end);
+                ta.focus();
+                ta.selectionStart = ta.selectionEnd = start + tag.length;
+            }
+            function insertWaLeadPlaceholder(tag) {
+                const ta = document.getElementById('waPersonalLeadMessageBox');
                 if (!ta) return;
                 const start = ta.selectionStart || 0;
                 const end = ta.selectionEnd || 0;

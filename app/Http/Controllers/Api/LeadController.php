@@ -186,6 +186,10 @@ class LeadController extends ApiBaseController
         } catch (\Throwable) {
         }
 
+        if (!empty($lead->assigned_user_id)) {
+            $this->notifyStaffOnLeadAssign($lead, $user);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Lead created successfully.',
@@ -421,6 +425,10 @@ class LeadController extends ApiBaseController
 
             if ($request->has('custom_fields')) {
                 $lead->saveCustomFields($request->get('custom_fields'));
+            }
+
+            if (!empty($lead->assigned_user_id) && $lead->wasChanged('assigned_user_id')) {
+                $this->notifyStaffOnLeadAssign($lead, $user);
             }
 
             return response()->json([
@@ -827,5 +835,65 @@ class LeadController extends ApiBaseController
     public function revertFromCustomer(Request $request, Lead $lead)
     {
         return app(\App\Http\Controllers\LeadController::class)->revertFromCustomer($request, $lead);
+    }
+
+    private function notifyStaffOnLeadAssign(Lead $lead, $actorUser): void
+    {
+        try {
+            $sendMode = \App\Models\Setting::where('key', 'whatsapp_send_mode')->value('value');
+            if ($sendMode !== 'personal_whatsapp') {
+                return;
+            }
+
+            $staff = $lead->assignedUser ?: \App\Models\User::find($lead->assigned_user_id);
+            if (! $staff) {
+                return;
+            }
+
+            $rawPhone = (string) ($staff->phone ?? $staff->mobile ?? $staff->contact_no ?? '');
+            $digits = preg_replace('/\D+/', '', $rawPhone);
+            if ($digits === '') {
+                return;
+            }
+            if (strlen($digits) === 10) {
+                $digits = '91' . $digits;
+            }
+
+            $template = (string) (\App\Models\Setting::where('key', 'whatsapp_personal_lead_message')->value('value')
+                ?: "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}");
+
+            $firmName = (string) (\App\Models\Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
+            $message = strtr($template, [
+                '{Firm_Name}' => $firmName,
+                '{Staff_Name}' => (string) ($staff->name ?? 'Staff'),
+                '{Lead_Name}' => (string) ($lead->name ?? ''),
+                '{Lead_Phone}' => (string) ($lead->phone ?? '--'),
+                '{Lead_Email}' => (string) ($lead->email ?? '--'),
+                '{Lead_Source}' => (string) ($lead->leadSource?->name ?? '--'),
+            ]);
+
+            $sessionId = 'user_' . (int) ($actorUser?->id ?: 1);
+            $secret = (string) env('WHATSAPP_SESSION_SECRET', 'wa_session_secret_key_2026');
+            $headers = ['x-session-secret' => $secret];
+            $payload = [
+                'phone' => $digits,
+                'message' => $message,
+            ];
+
+            $socketPath = '/tmp/wa_session.sock';
+            if (PHP_OS_FAMILY !== 'Windows' && file_exists($socketPath)) {
+                \Illuminate\Support\Facades\Http::timeout(10)
+                    ->withHeaders($headers)
+                    ->withOptions(['curl' => [CURLOPT_UNIX_SOCKET_PATH => $socketPath]])
+                    ->post("http://localhost/sessions/{$sessionId}/send-message", $payload);
+            } else {
+                $baseUrl = rtrim((string) env('WHATSAPP_SESSION_URL', 'http://127.0.0.1:3001'), '/');
+                \Illuminate\Support\Facades\Http::timeout(10)
+                    ->withHeaders($headers)
+                    ->post("{$baseUrl}/sessions/{$sessionId}/send-message", $payload);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Personal WhatsApp lead assignment notification failed: ' . $e->getMessage());
+        }
     }
 }

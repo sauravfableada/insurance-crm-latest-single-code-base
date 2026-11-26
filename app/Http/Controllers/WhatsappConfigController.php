@@ -268,7 +268,7 @@ class WhatsappConfigController extends Controller
                     ->withHeaders($headers)
                     ->withOptions(['curl' => [CURLOPT_UNIX_SOCKET_PATH => $socketPath]]);
                 if ($action === 'connect') {
-                    $resp = $http->post('http://localhost/sessions/init', ['sessionId' => $sessionId]);
+                    $resp = $http->post('http://localhost/sessions/init', ['session_id' => $sessionId]);
                 } elseif ($action === 'disconnect') {
                     $resp = $http->post("http://localhost/sessions/{$sessionId}/logout", []);
                 } else {
@@ -277,7 +277,7 @@ class WhatsappConfigController extends Controller
             } else {
                 $http = \Illuminate\Support\Facades\Http::timeout(15)->withHeaders($headers);
                 if ($action === 'connect') {
-                    $resp = $http->post("{$baseUrl}/sessions/init", ['sessionId' => $sessionId]);
+                    $resp = $http->post("{$baseUrl}/sessions/init", ['session_id' => $sessionId]);
                 } elseif ($action === 'disconnect') {
                     $resp = $http->post("{$baseUrl}/sessions/{$sessionId}/logout", []);
                 } else {
