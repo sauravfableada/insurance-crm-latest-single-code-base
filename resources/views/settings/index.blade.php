@@ -106,11 +106,9 @@
                         data-bs-target="#bank-signature" type="button" role="tab"><i class="fa-solid fa-building-columns me-1 text-primary"></i> Bank &amp; Signature</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'smtp' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#smtp" type="button" role="tab">Email SMTP</button></li>
-                {{-- WhatsApp configuration is intentionally hidden.
-                <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
-                        data-bs-target="#whatsapp-configure" type="button" role="tab">WhatsApp Configure Settings</button>
+                <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'whatsapp-configure' ? 'active' : '' }}" data-bs-toggle="tab"
+                        data-bs-target="#whatsapp-configure" type="button" role="tab">WhatsApp Configuration</button>
                 </li>
-                --}}
                 @unless($isBasicPlan)
                     <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'integrations' ? 'active' : '' }}" data-bs-toggle="tab"
                             data-bs-target="#integrations" type="button" role="tab">Integrations</button></li>
@@ -1193,8 +1191,8 @@
                 </form>
             </div>
 
-            @if(false) {{-- WhatsApp configuration is intentionally hidden. --}}
-            <div class="tab-pane fade" id="whatsapp-configure" role="tabpanel">
+            @if(true)
+            <div class="tab-pane fade {{ $activeSettingsTab === 'whatsapp-configure' ? 'show active' : '' }}" id="whatsapp-configure" role="tabpanel">
                 <div class="settings-panel">
                     <div class="settings-panel-head d-flex justify-content-between align-items-center gap-3">
                         <span>WhatsApp Configure Settings</span>
@@ -1213,14 +1211,106 @@
                         aria-disabled="{{ $whatsappEnabled ? 'false' : 'true' }}">
                         <div class="mb-4">
                             <div>
-                                <h4 class="fw-bold mb-1" style="color:#33496d;">Configure your WhatsApp API settings <span
-                                        class="settings-status-badge settings-inline-status"><span
-                                            class="settings-status-dot"></span>Connected</span></h4>
-                                <div class="text-muted">Enter your WhatsApp App details and WhatsApp Business credentials.
+                                <h4 class="fw-bold mb-1" style="color:#33496d;">Configure your WhatsApp settings</h4>
+                                <div class="text-muted">Choose how policy &amp; invoice bills should be sent on WhatsApp. Business API stays as it is.</div>
+                            </div>
+                        </div>
+
+                        @php
+                            $waSendMode = $settings['whatsapp_send_mode']->value ?? 'business_api';
+                            $waPersonalPhone = $settings['whatsapp_personal_phone']->value ?? '';
+                            $waPersonalConnected = ($settings['whatsapp_personal_connected']->value ?? '0') === '1';
+                            $waPersonalMessage = $settings['whatsapp_personal_message']->value ?? "Greetings from {Firm_Name}\nWe are pleased to have you as a valuable customer. Please find the details of your policy/invoice {Invoice_No} for ₹{Invoice_Amount}.";
+                        @endphp
+
+                        <!-- Mode Selector Cards: WhatsApp Business API vs Personal WhatsApp -->
+                        <form action="{{ route('settings.update') }}" method="POST" id="waModeForm" class="mb-4">
+                            @csrf @method('PUT')
+                            <input type="hidden" name="whatsapp_send_mode" id="whatsapp_send_mode_input" value="{{ $waSendMode }}">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-3 border h-100 wa-mode-card {{ $waSendMode === 'business_api' ? 'border-success bg-success bg-opacity-10' : 'bg-white' }}"
+                                         style="cursor:pointer;" onclick="selectWaMode('business_api')">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <div class="fw-bold text-dark fs-6">WhatsApp Business API</div>
+                                                <div class="text-muted small mt-1">Current Cloud API credentials and approved templates.</div>
+                                            </div>
+                                            <i class="fa-solid fa-circle-check text-success fs-5 {{ $waSendMode === 'business_api' ? '' : 'd-none' }}" id="wa_check_business_api"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-3 border h-100 wa-mode-card {{ $waSendMode === 'personal_whatsapp' ? 'border-success bg-success bg-opacity-10' : 'bg-white' }}"
+                                         style="cursor:pointer;" onclick="selectWaMode('personal_whatsapp')">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <div class="fw-bold text-dark fs-6">Personal WhatsApp</div>
+                                                <div class="text-muted small mt-1">Scan QR (WhatsApp Web style) and send custom text + PDF.</div>
+                                            </div>
+                                            <i class="fa-solid fa-circle-check text-success fs-5 {{ $waSendMode === 'personal_whatsapp' ? '' : 'd-none' }}" id="wa_check_personal_whatsapp"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Personal WhatsApp Section -->
+                        <div id="wa_personal_panel" class="mb-4 {{ $waSendMode === 'personal_whatsapp' ? '' : 'd-none' }}">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <h5 class="fw-bold mb-0" style="color:#33496d;">Personal WhatsApp</h5>
+                                <span class="badge {{ $waPersonalConnected ? 'bg-success' : 'bg-secondary' }}" id="waPersonalStatusBadge">
+                                    {{ $waPersonalConnected ? 'Connected' : 'Disconnected' }}
+                                </span>
+                            </div>
+                            <p class="text-muted small mb-3">Scan QR to link your phone. Policy &amp; invoice bills will send this message with the PDF.</p>
+
+                            <div class="row g-4">
+                                <div class="col-md-5">
+                                    <div class="p-3 border rounded-3 bg-white d-flex justify-content-between align-items-center mb-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                                <i class="fa-brands fa-whatsapp fs-5"></i>
+                                            </span>
+                                            <div>
+                                                <div class="fw-semibold small">Send via Personal WhatsApp</div>
+                                                <div class="text-muted" style="font-size:11px;" id="waPersonalPhoneLabel">
+                                                    {{ $waPersonalConnected && $waPersonalPhone ? 'Logged in with ' . $waPersonalPhone : 'Not linked yet' }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-link text-primary text-decoration-none fw-semibold" id="waPersonalToggleConnBtn" onclick="togglePersonalWaConnection()">
+                                            {{ $waPersonalConnected ? 'Logout' : 'Connect' }}
+                                        </button>
+                                    </div>
+
+                                    <div class="p-4 border rounded-3 bg-light text-center" style="min-height:170px; display:flex; align-items:center; justify-content:center;">
+                                        <span class="fw-semibold {{ $waPersonalConnected ? 'text-success' : 'text-muted' }}" id="waPersonalQrStatus">
+                                            {{ $waPersonalConnected ? 'Connected' : 'Click Connect to link your WhatsApp' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-7">
+                                    <form action="{{ route('settings.update') }}" method="POST">
+                                        @csrf @method('PUT')
+                                        <label class="form-label fw-semibold small text-dark">Sale / Policy Message</label>
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            @foreach(['{Firm_Name}', '{Transaction_Type}', '{Invoice_Amount}', '{Transaction_Balance}', '{Invoice_No}', '{Customer_Name}'] as $tag)
+                                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
+                                                    onclick="insertWaPlaceholder('{{ $tag }}')">{{ $tag }}</button>
+                                            @endforeach
+                                        </div>
+                                        <textarea name="whatsapp_personal_message" id="waPersonalMessageBox" rows="5" class="form-control mb-2">{{ $waPersonalMessage }}</textarea>
+                                        <div class="text-end">
+                                            <button type="submit" class="btn btn-primary btn-sm px-3">Save Message</button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
 
+                        <div id="wa_business_panel" class="{{ $waSendMode === 'business_api' ? '' : 'd-none' }}">
                         <ul class="nav settings-subtabs mb-4" id="waSettingsTabs" role="tablist">
                             <li class="nav-item" role="presentation"><button class="nav-link active" id="wa-config-tab"
                                     data-bs-toggle="pill" data-bs-target="#wa-config-pane" type="button"
@@ -1399,6 +1489,63 @@
                     </div>
                 </div>
             </div>
+            <script>
+            function selectWaMode(mode) {
+                document.getElementById('whatsapp_send_mode_input').value = mode;
+                const isPersonal = (mode === 'personal_whatsapp');
+                document.getElementById('wa_personal_panel').classList.toggle('d-none', !isPersonal);
+                document.getElementById('wa_business_panel').classList.toggle('d-none', isPersonal);
+                document.getElementById('wa_check_business_api').classList.toggle('d-none', isPersonal);
+                document.getElementById('wa_check_personal_whatsapp').classList.toggle('d-none', !isPersonal);
+                document.querySelectorAll('.wa-mode-card').forEach(c => {
+                    c.classList.remove('border-success', 'bg-success', 'bg-opacity-10');
+                    c.classList.add('bg-white');
+                });
+                const activeIdx = isPersonal ? 1 : 0;
+                const activeCard = document.querySelectorAll('.wa-mode-card')[activeIdx];
+                if (activeCard) {
+                    activeCard.classList.remove('bg-white');
+                    activeCard.classList.add('border-success', 'bg-success', 'bg-opacity-10');
+                }
+                fetch("{{ route('settings.update') }}", {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                    body: new FormData(document.getElementById('waModeForm'))
+                });
+            }
+            function insertWaPlaceholder(tag) {
+                const ta = document.getElementById('waPersonalMessageBox');
+                if (!ta) return;
+                const start = ta.selectionStart || 0;
+                const end = ta.selectionEnd || 0;
+                ta.value = ta.value.substring(0, start) + tag + ta.value.substring(end);
+                ta.focus();
+                ta.selectionStart = ta.selectionEnd = start + tag.length;
+            }
+            function togglePersonalWaConnection() {
+                const badge = document.getElementById('waPersonalStatusBadge');
+                const btn = document.getElementById('waPersonalToggleConnBtn');
+                const qrStatus = document.getElementById('waPersonalQrStatus');
+                const phoneLabel = document.getElementById('waPersonalPhoneLabel');
+                const isConnected = badge.textContent.trim() === 'Connected';
+                const nextState = isConnected ? '0' : '1';
+                const fd = new FormData();
+                fd.append('_method', 'PUT');
+                fd.append('whatsapp_personal_connected', nextState);
+                fetch("{{ route('settings.update') }}", {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                    body: fd
+                }).then(() => {
+                    badge.textContent = isConnected ? 'Disconnected' : 'Connected';
+                    badge.className = 'badge ' + (isConnected ? 'bg-secondary' : 'bg-success');
+                    btn.textContent = isConnected ? 'Connect' : 'Logout';
+                    qrStatus.textContent = isConnected ? 'Click Connect to link your WhatsApp' : 'Connected';
+                    qrStatus.className = 'fw-semibold ' + (isConnected ? 'text-muted' : 'text-success');
+                    phoneLabel.textContent = isConnected ? 'Not linked yet' : 'Logged in with Personal WhatsApp';
+                });
+            }
+            </script>
             @endif
             @unless($isBasicPlan)
             <div class="tab-pane fade {{ $activeSettingsTab === 'integrations' ? 'show active' : '' }}" id="integrations" role="tabpanel">
