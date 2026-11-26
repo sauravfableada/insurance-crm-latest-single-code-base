@@ -255,14 +255,17 @@ class WhatsappConfigController extends Controller
     {
         $sessionId = 'user_' . (int) ($request->user()?->id ?: 1);
         $baseUrl = rtrim((string) env('WHATSAPP_SESSION_URL', 'http://127.0.0.1:3001'), '/');
+        $secret = (string) env('WHATSAPP_SESSION_SECRET', 'wa_session_secret_key_2026');
 
         try {
             $resp = null;
             $socketPath = '/tmp/wa_session.sock';
+            $headers = ['x-session-secret' => $secret];
 
             // 1. Prefer UNIX socket on shared hosting if available
             if (PHP_OS_FAMILY !== 'Windows' && file_exists($socketPath)) {
                 $http = \Illuminate\Support\Facades\Http::timeout(15)
+                    ->withHeaders($headers)
                     ->withOptions(['curl' => [CURLOPT_UNIX_SOCKET_PATH => $socketPath]]);
                 if ($action === 'connect') {
                     $resp = $http->post('http://localhost/sessions/init', ['sessionId' => $sessionId]);
@@ -272,15 +275,13 @@ class WhatsappConfigController extends Controller
                     $resp = $http->get("http://localhost/sessions/{$sessionId}/status");
                 }
             } else {
+                $http = \Illuminate\Support\Facades\Http::timeout(15)->withHeaders($headers);
                 if ($action === 'connect') {
-                    $resp = \Illuminate\Support\Facades\Http::timeout(15)
-                        ->post("{$baseUrl}/sessions/init", ['sessionId' => $sessionId]);
+                    $resp = $http->post("{$baseUrl}/sessions/init", ['sessionId' => $sessionId]);
                 } elseif ($action === 'disconnect') {
-                    $resp = \Illuminate\Support\Facades\Http::timeout(15)
-                        ->post("{$baseUrl}/sessions/{$sessionId}/logout", []);
+                    $resp = $http->post("{$baseUrl}/sessions/{$sessionId}/logout", []);
                 } else {
-                    $resp = \Illuminate\Support\Facades\Http::timeout(15)
-                        ->get("{$baseUrl}/sessions/{$sessionId}/status");
+                    $resp = $http->get("{$baseUrl}/sessions/{$sessionId}/status");
                 }
             }
 
