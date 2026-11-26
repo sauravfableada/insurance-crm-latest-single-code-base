@@ -408,6 +408,15 @@ class FieldCustomizationService
                     'default_visible' => true,
                     'default_order' => 280,
                 ],
+                'agent_commission' => [
+                    'field_name' => 'agent_commission',
+                    'default_label' => 'Agent Commission',
+                    'type' => 'number',
+                    'default_required' => false,
+                    'system_required' => false,
+                    'default_visible' => true,
+                    'default_order' => 285,
+                ],
                 'remarks' => [
                     'field_name' => 'remarks',
                     'default_label' => 'Remarks / Notes',
