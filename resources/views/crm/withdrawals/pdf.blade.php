@@ -34,7 +34,7 @@
         : (!empty($companySettings['company_gstin']) ? $companySettings['company_gstin'] : '--');
     $firmPhone = !empty($companySettings['company_phone'])
         ? $companySettings['company_phone']
-        : ($adminUser?->contact_no ?: '--');
+        : ($adminUser?->phone ?: ($adminUser?->contact_no ?: '--'));
     $firmEmail = !empty($companySettings['company_email'])
         ? $companySettings['company_email']
         : ($adminUser?->email ?: '--');
