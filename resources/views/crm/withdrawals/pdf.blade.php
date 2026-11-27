@@ -23,11 +23,21 @@
 </head>
 <body>
 @php
+    $adminUser = \App\Models\User::where('id', 1)->first()
+        ?? \App\Models\User::whereIn('type', ['admin', 'super_admin'])->first()
+        ?? auth()->user();
+
     $firmName = $companySettings['company_name'] ?? config('app.name', 'FABLEAD DEVELOPERS TECHNOLAB');
     $firmAddress = $companySettings['company_address'] ?? '';
-    $firmGstin = $companySettings['company_gstin'] ?? '--';
-    $firmPhone = $companySettings['company_phone'] ?? '--';
-    $firmEmail = $companySettings['company_email'] ?? '--';
+    $firmGstin = !empty($companySettings['company_tax_id'])
+        ? $companySettings['company_tax_id']
+        : (!empty($companySettings['company_gstin']) ? $companySettings['company_gstin'] : '--');
+    $firmPhone = !empty($companySettings['company_phone'])
+        ? $companySettings['company_phone']
+        : ($adminUser?->contact_no ?: '--');
+    $firmEmail = !empty($companySettings['company_email'])
+        ? $companySettings['company_email']
+        : ($adminUser?->email ?: '--');
 
     $gross = (float) ($record['gross_premium'] ?? 0);
     $payIn = (float) ($record['pay_in_amount'] ?? 0);

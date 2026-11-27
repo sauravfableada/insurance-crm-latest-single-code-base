@@ -915,7 +915,7 @@ class AdminWithdrawalController extends Controller
         } catch (\Throwable $e) {}
 
         $companySettings = \App\Models\Setting::query()
-            ->whereIn('key', ['company_name', 'company_address', 'company_gstin', 'company_phone', 'company_email', 'bank_name', 'bank_account_no', 'bank_ifsc'])
+            ->whereIn('key', ['company_name', 'company_address', 'company_tax_id', 'company_gstin', 'company_phone', 'company_email', 'bank_name', 'bank_account_no', 'bank_ifsc'])
             ->pluck('value', 'key');
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('crm.withdrawals.pdf', compact('record', 'logoBase64', 'companySettings'));
@@ -999,7 +999,7 @@ class AdminWithdrawalController extends Controller
                         }
                     }
                     $companySettings = \App\Models\Setting::query()
-                        ->whereIn('key', ['company_name', 'company_address', 'company_gstin', 'company_phone', 'company_email', 'bank_name', 'bank_account_no', 'bank_ifsc'])
+                        ->whereIn('key', ['company_name', 'company_address', 'company_tax_id', 'company_gstin', 'company_phone', 'company_email', 'bank_name', 'bank_account_no', 'bank_ifsc'])
                         ->pluck('value', 'key');
 
                     $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('crm.withdrawals.pdf', compact('record', 'logoBase64', 'companySettings'));
