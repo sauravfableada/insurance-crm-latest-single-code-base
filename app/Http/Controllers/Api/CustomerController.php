@@ -254,6 +254,18 @@ class CustomerController extends Controller
                 ]);
             }
 
+            // Staff / Sub-Agent notification
+            try {
+                $staffId = $customer->user_id ?: ($customer->created_by ?: auth()->id());
+                \App\Services\ModuleNotificationService::dispatch('customers', [
+                    '{Client_Name}'  => (string) ($customer->name ?? '--'),
+                    '{Client_Phone}' => (string) ($customer->phone ?? '--'),
+                    '{Client_Email}' => (string) ($customer->email ?? '--'),
+                ], $staffId, auth()->user());
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Customer notification dispatch failed: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Customer created successfully.',
