@@ -247,6 +247,9 @@ class ModuleNotificationService
                 return false;
             }
 
+            // Dynamically configure SMTP from database settings table
+            self::configureSmtpFromDatabase();
+
             $defaultSubject = self::$modules[$module]['email_subject'] ?? 'Notification from {Firm_Name}';
             $defaultBody = self::$modules[$module]['email_body'] ?? "Hello {Staff_Name},\n\nYou have a new notification from {Firm_Name}.";
 
@@ -259,10 +262,48 @@ class ModuleNotificationService
 
             // Send email
             Mail::to($email)->send(new GenericNotificationMail($subject, $body, $firmName));
+            Log::info("Module notification email sent successfully to {$email} for module '{$module}'");
             return true;
         } catch (\Throwable $e) {
             Log::warning("sendEmail failed for module '{$module}': " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Dynamically apply SMTP credentials from the settings database table.
+     */
+    public static function configureSmtpFromDatabase(): void
+    {
+        try {
+            $settings = Setting::query()->where('key', 'like', 'mail_%')->pluck('value', 'key')->toArray();
+
+            if (!empty($settings['mail_host'])) {
+                config([
+                    'mail.default' => 'smtp',
+                    'mail.mailers.smtp.transport'  => 'smtp',
+                    'mail.mailers.smtp.host'       => $settings['mail_host'],
+                    'mail.mailers.smtp.port'       => (int) ($settings['mail_port'] ?? 587),
+                    'mail.mailers.smtp.encryption' => !empty($settings['mail_encryption']) ? $settings['mail_encryption'] : 'tls',
+                    'mail.mailers.smtp.username'   => $settings['mail_username'] ?? '',
+                    'mail.mailers.smtp.password'   => $settings['mail_password'] ?? '',
+                ]);
+
+                $fromAddress = $settings['mail_from_address'] ?? ($settings['mail_username'] ?? config('mail.from.address'));
+                $fromName = $settings['mail_from_name'] ?? (Setting::where('key', 'company_name')->value('value') ?: config('mail.from.name', 'Insurance CRM'));
+
+                if (!empty($fromAddress)) {
+                    config([
+                        'mail.from.address' => $fromAddress,
+                        'mail.from.name'    => $fromName,
+                    ]);
+                }
+
+                // Purge resolved mailer instance to force Laravel to rebuild it with the new DB credentials
+                app()->forgetInstance('mail.manager');
+            }
+        } catch (\Throwable $e) {
+            Log::warning('configureSmtpFromDatabase failed: ' . $e->getMessage());
         }
     }
 }
