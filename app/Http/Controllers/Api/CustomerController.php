@@ -207,9 +207,8 @@ class CustomerController extends Controller
                 $data['username'] = $request->filled('username') ? trim((string) $request->input('username')) : null;
                 if ($data['username']) {
                     $checkResp = app(\App\Http\Controllers\UsernameCheckController::class)->check(new Request([
-                        'username'           => $data['username'],
-                        'ignore_customer_id' => $customer->id,
-                        'context'            => 'customer',
+                        'username' => $data['username'],
+                        'context'  => 'customer',
                     ]));
                     $resData = $checkResp->getData(true);
                     if (!empty($resData) && isset($resData['available']) && $resData['available'] === false) {
