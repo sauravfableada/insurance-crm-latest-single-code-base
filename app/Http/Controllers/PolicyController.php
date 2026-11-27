@@ -637,7 +637,9 @@ class PolicyController extends Controller
         $branches = Branch::where('company_id', $policy->company_id)->get();
 
         // Vehicle Details
-        $vehicleDetails = VehiclePolicyModel::where('policy_id', $policy->id)->first();
+        $vehicleDetails = Schema::hasTable('vehicle_policies')
+            ? VehiclePolicyModel::where('policy_id', $policy->id)->first()
+            : null;
 
         return view('crm.policy.edit', [
             'policy' => $policy,
