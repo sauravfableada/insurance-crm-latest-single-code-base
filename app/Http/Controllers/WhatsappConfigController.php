@@ -270,7 +270,7 @@ class WhatsappConfigController extends Controller
                 if ($action === 'connect') {
                     $resp = $http->post('http://localhost/sessions/init', ['session_id' => $sessionId]);
                 } elseif ($action === 'disconnect') {
-                    $resp = $http->post("http://localhost/sessions/{$sessionId}/logout", []);
+                    $resp = $http->delete("http://localhost/sessions/{$sessionId}");
                 } else {
                     $resp = $http->get("http://localhost/sessions/{$sessionId}/status");
                 }
@@ -279,7 +279,7 @@ class WhatsappConfigController extends Controller
                 if ($action === 'connect') {
                     $resp = $http->post("{$baseUrl}/sessions/init", ['session_id' => $sessionId]);
                 } elseif ($action === 'disconnect') {
-                    $resp = $http->post("{$baseUrl}/sessions/{$sessionId}/logout", []);
+                    $resp = $http->delete("{$baseUrl}/sessions/{$sessionId}");
                 } else {
                     $resp = $http->get("{$baseUrl}/sessions/{$sessionId}/status");
                 }

@@ -872,7 +872,30 @@ class AdminWithdrawalController extends Controller
         }
 
         $record = $payload['data'];
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('crm.withdrawals.pdf', compact('record'));
+        $logoBase64 = null;
+        try {
+            $settingPath = \App\Models\Setting::query()->where('key', 'company_logo_path')->value('value');
+            if ($settingPath) {
+                foreach ([
+                    \Illuminate\Support\Facades\Storage::disk('public')->path($settingPath),
+                    storage_path('app/public/' . ltrim($settingPath, '/\\')),
+                    public_path('storage/' . ltrim($settingPath, '/\\')),
+                    public_path(ltrim($settingPath, '/\\')),
+                ] as $cand) {
+                    if ($cand && file_exists($cand) && !is_dir($cand)) {
+                        $mime = mime_content_type($cand) ?: 'image/png';
+                        $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($cand));
+                        break;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        $companySettings = \App\Models\Setting::query()
+            ->whereIn('key', ['company_name', 'company_address', 'company_gstin', 'company_phone', 'company_email', 'bank_name', 'bank_account_no', 'bank_ifsc'])
+            ->pluck('value', 'key');
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('crm.withdrawals.pdf', compact('record', 'logoBase64', 'companySettings'));
         $safeRef = preg_replace('/[^A-Za-z0-9\-_]/', '-', (string) ($record['ref_no'] ?? $id));
         $filename = 'payout-' . trim($safeRef, '-') . '.pdf';
 
