@@ -186,20 +186,33 @@ class LeadController extends ApiBaseController
         } catch (\Throwable) {
         }
 
-        if (!empty($lead->assigned_user_id)) {
-            $this->notifyStaffOnLeadAssign($lead, $user);
+        // Module Notification (WhatsApp & Email) for Lead Creation
+        try {
+            // Determine recipient: assigned user if selected, otherwise creator or first active admin/staff
+            $recipientUser = null;
+            if (!empty($lead->assigned_user_id)) {
+                $recipientUser = $lead->assignedUser ?: \App\Models\User::find($lead->assigned_user_id);
+                $this->notifyStaffOnLeadAssign($lead, $user);
+            }
 
-            // Also dispatch through ModuleNotificationService for configured Email & WhatsApp alerts
-            try {
+            if (!$recipientUser && !empty($lead->user_id)) {
+                $recipientUser = \App\Models\User::find($lead->user_id);
+            }
+
+            if (!$recipientUser) {
+                $recipientUser = $user ?: \App\Models\User::whereIn('type', ['admin', 'staff', 'sub_agents'])->first();
+            }
+
+            if ($recipientUser) {
                 \App\Services\ModuleNotificationService::dispatch('leads', [
                     '{Lead_Name}'   => (string) ($lead->name ?? '--'),
                     '{Lead_Phone}'  => (string) ($lead->phone ?? '--'),
                     '{Lead_Email}'  => (string) ($lead->email ?? '--'),
                     '{Lead_Source}' => (string) ($lead->leadSource?->name ?? '--'),
-                ], $lead->assigned_user_id, $user);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Lead module notification dispatch failed: ' . $e->getMessage());
+                ], $recipientUser, $user);
             }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Lead module notification dispatch failed: ' . $e->getMessage());
         }
 
         return response()->json([
