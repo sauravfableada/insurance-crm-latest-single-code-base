@@ -1230,7 +1230,6 @@
 
             <!-- EMAIL SMTP TAB -->
             <div class="tab-pane fade {{ $activeSettingsTab === 'smtp' ? 'show active' : '' }}" id="smtp" role="tabpanel">
-                @if(false) {{-- SMTP credentials are managed by main admin (admin_products) --}}
                 <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data"
                     id="smtpSettingsForm">
                     @csrf
