@@ -1189,6 +1189,12 @@
                                     'title' => 'Meeting Email',
                                     'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
                                 ],
+                                [
+                                    'key' => 'task',
+                                    'icon' => 'fa-solid fa-list-check text-primary',
+                                    'title' => 'Task Assignment Email',
+                                    'default' => "Hello {Staff_Name},\nA new task has been assigned to you:\nTask: {Task_Title}\nDue Date: {Due_Date}\nPriority: {Priority}\n- {Firm_Name}",
+                                ],
                             ];
                         @endphp
 
@@ -1315,6 +1321,12 @@
                                     'icon' => 'fa-solid fa-calendar-check text-danger',
                                     'title' => 'Meeting Email',
                                     'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'task',
+                                    'icon' => 'fa-solid fa-list-check text-primary',
+                                    'title' => 'Task Assignment Email',
+                                    'default' => "Hello {Staff_Name},\nA new task has been assigned to you:\nTask: {Task_Title}\nDue Date: {Due_Date}\nPriority: {Priority}\n- {Firm_Name}",
                                 ],
                             ];
                         @endphp
@@ -1595,8 +1607,26 @@
                                             @endforeach
                                         </div>
                                         <textarea name="whatsapp_personal_meeting_message" id="waPersonalMeetingMessageBox" rows="3" class="form-control mb-2">{{ $waPersonalMeetingMessage }}</textarea>
-                                        <div class="text-end">
+                                        <div class="text-end mb-3">
                                             <button type="submit" class="btn btn-primary btn-sm px-3">Save Meeting Message</button>
+                                        </div>
+                                    </form>
+
+                                    <form action="{{ route('settings.update') }}" method="POST">
+                                        @csrf @method('PUT')
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label fw-semibold small text-dark mb-0"><i class="fa-solid fa-list-check text-primary me-1"></i>Task Assignment Message</label>
+                                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                                <input type="hidden" name="whatsapp_personal_task_enabled" value="0">
+                                                <input class="form-check-input" type="checkbox" role="switch" name="whatsapp_personal_task_enabled" value="1"
+                                                    {{ ($settings['whatsapp_personal_task_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
+                                                    onchange="toggleWaModule('whatsapp_personal_task_enabled', this)">
+                                                <span class="small fw-semibold {{ ($settings['whatsapp_personal_task_enabled']->value ?? '1') === '1' ? 'text-success' : 'text-muted' }}">{{ ($settings['whatsapp_personal_task_enabled']->value ?? '1') === '1' ? 'Enabled' : 'Disabled' }}</span>
+                                            </div>
+                                        </div>
+                                        <textarea name="whatsapp_personal_task_message" rows="3" class="form-control mb-2">{{ $settings['whatsapp_personal_task_message']->value ?? "Hello {Staff_Name},\nA new task has been assigned to you:\nTask: {Task_Title}\nDue Date: {Due_Date}\nPriority: {Priority}\n- {Firm_Name}" }}</textarea>
+                                        <div class="text-end">
+                                            <button type="submit" class="btn btn-primary btn-sm px-3">Save Task Message</button>
                                         </div>
                                     </form>
                                 </div>
@@ -2375,6 +2405,12 @@
                                     'title' => 'Meeting Email',
                                     'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
                                 ],
+                                [
+                                    'key' => 'task',
+                                    'icon' => 'fa-solid fa-list-check text-primary',
+                                    'title' => 'Task Assignment Email',
+                                    'default' => "Hello {Staff_Name},\nA new task has been assigned to you:\nTask: {Task_Title}\nDue Date: {Due_Date}\nPriority: {Priority}\n- {Firm_Name}",
+                                ],
                             ];
                         @endphp
 
@@ -2589,6 +2625,12 @@
                                     'title' => 'Meeting Email',
                                     'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
                                 ],
+                                [
+                                    'key' => 'task',
+                                    'icon' => 'fa-solid fa-list-check text-primary',
+                                    'title' => 'Task Assignment Email',
+                                    'default' => "Hello {Staff_Name},\nA new task has been assigned to you:\nTask: {Task_Title}\nDue Date: {Due_Date}\nPriority: {Priority}\n- {Firm_Name}",
+                                ],
                             ];
                         @endphp
 
@@ -2793,6 +2835,12 @@
                                     'icon' => 'fa-solid fa-calendar-check text-danger',
                                     'title' => 'Meeting Email',
                                     'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'task',
+                                    'icon' => 'fa-solid fa-list-check text-primary',
+                                    'title' => 'Task Assignment Email',
+                                    'default' => "Hello {Staff_Name},\nA new task has been assigned to you:\nTask: {Task_Title}\nDue Date: {Due_Date}\nPriority: {Priority}\n- {Firm_Name}",
                                 ],
                             ];
                         @endphp
@@ -3007,6 +3055,12 @@
                                     'icon' => 'fa-solid fa-calendar-check text-danger',
                                     'title' => 'Meeting Email',
                                     'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'task',
+                                    'icon' => 'fa-solid fa-list-check text-primary',
+                                    'title' => 'Task Assignment Email',
+                                    'default' => "Hello {Staff_Name},\nA new task has been assigned to you:\nTask: {Task_Title}\nDue Date: {Due_Date}\nPriority: {Priority}\n- {Firm_Name}",
                                 ],
                             ];
                         @endphp

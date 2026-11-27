@@ -111,6 +111,32 @@ class TaskController extends ApiBaseController
         $historyEntry = $this->recordStatusHistory($task, $data['status'] ?? null, $data['status_comment'] ?? null);
         app(\App\Services\UserLogService::class)->created($task);
 
+        try {
+            $staffId = $task->assigned_user_id ?? $task->user_id ?? auth()->id();
+            $staff = \App\Models\User::find($staffId);
+            if ($staff) {
+                $firmName = (string) (\App\Models\Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
+                $vars = [
+                    '{Firm_Name}' => $firmName,
+                    '{Staff_Name}' => (string) ($staff->name ?? 'Staff'),
+                    '{Task_Title}' => (string) ($task->title ?? $task->name ?? '--'),
+                    '{Due_Date}' => (string) ($task->due_date ?? '--'),
+                    '{Priority}' => (string) ($task->priority ?? '--'),
+                ];
+                $rawPhone = (string) ($staff->phone ?? $staff->mobile ?? $staff->contact ?? $staff->contact_no ?? $staff->phone_number ?? '');
+                if ($rawPhone !== '' && \App\Services\PersonalWhatsappService::isModuleEnabled('whatsapp_personal_task_enabled')) {
+                    $waTpl = (string) (\App\Models\Setting::where('key', 'whatsapp_personal_task_message')->value('value')
+                        ?: "Hello {Staff_Name},\nA new task has been assigned to you:\nTask: {Task_Title}\nDue Date: {Due_Date}\nPriority: {Priority}\n- {Firm_Name}");
+                    \App\Services\PersonalWhatsappService::sendText($rawPhone, strtr($waTpl, $vars), (int) (auth()->id() ?: 1));
+                }
+                if (!empty($staff->email) && \App\Services\PersonalEmailService::isModuleEnabled('email_task_enabled')) {
+                    $emTpl = (string) (\App\Models\Setting::where('key', 'email_task_message')->value('value')
+                        ?: "Hello {Staff_Name},\nA new task has been assigned to you:\nTask: {Task_Title}\nDue Date: {Due_Date}\nPriority: {Priority}\n- {Firm_Name}");
+                    \App\Services\PersonalEmailService::sendText($staff->email, 'New Task Assigned: ' . ($task->title ?? 'Task'), strtr($emTpl, $vars));
+                }
+            }
+        } catch (\Throwable $e) {}
+
         if ($request->has('custom_fields')) {
             $task->saveCustomFields($request->get('custom_fields'));
         }
