@@ -142,13 +142,23 @@ class FollowUpController extends ApiBaseController
 
         // Staff / Sub-Agent notification
         try {
-            $assignedStaffId = $followUp->assigned_user_id ?: ($followUp->created_by ?: auth()->id());
+            $assignedStaffId = $followUp->assigned_user_id ?: ($followUp->user_id ?: ($followUp->created_by ?: auth()->id()));
             $clientName = $followUp->lead?->name ?: ($followUp->customer?->name ?: '--');
+            $followupDateTime = '--';
+            if (!empty($followUp->follow_up_at)) {
+                $followupDateTime = \Carbon\Carbon::parse($followUp->follow_up_at)->format('d M Y, h:i A');
+            } elseif (!empty($followUp->followup_date)) {
+                $followupDateTime = \Carbon\Carbon::parse($followUp->followup_date)->format('d M Y');
+            }
+
+            $remarks = (string) ($followUp->comment ?: ($followUp->remarks ?: ($followUp->notes ?: '--')));
+
             \App\Services\ModuleNotificationService::dispatch('followups', [
-                '{Followup_Subject}' => (string) ($followUp->purpose ?: ($followUp->remarks ?: 'Follow-up')),
+                '{Followup_Subject}' => (string) ($followUp->purpose ?: ($followUp->comment ?: 'Follow-up')),
                 '{Client_Name}'      => (string) $clientName,
-                '{Followup_Date}'    => (string) ($followUp->followup_date ?: ($followUp->follow_up_date ?? '--')),
-                '{Remarks}'          => (string) ($followUp->remarks ?: '--'),
+                '{Followup_Date}'    => (string) $followupDateTime,
+                '{Remarks}'          => $remarks,
+                '{Notes}'            => $remarks,
             ], $assignedStaffId, $user);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('FollowUp notification dispatch failed: ' . $e->getMessage());

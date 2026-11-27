@@ -78,7 +78,23 @@ class ClaimTrackerController extends Controller
             $data['claim_file'] = $request->file('claim_file')->store('claims', 'public');
         }
         $data['created_by'] = auth()->id();
-        ClaimTracker::create($data);
+        $claim = ClaimTracker::create($data);
+
+        // Module Notification (WhatsApp & Email) for Claim Tracker
+        try {
+            $claim->load(['proposer', 'policy.holder', 'creator']);
+            $clientName = $claim->proposer?->name ?: ($claim->policy?->holder?->name ?: '--');
+            $recipientStaff = $claim->user_id ?: ($claim->created_by ?: auth()->id());
+            \App\Services\ModuleNotificationService::dispatch('claim_trackers', [
+                '{Claim_No}'     => (string) ($claim->claim_number ?: ('#' . $claim->id)),
+                '{Policy_No}'    => (string) ($claim->policy?->policy_number_no ?: '--'),
+                '{Client_Name}'  => (string) $clientName,
+                '{Claim_Status}' => (string) ($claim->claim_status ?: 'Submitted'),
+            ], $recipientStaff, auth()->user());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Claim tracker notification dispatch failed: ' . $e->getMessage());
+        }
+
         return redirect()->route('claim-tracker.index')->with('success', 'Claim created successfully.');
     }
 

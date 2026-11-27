@@ -128,6 +128,19 @@ class DealController extends ApiBaseController
             $this->createAutoTaskForDeal($deal);
             $this->createOrUpdateProjectFromDeal($deal);
 
+            // Module Notification (WhatsApp & Email) for Deals
+            try {
+                $recipientStaff = $deal->assigned_user_id ?: ($deal->user_id ?: ($deal->created_by ?: auth()->id()));
+                $clientName = $deal->customer?->name ?: ($deal->lead?->name ?: '--');
+                \App\Services\ModuleNotificationService::dispatch('deals', [
+                    '{Deal_Name}'   => (string) ($deal->title ?: ($deal->name ?: 'New Deal')),
+                    '{Deal_Value}'  => (string) ($deal->deal_value ?: ($deal->value ?: '0')),
+                    '{Client_Name}' => (string) $clientName,
+                ], $recipientStaff, auth()->user());
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Deal notification dispatch failed: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Deal created successfully!',
