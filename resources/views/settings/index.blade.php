@@ -1149,7 +1149,6 @@
                         </div>
                     </div>
                 </form>
-                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
@@ -1282,7 +1281,6 @@
                         </div>
                     </div>
                 </form>
-                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
@@ -2365,7 +2363,6 @@
                         </button>
                     </div>
                 </form>
-                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
@@ -2585,7 +2582,6 @@
                         </button>
                     </div>
                 </form>
-                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
@@ -2796,7 +2792,6 @@
                         </button>
                     </div>
                 </form>
-                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
@@ -3016,7 +3011,6 @@
                         </button>
                     </div>
                 </form>
-                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
