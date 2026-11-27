@@ -192,7 +192,6 @@ class LeadController extends ApiBaseController
             $recipientUser = null;
             if (!empty($lead->assigned_user_id)) {
                 $recipientUser = $lead->assignedUser ?: \App\Models\User::find($lead->assigned_user_id);
-                $this->notifyStaffOnLeadAssign($lead, $user);
             }
 
             if (!$recipientUser && !empty($lead->user_id)) {
@@ -453,19 +452,17 @@ class LeadController extends ApiBaseController
             }
 
             if (!empty($lead->assigned_user_id) && $lead->wasChanged('assigned_user_id')) {
-                $this->notifyStaffOnLeadAssign($lead, $user);
-
-            // Also dispatch through ModuleNotificationService for configured Email & WhatsApp alerts
-            try {
-                \App\Services\ModuleNotificationService::dispatch('leads', [
-                    '{Lead_Name}'   => (string) ($lead->name ?? '--'),
-                    '{Lead_Phone}'  => (string) ($lead->phone ?? '--'),
-                    '{Lead_Email}'  => (string) ($lead->email ?? '--'),
-                    '{Lead_Source}' => (string) ($lead->leadSource?->name ?? '--'),
-                ], $lead->assigned_user_id, $user);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Lead module notification dispatch failed: ' . $e->getMessage());
-            }
+                // Dispatch through ModuleNotificationService for configured Email & WhatsApp alerts
+                try {
+                    \App\Services\ModuleNotificationService::dispatch('leads', [
+                        '{Lead_Name}'   => (string) ($lead->name ?? '--'),
+                        '{Lead_Phone}'  => (string) ($lead->phone ?? '--'),
+                        '{Lead_Email}'  => (string) ($lead->email ?? '--'),
+                        '{Lead_Source}' => (string) ($lead->leadSource?->name ?? '--'),
+                    ], $lead->assigned_user_id, $user);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Lead module notification dispatch failed: ' . $e->getMessage());
+                }
             }
 
             return response()->json([

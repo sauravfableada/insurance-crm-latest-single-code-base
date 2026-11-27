@@ -562,7 +562,6 @@ class PolicyController extends Controller
                     '{Company_Name}'    => (string) ($policy->company_name ?? '--'),
                     '{Premium_Amount}'  => number_format((float) ($policy->payment_amount ?? $policy->net_premium ?? 0), 2),
                 ], $assignedStaffId, Auth::user());
-                $this->notifyAgentOnPolicyAssign($policy, (int) ($userId ?: auth()->id()));
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Policy notification dispatch failed: ' . $e->getMessage());
             }
@@ -736,7 +735,17 @@ class PolicyController extends Controller
             }
 
             if (!empty($policy->user_id)) {
-                $this->notifyAgentOnPolicyAssign($policy, (int) (auth()->id() ?: 1));
+                try {
+                    $assignedStaffId = (int) ($policy->user_id ?: 0);
+                    \App\Services\ModuleNotificationService::dispatch('policies', [
+                        '{Policy_No}'       => (string) ($policy->policy_no ?? '--'),
+                        '{Client_Name}'     => (string) ($policy->customer?->name ?? '--'),
+                        '{Company_Name}'    => (string) ($policy->company_name ?? '--'),
+                        '{Premium_Amount}'  => number_format((float) ($policy->payment_amount ?? $policy->net_premium ?? 0), 2),
+                    ], $assignedStaffId, Auth::user());
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Policy notification dispatch failed: ' . $e->getMessage());
+                }
             }
 
             return response()->json([
