@@ -20,7 +20,12 @@ class PersonalEmailService
             if (! filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
                 return;
             }
-            Mail::raw($message, function ($mail) use ($toEmail, $subject) {
+            $firmName = (string) (Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
+            Mail::send('emails.crm-notification', [
+                'subjectLine' => $subject,
+                'bodyText' => $message,
+                'firmName' => $firmName,
+            ], function ($mail) use ($toEmail, $subject) {
                 $mail->to($toEmail)->subject($subject);
             });
         } catch (\Throwable $e) {

@@ -878,8 +878,8 @@ class LeadController extends ApiBaseController
     {
         try {
             if (! \App\Services\PersonalWhatsappService::isModuleEnabled('whatsapp_personal_lead_enabled')) {
-                return;
-            }
+                // Still check email below
+            } else {
 
             $staff = $lead->assignedUser ?: \App\Models\User::find($lead->assigned_user_id);
             if (! $staff) {
@@ -931,6 +931,25 @@ class LeadController extends ApiBaseController
             }
             if (! $resp->successful()) {
                 \Illuminate\Support\Facades\Log::warning('Personal WhatsApp lead notify failed: HTTP ' . $resp->status() . ' ' . $resp->body());
+            }
+            }
+
+            if (\App\Services\PersonalEmailService::isModuleEnabled('email_lead_enabled')) {
+                $staff = $lead->assignedUser ?: \App\Models\User::find($lead->assigned_user_id);
+                if ($staff && !empty($staff->email)) {
+                    $firmName = (string) (\App\Models\Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
+                    $emailTpl = (string) (\App\Models\Setting::where('key', 'email_lead_message')->value('value')
+                        ?: "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}");
+                    $emailMsg = strtr($emailTpl, [
+                        '{Firm_Name}' => $firmName,
+                        '{Staff_Name}' => (string) ($staff->name ?? 'Staff'),
+                        '{Lead_Name}' => (string) ($lead->name ?? ''),
+                        '{Lead_Phone}' => (string) ($lead->phone ?? '--'),
+                        '{Lead_Email}' => (string) ($lead->email ?? '--'),
+                        '{Lead_Source}' => (string) ($lead->leadSource?->name ?? '--'),
+                    ]);
+                    \App\Services\PersonalEmailService::sendText($staff->email, 'New Lead Assigned: ' . ($lead->name ?? ''), $emailMsg);
+                }
             }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Module notification lead assignment failed: ' . $e->getMessage());
