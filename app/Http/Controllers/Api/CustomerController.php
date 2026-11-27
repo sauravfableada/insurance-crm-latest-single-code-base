@@ -254,14 +254,13 @@ class CustomerController extends Controller
                 ]);
             }
 
-            // Staff / Sub-Agent notification
+            // Client welcome notification (WhatsApp & Email sent directly to Client)
             try {
-                $staffId = $customer->user_id ?: ($customer->created_by ?: auth()->id());
                 \App\Services\ModuleNotificationService::dispatch('customers', [
-                    '{Client_Name}'  => (string) ($customer->name ?? '--'),
+                    '{Client_Name}'  => (string) ($customer->name ?? 'Valued Client'),
                     '{Client_Phone}' => (string) ($customer->phone ?? '--'),
                     '{Client_Email}' => (string) ($customer->email ?? '--'),
-                ], $staffId, auth()->user());
+                ], $customer, auth()->user());
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Customer notification dispatch failed: ' . $e->getMessage());
             }

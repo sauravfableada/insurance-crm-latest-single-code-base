@@ -1189,9 +1189,16 @@
                                         placeholder="Company Name"></div>
                             </div>
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-4">
-                                <span id="smtpSettingsStatus" class="settings-form-status"></span>
-                                <button type="submit" class="btn btn-dark-blue settings-submit-btn">Save SMTP
-                                    Settings</button>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span id="smtpSettingsStatus" class="settings-form-status"></span>
+                                    <span id="smtpTestStatus" class="small"></span>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" id="btnTestSmtp" class="btn btn-outline-secondary">
+                                        <i class="fa-solid fa-paper-plane me-1"></i> Send Test Email
+                                    </button>
+                                    <button type="submit" class="btn btn-dark-blue settings-submit-btn">Save SMTP Settings</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3459,7 +3466,48 @@
                 apiSettingsIndex: @json(route('api.settings.index')),
                 apiSettingsUpdate: @json(route('api.settings.update')),
                 settingsUpdate: @json(route('settings.update')),
+                testSmtpUrl: @json(route('settings.smtp.test')),
             };
+
+            // Test SMTP handler
+            $(document).on('click', '#btnTestSmtp', function() {
+                const btn = $(this);
+                const status = $('#smtpTestStatus');
+                const recipient = $('input[name="mail_username"]').val();
+
+                if (!recipient) {
+                    alert('Please enter your SMTP Username (email) before sending a test email.');
+                    return;
+                }
+
+                btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Sending...');
+                status.removeClass('text-success text-danger').addClass('text-muted').text('Sending test email to ' + recipient + '...');
+
+                $.ajax({
+                    url: window.settingsPageConfig.testSmtpUrl,
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        email: recipient
+                    },
+                    success: function(res) {
+                        btn.prop('disabled', false).html('<i class="fa-solid fa-paper-plane me-1"></i> Send Test Email');
+                        if (res.success) {
+                            status.removeClass('text-muted text-danger').addClass('text-success').text(res.message);
+                            if (typeof toastr !== 'undefined') toastr.success(res.message);
+                        } else {
+                            status.removeClass('text-muted text-success').addClass('text-danger').text(res.message);
+                            if (typeof toastr !== 'undefined') toastr.error(res.message);
+                        }
+                    },
+                    error: function(xhr) {
+                        btn.prop('disabled', false).html('<i class="fa-solid fa-paper-plane me-1"></i> Send Test Email');
+                        const msg = xhr.responseJSON?.message || 'Failed to send test email. Check your SMTP settings and password.';
+                        status.removeClass('text-muted text-success').addClass('text-danger').text(msg);
+                        if (typeof toastr !== 'undefined') toastr.error(msg);
+                    }
+                });
+            });
         </script>
         <script src="{{ (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/assets/js/setting.js' : '/assets/js/setting.js') }}?v={{ filemtime(public_path('assets/js/setting.js')) }}"></script>
         <script src="{{ (env('PUBLIC_PATH') ? '/' . trim(env('PUBLIC_PATH'), '/') . '/js/settings-page.js' : '/js/settings-page.js') }}?v={{ filemtime(public_path('js/settings-page.js')) }}"></script>
