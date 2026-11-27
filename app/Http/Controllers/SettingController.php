@@ -791,6 +791,16 @@ class SettingController extends Controller
             'whatsapp_personal_policy_enabled' => ['sometimes', 'boolean'],
             'whatsapp_personal_followup_enabled' => ['sometimes', 'boolean'],
             'whatsapp_personal_meeting_enabled' => ['sometimes', 'boolean'],
+            'email_lead_enabled' => ['sometimes', 'boolean'],
+            'email_withdrawal_enabled' => ['sometimes', 'boolean'],
+            'email_policy_enabled' => ['sometimes', 'boolean'],
+            'email_followup_enabled' => ['sometimes', 'boolean'],
+            'email_meeting_enabled' => ['sometimes', 'boolean'],
+            'email_lead_message' => ['sometimes', 'nullable', 'string'],
+            'email_withdrawal_message' => ['sometimes', 'nullable', 'string'],
+            'email_policy_message' => ['sometimes', 'nullable', 'string'],
+            'email_followup_message' => ['sometimes', 'nullable', 'string'],
+            'email_meeting_message' => ['sometimes', 'nullable', 'string'],
         ]);
 
         // Accept any dynamic notification module settings: notif_email_{module}_*, notif_wa_{module}_*

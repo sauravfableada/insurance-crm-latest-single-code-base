@@ -896,7 +896,7 @@ Route::get('/manifest.json', function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('customer')->name('customer.portal.')->group(function () {
-    Route::get('/login', fn () => redirect()->route('login'))->name('login');
+    Route::get('/login', fn () => redirect('/'))->name('login');
     Route::match(['get', 'post'], '/logout', [\App\Http\Controllers\CustomerPortalController::class, 'logout'])->name('logout');
 
     Route::middleware(['auth:customer,web'])->group(function () {

@@ -1149,6 +1149,77 @@
                         </div>
                     </div>
                 </form>
+
+                <!-- Email Notification Templates & Toggles -->
+                <div class="settings-panel mt-4">
+                    <div class="settings-panel-head">
+                        <span><i class="fa-solid fa-envelope-open-text text-primary me-2"></i>Email Notification Templates</span>
+                    </div>
+                    <div class="settings-panel-body">
+                        @php
+                            $emailTemplates = [
+                                [
+                                    'key' => 'lead',
+                                    'icon' => 'fa-solid fa-user-plus text-info',
+                                    'title' => 'Lead Assignment Email (to Staff)',
+                                    'default' => "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'withdrawal',
+                                    'icon' => 'fa-solid fa-money-bill-transfer text-success',
+                                    'title' => 'Withdrawal / Payout Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nYour payout request of ₹{Amount} has been {Status}.\n{Remarks}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'policy',
+                                    'icon' => 'fa-solid fa-shield-halved text-warning',
+                                    'title' => 'Policy Assignment Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nA new policy has been assigned to you:\nPolicy No: {Policy_No}\nClient: {Client_Name}\nInsurer: {Company_Name}\nPremium: ₹{Premium_Amount}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'followup',
+                                    'icon' => 'fa-solid fa-clock-rotate-left text-secondary',
+                                    'title' => 'Follow-Up Email',
+                                    'default' => "Hello {Staff_Name},\nA new follow-up has been scheduled:\nLead/Client: {Client_Name}\nDate: {Followup_Date}\nNotes: {Notes}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'meeting',
+                                    'icon' => 'fa-solid fa-calendar-check text-danger',
+                                    'title' => 'Meeting Email',
+                                    'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
+                                ],
+                            ];
+                        @endphp
+
+                        @foreach($emailTemplates as $tpl)
+                            @php
+                                $enabledKey = 'email_' . $tpl['key'] . '_enabled';
+                                $msgKey = 'email_' . $tpl['key'] . '_message';
+                                $isOn = ($settings[$enabledKey]->value ?? '1') === '1';
+                                $msgVal = $settings[$msgKey]->value ?? $tpl['default'];
+                            @endphp
+                            <form action="{{ route('settings.update') }}" method="POST" class="mb-3">
+                                @csrf @method('PUT')
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label fw-semibold small text-dark mb-0">
+                                        <i class="{{ $tpl['icon'] }} me-1"></i>{{ $tpl['title'] }}
+                                    </label>
+                                    <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                        <input type="hidden" name="{{ $enabledKey }}" value="0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="{{ $enabledKey }}" value="1"
+                                            {{ $isOn ? 'checked' : '' }}
+                                            onchange="toggleWaModule('{{ $enabledKey }}', this)">
+                                        <span class="small fw-semibold {{ $isOn ? 'text-success' : 'text-muted' }}">{{ $isOn ? 'Enabled' : 'Disabled' }}</span>
+                                    </div>
+                                </div>
+                                <textarea name="{{ $msgKey }}" rows="3" class="form-control mb-2">{{ $msgVal }}</textarea>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Save Email Template</button>
+                                </div>
+                            </form>
+                        @endforeach
+                    </div>
+                </div>
             </div>
 
             <!-- EMAIL SMTP TAB -->
@@ -1203,6 +1274,77 @@
                         </div>
                     </div>
                 </form>
+
+                <!-- Email Notification Templates & Toggles -->
+                <div class="settings-panel mt-4">
+                    <div class="settings-panel-head">
+                        <span><i class="fa-solid fa-envelope-open-text text-primary me-2"></i>Email Notification Templates</span>
+                    </div>
+                    <div class="settings-panel-body">
+                        @php
+                            $emailTemplates = [
+                                [
+                                    'key' => 'lead',
+                                    'icon' => 'fa-solid fa-user-plus text-info',
+                                    'title' => 'Lead Assignment Email (to Staff)',
+                                    'default' => "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'withdrawal',
+                                    'icon' => 'fa-solid fa-money-bill-transfer text-success',
+                                    'title' => 'Withdrawal / Payout Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nYour payout request of ₹{Amount} has been {Status}.\n{Remarks}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'policy',
+                                    'icon' => 'fa-solid fa-shield-halved text-warning',
+                                    'title' => 'Policy Assignment Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nA new policy has been assigned to you:\nPolicy No: {Policy_No}\nClient: {Client_Name}\nInsurer: {Company_Name}\nPremium: ₹{Premium_Amount}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'followup',
+                                    'icon' => 'fa-solid fa-clock-rotate-left text-secondary',
+                                    'title' => 'Follow-Up Email',
+                                    'default' => "Hello {Staff_Name},\nA new follow-up has been scheduled:\nLead/Client: {Client_Name}\nDate: {Followup_Date}\nNotes: {Notes}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'meeting',
+                                    'icon' => 'fa-solid fa-calendar-check text-danger',
+                                    'title' => 'Meeting Email',
+                                    'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
+                                ],
+                            ];
+                        @endphp
+
+                        @foreach($emailTemplates as $tpl)
+                            @php
+                                $enabledKey = 'email_' . $tpl['key'] . '_enabled';
+                                $msgKey = 'email_' . $tpl['key'] . '_message';
+                                $isOn = ($settings[$enabledKey]->value ?? '1') === '1';
+                                $msgVal = $settings[$msgKey]->value ?? $tpl['default'];
+                            @endphp
+                            <form action="{{ route('settings.update') }}" method="POST" class="mb-3">
+                                @csrf @method('PUT')
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label fw-semibold small text-dark mb-0">
+                                        <i class="{{ $tpl['icon'] }} me-1"></i>{{ $tpl['title'] }}
+                                    </label>
+                                    <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                        <input type="hidden" name="{{ $enabledKey }}" value="0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="{{ $enabledKey }}" value="1"
+                                            {{ $isOn ? 'checked' : '' }}
+                                            onchange="toggleWaModule('{{ $enabledKey }}', this)">
+                                        <span class="small fw-semibold {{ $isOn ? 'text-success' : 'text-muted' }}">{{ $isOn ? 'Enabled' : 'Disabled' }}</span>
+                                    </div>
+                                </div>
+                                <textarea name="{{ $msgKey }}" rows="3" class="form-control mb-2">{{ $msgVal }}</textarea>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Save Email Template</button>
+                                </div>
+                            </form>
+                        @endforeach
+                    </div>
+                </div>
             </div>
 
             @if(true)
@@ -2190,6 +2332,77 @@
                         </button>
                     </div>
                 </form>
+
+                <!-- Email Notification Templates & Toggles -->
+                <div class="settings-panel mt-4">
+                    <div class="settings-panel-head">
+                        <span><i class="fa-solid fa-envelope-open-text text-primary me-2"></i>Email Notification Templates</span>
+                    </div>
+                    <div class="settings-panel-body">
+                        @php
+                            $emailTemplates = [
+                                [
+                                    'key' => 'lead',
+                                    'icon' => 'fa-solid fa-user-plus text-info',
+                                    'title' => 'Lead Assignment Email (to Staff)',
+                                    'default' => "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'withdrawal',
+                                    'icon' => 'fa-solid fa-money-bill-transfer text-success',
+                                    'title' => 'Withdrawal / Payout Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nYour payout request of ₹{Amount} has been {Status}.\n{Remarks}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'policy',
+                                    'icon' => 'fa-solid fa-shield-halved text-warning',
+                                    'title' => 'Policy Assignment Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nA new policy has been assigned to you:\nPolicy No: {Policy_No}\nClient: {Client_Name}\nInsurer: {Company_Name}\nPremium: ₹{Premium_Amount}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'followup',
+                                    'icon' => 'fa-solid fa-clock-rotate-left text-secondary',
+                                    'title' => 'Follow-Up Email',
+                                    'default' => "Hello {Staff_Name},\nA new follow-up has been scheduled:\nLead/Client: {Client_Name}\nDate: {Followup_Date}\nNotes: {Notes}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'meeting',
+                                    'icon' => 'fa-solid fa-calendar-check text-danger',
+                                    'title' => 'Meeting Email',
+                                    'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
+                                ],
+                            ];
+                        @endphp
+
+                        @foreach($emailTemplates as $tpl)
+                            @php
+                                $enabledKey = 'email_' . $tpl['key'] . '_enabled';
+                                $msgKey = 'email_' . $tpl['key'] . '_message';
+                                $isOn = ($settings[$enabledKey]->value ?? '1') === '1';
+                                $msgVal = $settings[$msgKey]->value ?? $tpl['default'];
+                            @endphp
+                            <form action="{{ route('settings.update') }}" method="POST" class="mb-3">
+                                @csrf @method('PUT')
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label fw-semibold small text-dark mb-0">
+                                        <i class="{{ $tpl['icon'] }} me-1"></i>{{ $tpl['title'] }}
+                                    </label>
+                                    <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                        <input type="hidden" name="{{ $enabledKey }}" value="0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="{{ $enabledKey }}" value="1"
+                                            {{ $isOn ? 'checked' : '' }}
+                                            onchange="toggleWaModule('{{ $enabledKey }}', this)">
+                                        <span class="small fw-semibold {{ $isOn ? 'text-success' : 'text-muted' }}">{{ $isOn ? 'Enabled' : 'Disabled' }}</span>
+                                    </div>
+                                </div>
+                                <textarea name="{{ $msgKey }}" rows="3" class="form-control mb-2">{{ $msgVal }}</textarea>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Save Email Template</button>
+                                </div>
+                            </form>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2332,6 +2545,77 @@
                         </button>
                     </div>
                 </form>
+
+                <!-- Email Notification Templates & Toggles -->
+                <div class="settings-panel mt-4">
+                    <div class="settings-panel-head">
+                        <span><i class="fa-solid fa-envelope-open-text text-primary me-2"></i>Email Notification Templates</span>
+                    </div>
+                    <div class="settings-panel-body">
+                        @php
+                            $emailTemplates = [
+                                [
+                                    'key' => 'lead',
+                                    'icon' => 'fa-solid fa-user-plus text-info',
+                                    'title' => 'Lead Assignment Email (to Staff)',
+                                    'default' => "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'withdrawal',
+                                    'icon' => 'fa-solid fa-money-bill-transfer text-success',
+                                    'title' => 'Withdrawal / Payout Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nYour payout request of ₹{Amount} has been {Status}.\n{Remarks}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'policy',
+                                    'icon' => 'fa-solid fa-shield-halved text-warning',
+                                    'title' => 'Policy Assignment Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nA new policy has been assigned to you:\nPolicy No: {Policy_No}\nClient: {Client_Name}\nInsurer: {Company_Name}\nPremium: ₹{Premium_Amount}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'followup',
+                                    'icon' => 'fa-solid fa-clock-rotate-left text-secondary',
+                                    'title' => 'Follow-Up Email',
+                                    'default' => "Hello {Staff_Name},\nA new follow-up has been scheduled:\nLead/Client: {Client_Name}\nDate: {Followup_Date}\nNotes: {Notes}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'meeting',
+                                    'icon' => 'fa-solid fa-calendar-check text-danger',
+                                    'title' => 'Meeting Email',
+                                    'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
+                                ],
+                            ];
+                        @endphp
+
+                        @foreach($emailTemplates as $tpl)
+                            @php
+                                $enabledKey = 'email_' . $tpl['key'] . '_enabled';
+                                $msgKey = 'email_' . $tpl['key'] . '_message';
+                                $isOn = ($settings[$enabledKey]->value ?? '1') === '1';
+                                $msgVal = $settings[$msgKey]->value ?? $tpl['default'];
+                            @endphp
+                            <form action="{{ route('settings.update') }}" method="POST" class="mb-3">
+                                @csrf @method('PUT')
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label fw-semibold small text-dark mb-0">
+                                        <i class="{{ $tpl['icon'] }} me-1"></i>{{ $tpl['title'] }}
+                                    </label>
+                                    <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                        <input type="hidden" name="{{ $enabledKey }}" value="0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="{{ $enabledKey }}" value="1"
+                                            {{ $isOn ? 'checked' : '' }}
+                                            onchange="toggleWaModule('{{ $enabledKey }}', this)">
+                                        <span class="small fw-semibold {{ $isOn ? 'text-success' : 'text-muted' }}">{{ $isOn ? 'Enabled' : 'Disabled' }}</span>
+                                    </div>
+                                </div>
+                                <textarea name="{{ $msgKey }}" rows="3" class="form-control mb-2">{{ $msgVal }}</textarea>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Save Email Template</button>
+                                </div>
+                            </form>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2465,6 +2749,77 @@
                         </button>
                     </div>
                 </form>
+
+                <!-- Email Notification Templates & Toggles -->
+                <div class="settings-panel mt-4">
+                    <div class="settings-panel-head">
+                        <span><i class="fa-solid fa-envelope-open-text text-primary me-2"></i>Email Notification Templates</span>
+                    </div>
+                    <div class="settings-panel-body">
+                        @php
+                            $emailTemplates = [
+                                [
+                                    'key' => 'lead',
+                                    'icon' => 'fa-solid fa-user-plus text-info',
+                                    'title' => 'Lead Assignment Email (to Staff)',
+                                    'default' => "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'withdrawal',
+                                    'icon' => 'fa-solid fa-money-bill-transfer text-success',
+                                    'title' => 'Withdrawal / Payout Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nYour payout request of ₹{Amount} has been {Status}.\n{Remarks}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'policy',
+                                    'icon' => 'fa-solid fa-shield-halved text-warning',
+                                    'title' => 'Policy Assignment Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nA new policy has been assigned to you:\nPolicy No: {Policy_No}\nClient: {Client_Name}\nInsurer: {Company_Name}\nPremium: ₹{Premium_Amount}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'followup',
+                                    'icon' => 'fa-solid fa-clock-rotate-left text-secondary',
+                                    'title' => 'Follow-Up Email',
+                                    'default' => "Hello {Staff_Name},\nA new follow-up has been scheduled:\nLead/Client: {Client_Name}\nDate: {Followup_Date}\nNotes: {Notes}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'meeting',
+                                    'icon' => 'fa-solid fa-calendar-check text-danger',
+                                    'title' => 'Meeting Email',
+                                    'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
+                                ],
+                            ];
+                        @endphp
+
+                        @foreach($emailTemplates as $tpl)
+                            @php
+                                $enabledKey = 'email_' . $tpl['key'] . '_enabled';
+                                $msgKey = 'email_' . $tpl['key'] . '_message';
+                                $isOn = ($settings[$enabledKey]->value ?? '1') === '1';
+                                $msgVal = $settings[$msgKey]->value ?? $tpl['default'];
+                            @endphp
+                            <form action="{{ route('settings.update') }}" method="POST" class="mb-3">
+                                @csrf @method('PUT')
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label fw-semibold small text-dark mb-0">
+                                        <i class="{{ $tpl['icon'] }} me-1"></i>{{ $tpl['title'] }}
+                                    </label>
+                                    <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                        <input type="hidden" name="{{ $enabledKey }}" value="0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="{{ $enabledKey }}" value="1"
+                                            {{ $isOn ? 'checked' : '' }}
+                                            onchange="toggleWaModule('{{ $enabledKey }}', this)">
+                                        <span class="small fw-semibold {{ $isOn ? 'text-success' : 'text-muted' }}">{{ $isOn ? 'Enabled' : 'Disabled' }}</span>
+                                    </div>
+                                </div>
+                                <textarea name="{{ $msgKey }}" rows="3" class="form-control mb-2">{{ $msgVal }}</textarea>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Save Email Template</button>
+                                </div>
+                            </form>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2607,6 +2962,77 @@
                         </button>
                     </div>
                 </form>
+
+                <!-- Email Notification Templates & Toggles -->
+                <div class="settings-panel mt-4">
+                    <div class="settings-panel-head">
+                        <span><i class="fa-solid fa-envelope-open-text text-primary me-2"></i>Email Notification Templates</span>
+                    </div>
+                    <div class="settings-panel-body">
+                        @php
+                            $emailTemplates = [
+                                [
+                                    'key' => 'lead',
+                                    'icon' => 'fa-solid fa-user-plus text-info',
+                                    'title' => 'Lead Assignment Email (to Staff)',
+                                    'default' => "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'withdrawal',
+                                    'icon' => 'fa-solid fa-money-bill-transfer text-success',
+                                    'title' => 'Withdrawal / Payout Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nYour payout request of ₹{Amount} has been {Status}.\n{Remarks}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'policy',
+                                    'icon' => 'fa-solid fa-shield-halved text-warning',
+                                    'title' => 'Policy Assignment Email (to Agent/Staff)',
+                                    'default' => "Hello {Agent_Name},\nA new policy has been assigned to you:\nPolicy No: {Policy_No}\nClient: {Client_Name}\nInsurer: {Company_Name}\nPremium: ₹{Premium_Amount}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'followup',
+                                    'icon' => 'fa-solid fa-clock-rotate-left text-secondary',
+                                    'title' => 'Follow-Up Email',
+                                    'default' => "Hello {Staff_Name},\nA new follow-up has been scheduled:\nLead/Client: {Client_Name}\nDate: {Followup_Date}\nNotes: {Notes}\n- {Firm_Name}",
+                                ],
+                                [
+                                    'key' => 'meeting',
+                                    'icon' => 'fa-solid fa-calendar-check text-danger',
+                                    'title' => 'Meeting Email',
+                                    'default' => "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}",
+                                ],
+                            ];
+                        @endphp
+
+                        @foreach($emailTemplates as $tpl)
+                            @php
+                                $enabledKey = 'email_' . $tpl['key'] . '_enabled';
+                                $msgKey = 'email_' . $tpl['key'] . '_message';
+                                $isOn = ($settings[$enabledKey]->value ?? '1') === '1';
+                                $msgVal = $settings[$msgKey]->value ?? $tpl['default'];
+                            @endphp
+                            <form action="{{ route('settings.update') }}" method="POST" class="mb-3">
+                                @csrf @method('PUT')
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label fw-semibold small text-dark mb-0">
+                                        <i class="{{ $tpl['icon'] }} me-1"></i>{{ $tpl['title'] }}
+                                    </label>
+                                    <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                        <input type="hidden" name="{{ $enabledKey }}" value="0">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="{{ $enabledKey }}" value="1"
+                                            {{ $isOn ? 'checked' : '' }}
+                                            onchange="toggleWaModule('{{ $enabledKey }}', this)">
+                                        <span class="small fw-semibold {{ $isOn ? 'text-success' : 'text-muted' }}">{{ $isOn ? 'Enabled' : 'Disabled' }}</span>
+                                    </div>
+                                </div>
+                                <textarea name="{{ $msgKey }}" rows="3" class="form-control mb-2">{{ $msgVal }}</textarea>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Save Email Template</button>
+                                </div>
+                            </form>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </div>
     </div>
