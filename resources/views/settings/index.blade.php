@@ -1314,11 +1314,13 @@
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
                                         <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <label class="form-label fw-semibold small text-dark mb-0">Sale / Policy Message</label>
-                                            <div class="form-check form-switch m-0">
-                                                <input class="form-check-input" type="checkbox" role="switch"
+                                            <label class="form-label fw-semibold small text-dark mb-0"><i class="fa-solid fa-file-invoice-dollar text-primary me-1"></i>Sale / Policy Message</label>
+                                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                                <input type="hidden" name="whatsapp_personal_sale_enabled" value="0">
+                                                <input class="form-check-input" type="checkbox" role="switch" name="whatsapp_personal_sale_enabled" value="1"
                                                     {{ ($settings['whatsapp_personal_sale_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
                                                     onchange="toggleWaModule('whatsapp_personal_sale_enabled', this)">
+                                                <span class="small fw-semibold {{ ($settings['whatsapp_personal_sale_enabled']->value ?? '1') === '1' ? 'text-success' : 'text-muted' }}">{{ ($settings['whatsapp_personal_sale_enabled']->value ?? '1') === '1' ? 'Enabled' : 'Disabled' }}</span>
                                             </div>
                                         </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
@@ -1336,11 +1338,13 @@
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
                                         <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <label class="form-label fw-semibold small text-dark mb-0">Lead Assignment Message (to Staff)</label>
-                                            <div class="form-check form-switch m-0">
-                                                <input class="form-check-input" type="checkbox" role="switch"
+                                            <label class="form-label fw-semibold small text-dark mb-0"><i class="fa-solid fa-user-plus text-info me-1"></i>Lead Assignment Message (to Staff)</label>
+                                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                                <input type="hidden" name="whatsapp_personal_lead_enabled" value="0">
+                                                <input class="form-check-input" type="checkbox" role="switch" name="whatsapp_personal_lead_enabled" value="1"
                                                     {{ ($settings['whatsapp_personal_lead_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
                                                     onchange="toggleWaModule('whatsapp_personal_lead_enabled', this)">
+                                                <span class="small fw-semibold {{ ($settings['whatsapp_personal_lead_enabled']->value ?? '1') === '1' ? 'text-success' : 'text-muted' }}">{{ ($settings['whatsapp_personal_lead_enabled']->value ?? '1') === '1' ? 'Enabled' : 'Disabled' }}</span>
                                             </div>
                                         </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
@@ -1358,11 +1362,13 @@
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
                                         <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <label class="form-label fw-semibold small text-dark mb-0">Withdrawal / Payout Message (to Agent/Staff)</label>
-                                            <div class="form-check form-switch m-0">
-                                                <input class="form-check-input" type="checkbox" role="switch"
+                                            <label class="form-label fw-semibold small text-dark mb-0"><i class="fa-solid fa-money-bill-transfer text-success me-1"></i>Withdrawal / Payout Message (to Agent/Staff)</label>
+                                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                                <input type="hidden" name="whatsapp_personal_withdrawal_enabled" value="0">
+                                                <input class="form-check-input" type="checkbox" role="switch" name="whatsapp_personal_withdrawal_enabled" value="1"
                                                     {{ ($settings['whatsapp_personal_withdrawal_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
                                                     onchange="toggleWaModule('whatsapp_personal_withdrawal_enabled', this)">
+                                                <span class="small fw-semibold {{ ($settings['whatsapp_personal_withdrawal_enabled']->value ?? '1') === '1' ? 'text-success' : 'text-muted' }}">{{ ($settings['whatsapp_personal_withdrawal_enabled']->value ?? '1') === '1' ? 'Enabled' : 'Disabled' }}</span>
                                             </div>
                                         </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
@@ -1380,11 +1386,13 @@
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
                                         <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <label class="form-label fw-semibold small text-dark mb-0">Policy Assignment Message (to Agent/Staff)</label>
-                                            <div class="form-check form-switch m-0">
-                                                <input class="form-check-input" type="checkbox" role="switch"
+                                            <label class="form-label fw-semibold small text-dark mb-0"><i class="fa-solid fa-shield-halved text-warning me-1"></i>Policy Assignment Message (to Agent/Staff)</label>
+                                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                                <input type="hidden" name="whatsapp_personal_policy_enabled" value="0">
+                                                <input class="form-check-input" type="checkbox" role="switch" name="whatsapp_personal_policy_enabled" value="1"
                                                     {{ ($settings['whatsapp_personal_policy_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
                                                     onchange="toggleWaModule('whatsapp_personal_policy_enabled', this)">
+                                                <span class="small fw-semibold {{ ($settings['whatsapp_personal_policy_enabled']->value ?? '1') === '1' ? 'text-success' : 'text-muted' }}">{{ ($settings['whatsapp_personal_policy_enabled']->value ?? '1') === '1' ? 'Enabled' : 'Disabled' }}</span>
                                             </div>
                                         </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
@@ -1402,11 +1410,13 @@
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
                                         <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <label class="form-label fw-semibold small text-dark mb-0">Follow-Up Message</label>
-                                            <div class="form-check form-switch m-0">
-                                                <input class="form-check-input" type="checkbox" role="switch"
+                                            <label class="form-label fw-semibold small text-dark mb-0"><i class="fa-solid fa-clock-rotate-left text-secondary me-1"></i>Follow-Up Message</label>
+                                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                                <input type="hidden" name="whatsapp_personal_followup_enabled" value="0">
+                                                <input class="form-check-input" type="checkbox" role="switch" name="whatsapp_personal_followup_enabled" value="1"
                                                     {{ ($settings['whatsapp_personal_followup_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
                                                     onchange="toggleWaModule('whatsapp_personal_followup_enabled', this)">
+                                                <span class="small fw-semibold {{ ($settings['whatsapp_personal_followup_enabled']->value ?? '1') === '1' ? 'text-success' : 'text-muted' }}">{{ ($settings['whatsapp_personal_followup_enabled']->value ?? '1') === '1' ? 'Enabled' : 'Disabled' }}</span>
                                             </div>
                                         </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
@@ -1424,11 +1434,13 @@
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
                                         <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <label class="form-label fw-semibold small text-dark mb-0">Meeting Message</label>
-                                            <div class="form-check form-switch m-0">
-                                                <input class="form-check-input" type="checkbox" role="switch"
+                                            <label class="form-label fw-semibold small text-dark mb-0"><i class="fa-solid fa-calendar-check text-danger me-1"></i>Meeting Message</label>
+                                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                                <input type="hidden" name="whatsapp_personal_meeting_enabled" value="0">
+                                                <input class="form-check-input" type="checkbox" role="switch" name="whatsapp_personal_meeting_enabled" value="1"
                                                     {{ ($settings['whatsapp_personal_meeting_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
                                                     onchange="toggleWaModule('whatsapp_personal_meeting_enabled', this)">
+                                                <span class="small fw-semibold {{ ($settings['whatsapp_personal_meeting_enabled']->value ?? '1') === '1' ? 'text-success' : 'text-muted' }}">{{ ($settings['whatsapp_personal_meeting_enabled']->value ?? '1') === '1' ? 'Enabled' : 'Disabled' }}</span>
                                             </div>
                                         </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
@@ -1705,6 +1717,11 @@
                 ta.selectionStart = ta.selectionEnd = start + tag.length;
             }
             function toggleWaModule(key, el) {
+                const label = el.nextElementSibling;
+                if (label) {
+                    label.textContent = el.checked ? 'Enabled' : 'Disabled';
+                    label.className = 'small fw-semibold ' + (el.checked ? 'text-success' : 'text-muted');
+                }
                 const fd = new FormData();
                 fd.append('_method', 'PUT');
                 fd.append(key, el.checked ? '1' : '0');
@@ -1712,6 +1729,8 @@
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
                     body: fd
+                }).then(() => {
+                    if (typeof toastr !== 'undefined') toastr.success('Setting updated');
                 });
             }
             let waPollTimer = null;
