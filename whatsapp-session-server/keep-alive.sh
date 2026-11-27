@@ -25,7 +25,7 @@ if [ -z "$NODE_BIN" ] || [ ! -x "$NODE_BIN" ]; then
     done
 fi
 if [ -z "$NODE_BIN" ] || [ ! -x "$NODE_BIN" ]; then
-    for cand in /usr/local/bin/node /usr/bin/node /opt/alt/alt-nodejs*/root/usr/bin/node; do
+    for cand in $(ls -1d /opt/alt/alt-nodejs*/root/usr/bin/node 2>/dev/null | sort -V -r) /usr/local/bin/node /usr/bin/node; do
         if [ -x "$cand" ]; then
             NODE_BIN="$cand"
             export PATH="$(dirname "$cand"):$PATH"

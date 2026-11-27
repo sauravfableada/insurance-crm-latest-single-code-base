@@ -841,7 +841,14 @@ class LeadController extends ApiBaseController
     {
         try {
             $sendMode = \App\Models\Setting::where('key', 'whatsapp_send_mode')->value('value');
-            if ($sendMode !== 'personal_whatsapp') {
+            $personalConnected = \App\Models\Setting::where('key', 'whatsapp_personal_connected')->value('value');
+            \Illuminate\Support\Facades\Log::info('Personal WhatsApp lead notify check', [
+                'lead_id' => $lead->id,
+                'assigned_user_id' => $lead->assigned_user_id,
+                'send_mode' => $sendMode,
+                'personal_connected' => $personalConnected,
+            ]);
+            if ($sendMode !== 'personal_whatsapp' && $personalConnected !== '1') {
                 return;
             }
 
@@ -850,9 +857,10 @@ class LeadController extends ApiBaseController
                 return;
             }
 
-            $rawPhone = (string) ($staff->phone ?? $staff->mobile ?? $staff->contact_no ?? '');
+            $rawPhone = (string) ($staff->phone ?? $staff->mobile ?? $staff->contact ?? $staff->contact_no ?? $staff->phone_number ?? '');
             $digits = preg_replace('/\D+/', '', $rawPhone);
             if ($digits === '') {
+                \Illuminate\Support\Facades\Log::warning('Personal WhatsApp lead notify skipped: no phone for staff user #' . $staff->id);
                 return;
             }
             if (strlen($digits) === 10) {
@@ -882,15 +890,18 @@ class LeadController extends ApiBaseController
 
             $socketPath = '/tmp/wa_session.sock';
             if (PHP_OS_FAMILY !== 'Windows' && file_exists($socketPath)) {
-                \Illuminate\Support\Facades\Http::timeout(10)
+                $resp = \Illuminate\Support\Facades\Http::timeout(10)
                     ->withHeaders($headers)
                     ->withOptions(['curl' => [CURLOPT_UNIX_SOCKET_PATH => $socketPath]])
                     ->post("http://localhost/sessions/{$sessionId}/send-message", $payload);
             } else {
                 $baseUrl = rtrim((string) env('WHATSAPP_SESSION_URL', 'http://127.0.0.1:3001'), '/');
-                \Illuminate\Support\Facades\Http::timeout(10)
+                $resp = \Illuminate\Support\Facades\Http::timeout(10)
                     ->withHeaders($headers)
                     ->post("{$baseUrl}/sessions/{$sessionId}/send-message", $payload);
+            }
+            if (! $resp->successful()) {
+                \Illuminate\Support\Facades\Log::warning('Personal WhatsApp lead notify failed: HTTP ' . $resp->status() . ' ' . $resp->body());
             }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Personal WhatsApp lead assignment notification failed: ' . $e->getMessage());

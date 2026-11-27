@@ -1502,6 +1502,7 @@
                                     id="wa_templates_pagination"></div>
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
             </div>
