@@ -954,12 +954,15 @@ class AdminWithdrawalController extends Controller
 
             $firmName = (string) (\App\Models\Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
             $amtFormatted = number_format($amount, 2);
-            if ($status === 'approved') {
-                $message = "Hello {$agent->name},\nYour payout request of ₹{$amtFormatted} has been *APPROVED*.\nPlease find the attached statement PDF.\n- {$firmName}";
-            } else {
-                $reason = $remarks ? "\nReason: {$remarks}" : '';
-                $message = "Hello {$agent->name},\nYour payout request of ₹{$amtFormatted} has been *REJECTED*.{$reason}\n- {$firmName}";
-            }
+            $template = (string) (\App\Models\Setting::where('key', 'whatsapp_personal_withdrawal_message')->value('value')
+                ?: "Hello {Agent_Name},\nYour payout request of ₹{Amount} has been *{Status}*.\n{Remarks}\n- {Firm_Name}");
+            $message = strtr($template, [
+                '{Firm_Name}' => $firmName,
+                '{Agent_Name}' => (string) ($agent->name ?? 'Agent'),
+                '{Amount}' => $amtFormatted,
+                '{Status}' => strtoupper($status),
+                '{Remarks}' => $remarks ? "Note: {$remarks}" : ($status === 'approved' ? 'Please find the attached statement PDF.' : ''),
+            ]);
 
             $sessionId = 'user_' . (int) (Auth::id() ?: 1);
             $secret = (string) env('WHATSAPP_SESSION_SECRET', 'wa_session_secret_key_2026');

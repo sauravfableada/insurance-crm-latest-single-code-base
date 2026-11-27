@@ -1222,6 +1222,7 @@
                             $waPersonalConnected = ($settings['whatsapp_personal_connected']->value ?? '0') === '1';
                             $waPersonalMessage = $settings['whatsapp_personal_message']->value ?? "Greetings from {Firm_Name}\nWe are pleased to have you as a valuable customer. Please find the details of your policy/invoice {Invoice_No} for ₹{Invoice_Amount}.";
                             $waPersonalLeadMessage = $settings['whatsapp_personal_lead_message']->value ?? "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}";
+                            $waPersonalWithdrawalMessage = $settings['whatsapp_personal_withdrawal_message']->value ?? "Hello {Agent_Name},\nYour payout request of ₹{Amount} has been *{Status}*.\n{Remarks}\n- {Firm_Name}";
                         @endphp
 
                         <!-- Mode Selector Cards: WhatsApp Business API vs Personal WhatsApp -->
@@ -1318,8 +1319,23 @@
                                             @endforeach
                                         </div>
                                         <textarea name="whatsapp_personal_lead_message" id="waPersonalLeadMessageBox" rows="4" class="form-control mb-2">{{ $waPersonalLeadMessage }}</textarea>
-                                        <div class="text-end">
+                                        <div class="text-end mb-3">
                                             <button type="submit" class="btn btn-primary btn-sm px-3">Save Lead Message</button>
+                                        </div>
+                                    </form>
+
+                                    <form action="{{ route('settings.update') }}" method="POST">
+                                        @csrf @method('PUT')
+                                        <label class="form-label fw-semibold small text-dark">Withdrawal / Payout Message (to Agent/Staff)</label>
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            @foreach(['{Firm_Name}', '{Agent_Name}', '{Amount}', '{Status}', '{Remarks}'] as $tag)
+                                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
+                                                    onclick="insertWaWithdrawalPlaceholder('{{ $tag }}')">{{ $tag }}</button>
+                                            @endforeach
+                                        </div>
+                                        <textarea name="whatsapp_personal_withdrawal_message" id="waPersonalWithdrawalMessageBox" rows="4" class="form-control mb-2">{{ $waPersonalWithdrawalMessage }}</textarea>
+                                        <div class="text-end">
+                                            <button type="submit" class="btn btn-primary btn-sm px-3">Save Withdrawal Message</button>
                                         </div>
                                     </form>
                                 </div>
@@ -1541,6 +1557,15 @@
             }
             function insertWaLeadPlaceholder(tag) {
                 const ta = document.getElementById('waPersonalLeadMessageBox');
+                if (!ta) return;
+                const start = ta.selectionStart || 0;
+                const end = ta.selectionEnd || 0;
+                ta.value = ta.value.substring(0, start) + tag + ta.value.substring(end);
+                ta.focus();
+                ta.selectionStart = ta.selectionEnd = start + tag.length;
+            }
+            function insertWaWithdrawalPlaceholder(tag) {
+                const ta = document.getElementById('waPersonalWithdrawalMessageBox');
                 if (!ta) return;
                 const start = ta.selectionStart || 0;
                 const end = ta.selectionEnd || 0;
