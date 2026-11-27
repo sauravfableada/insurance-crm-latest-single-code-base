@@ -56,6 +56,9 @@ return [
         // 'invoices' => ['label' => 'Invoice', 'icon' => 'bi-receipt'],
         // 'tickets'  => ['label' => 'Tickets', 'icon' => 'bi-ticket-perforated'],
         'projects' => ['label' => 'Projects', 'icon' => 'bi-diagram-3-fill'],
+        'claim_tracker' => ['label' => 'Claim Tracker', 'icon' => 'bi-clipboard2-pulse-fill'],
+        'sub_agents' => ['label' => 'Sub Agents', 'icon' => 'bi-people-fill'],
+        'team_members' => ['label' => 'Manage Team Members', 'icon' => 'bi-person-badge-fill'],
         // 'deals'    => ['label' => 'Deals', 'icon' => 'bi-award-fill'],
         // 'sms_marketing' => [
         //     'label'   => 'SMS Marketing',

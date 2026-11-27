@@ -322,8 +322,8 @@
         @endif
 
         <!-- Manage Staff / Sub Agent -->
-        @if(tenant_has_module(['Staff', 'Sub Agent', 'Users']) && $authUser?->isAdmin())
-        <li class="nav-item mt-2 sidebar-module" data-permission="view_users" data-requires-perm="true">
+        @if(tenant_has_module(['Staff', 'Sub Agent', 'Users']) && ($authUser?->isAdmin() || $authUser?->hasMatrixPermission('view_sub_agents')))
+        <li class="nav-item mt-2 sidebar-module" data-permission="view_sub_agents" data-requires-perm="true">
             <a class="nav-link ccc ddd @if(request()->routeIs('users.*')) active @endif" href="{{ route('users.index') }}">
                 <i class="fa fa-users me-2 text-info"></i>
                 <span>Sub Agent</span>
@@ -342,8 +342,8 @@
         @endif
 
         <!-- Claim Tracker -->
-        @if(tenant_has_module(['Claim Tracker', 'Claims']))
-        <li class="nav-item mt-2 sidebar-category">
+        @if(tenant_has_module(['Claim Tracker', 'Claims']) && ($authUser?->isAdmin() || $authUser?->hasMatrixPermission('view_claim_tracker')))
+        <li class="nav-item mt-2 sidebar-category" data-permission="view_claim_tracker" data-requires-perm="true">
             <a class="nav-link ccc ddd d-flex align-items-center @if(request()->routeIs('claim-tracker.*')) active @endif"
                data-bs-toggle="collapse" href="#claimTrackerCollapse" role="button"
                aria-expanded="{{ request()->routeIs('claim-tracker.*') ? 'true' : 'false' }}"
@@ -405,8 +405,8 @@
         </li>
         @endif
 
-        @if(tenant_has_module(['Team Members', 'Staff']) && $authUser?->isAdmin())
-        <li class="nav-item mt-2 sidebar-module" data-permission="view_users" data-requires-perm="true">
+        @if(tenant_has_module(['Team Members', 'Staff']) && ($authUser?->isAdmin() || $authUser?->hasMatrixPermission('view_team_members')))
+        <li class="nav-item mt-2 sidebar-module" data-permission="view_team_members" data-requires-perm="true">
             <a class="nav-link ccc ddd @if(request()->routeIs('team-members.*')) active @endif" href="{{ route('team-members.index') }}">
                 <i class="fa-solid fa-people-group me-2 text-primary"></i>
                 <span>Team Members</span>
