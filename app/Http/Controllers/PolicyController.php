@@ -552,6 +552,20 @@ class PolicyController extends Controller
 
             DB::commit();
 
+            // Dispatch notification to staff/sub-agent
+            try {
+                $assignedStaffId = $policy->user_id ?: ($targetAgentId ?? auth()->id());
+                $clientName = $policy->customer_name ?: ($policy->holder?->name ?? '--');
+                \App\Services\ModuleNotificationService::dispatch('policies', [
+                    '{Policy_No}'       => (string) ($policy->policy_number ?? '--'),
+                    '{Client_Name}'     => (string) $clientName,
+                    '{Company_Name}'    => (string) ($policy->company_name ?? '--'),
+                    '{Premium_Amount}'  => number_format((float) ($policy->payment_amount ?? $policy->net_premium ?? 0), 2),
+                ], $assignedStaffId, Auth::user());
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Policy notification dispatch failed: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'status'  => true,
                 'message' => 'Policy saved successfully!',

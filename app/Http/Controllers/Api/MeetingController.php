@@ -272,6 +272,19 @@ class MeetingController extends ApiBaseController
             ]);
         }
 
+        // Module notification dispatch (Email & WhatsApp configurable)
+        try {
+            $assignedStaffId = $meeting->assigned_user_id ?: ($meeting->created_by ?: auth()->id());
+            \App\Services\ModuleNotificationService::dispatch('meetings', [
+                '{Meeting_Title}'    => (string) ($meeting->title ?? 'Meeting'),
+                '{Client_Name}'       => (string) ($contactName ?? '--'),
+                '{Meeting_Time}'     => (string) ($scheduledText ?? ($meeting->meeting_date ?? '--')),
+                '{Meeting_Location}' => (string) ($meeting->location ?? ($addressText ?? '--')),
+            ], $assignedStaffId, $user);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Meeting notification dispatch failed: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Meeting scheduled successfully.',

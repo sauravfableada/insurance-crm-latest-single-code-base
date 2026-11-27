@@ -76,10 +76,13 @@
 
         $canCommission = function_exists('tenant_has_module') ? tenant_has_module('Commissions') : true;
         $canFieldCustomization = !empty($fieldCustomizationModules);
+        $canNotifications = !empty($notificationModules);
         $requestedTab = request('tab');
         if ($requestedTab === 'field-customization' && $canFieldCustomization) {
             $activeSettingsTab = 'field-customization';
-        } elseif ($requestedTab && in_array($requestedTab, ['bank-signature', 'smtp', 'integrations', 'google-connect'])) {
+        } elseif ($requestedTab === 'notifications' && $canNotifications) {
+            $activeSettingsTab = 'notifications';
+        } elseif ($requestedTab && in_array($requestedTab, ['bank-signature', 'smtp', 'integrations', 'google-connect', 'notifications'])) {
             $activeSettingsTab = $requestedTab;
         } elseif ($canCommission) {
             $activeSettingsTab = 'commission-settings';
@@ -118,6 +121,10 @@
                 @if($canFieldCustomization)
                 <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'field-customization' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#field-customization" type="button" role="tab"><i class="fa-solid fa-sliders me-1 text-primary"></i> Field Customization</button></li>
+                @endif
+                @if($canNotifications)
+                <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'notifications' ? 'active' : '' }}" data-bs-toggle="tab"
+                        data-bs-target="#notifications" type="button" role="tab"><i class="fa-solid fa-bell me-1 text-primary"></i> Notifications</button></li>
                 @endif
                 @if(false /* Feature disabled: auth()->id() === 1 || auth()->user()->email === 'harsing.fablead@gmail.com' */)
                 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab"
@@ -1756,6 +1763,13 @@
             <!-- FIELD CUSTOMIZATION TAB -->
             <div class="tab-pane fade {{ $activeSettingsTab === 'field-customization' ? 'show active' : '' }}" id="field-customization" role="tabpanel">
                 @include('settings.partials.field-customization')
+            </div>
+            @endif
+
+            @if($canNotifications)
+            <!-- NOTIFICATIONS TAB -->
+            <div class="tab-pane fade {{ $activeSettingsTab === 'notifications' ? 'show active' : '' }}" id="notifications" role="tabpanel">
+                @include('settings.partials.notification-settings')
             </div>
             @endif
 

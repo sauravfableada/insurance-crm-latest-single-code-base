@@ -904,7 +904,7 @@ class LeadController extends ApiBaseController
                 \Illuminate\Support\Facades\Log::warning('Personal WhatsApp lead notify failed: HTTP ' . $resp->status() . ' ' . $resp->body());
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Personal WhatsApp lead assignment notification failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Module notification lead assignment failed: ' . $e->getMessage());
         }
     }
 }

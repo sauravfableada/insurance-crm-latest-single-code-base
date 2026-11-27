@@ -170,6 +170,18 @@ class TaskController extends ApiBaseController
             ]);
         }
 
+        // Module notification dispatch (Email & WhatsApp configurable)
+        try {
+            $assignedStaffId = $task->assigned_user_id ?: ($task->created_by ?: auth()->id());
+            \App\Services\ModuleNotificationService::dispatch('tasks', [
+                '{Task_Title}'    => (string) ($task->title ?? 'Task'),
+                '{Task_Priority}' => (string) ($task->priority ?? '--'),
+                '{Task_Due_Date}' => (string) ($dueDateText ?? ($task->due_date ?? '--')),
+            ], $assignedStaffId, $user);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Task notification dispatch failed: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Task created successfully.',

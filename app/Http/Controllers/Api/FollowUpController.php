@@ -119,6 +119,20 @@ class FollowUpController extends ApiBaseController
         $historyEntry = $this->recordStatusHistory($followUp, $data['status'] ?? null, $data['status_comment'] ?? null);
         app(\App\Services\UserLogService::class)->created($followUp, 'Created a Follow Up ' . ($followUp->purpose ?: ('ID ' . $followUp->id)));
 
+        // Staff / Sub-Agent notification
+        try {
+            $assignedStaffId = $followUp->assigned_user_id ?: ($followUp->created_by ?: auth()->id());
+            $clientName = $followUp->lead?->name ?: ($followUp->customer?->name ?: '--');
+            \App\Services\ModuleNotificationService::dispatch('followups', [
+                '{Followup_Subject}' => (string) ($followUp->purpose ?: ($followUp->remarks ?: 'Follow-up')),
+                '{Client_Name}'      => (string) $clientName,
+                '{Followup_Date}'    => (string) ($followUp->followup_date ?: ($followUp->follow_up_date ?? '--')),
+                '{Remarks}'          => (string) ($followUp->remarks ?: '--'),
+            ], $assignedStaffId, $user);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FollowUp notification dispatch failed: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'data' => $followUp,

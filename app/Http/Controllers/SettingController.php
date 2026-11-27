@@ -268,6 +268,8 @@ class SettingController extends Controller
             ? $fieldCustomizationService->getModuleFields($initialFieldCustomizationModule)
             : [];
 
+        $notificationModules = \App\Services\ModuleNotificationService::getPermittedModules();
+
         return view('settings.index', compact(
             'settings',
             'whatsappTemplates',
@@ -282,10 +284,10 @@ class SettingController extends Controller
             'subTypesWithCommission',
             'policiesWithCommission',
             'agentsWithCommission',
-            'agentsWithCommission',
             'fieldCustomizationModules',
             'initialFieldCustomizationModule',
-            'initialFieldCustomizationFields'
+            'initialFieldCustomizationFields',
+            'notificationModules'
         ));
     }
 
@@ -745,7 +747,17 @@ class SettingController extends Controller
             'dsc_reason' => ['sometimes', 'nullable', 'string', 'max:255'],
             'dsc_display_mode' => ['sometimes', 'nullable', 'in:image_only,dsc_only,both'],
             'dsc_stamp_path' => ['sometimes', 'nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:4096'],
+            'whatsapp_personal_lead_message' => ['sometimes', 'nullable', 'string'],
         ]);
+
+        // Accept any dynamic notification module settings: notif_email_{module}_*, notif_wa_{module}_*
+        foreach ($request->all() as $reqKey => $reqVal) {
+            if (str_starts_with($reqKey, 'notif_email_') || str_starts_with($reqKey, 'notif_wa_')) {
+                if (!isset($validated[$reqKey])) {
+                    $validated[$reqKey] = is_string($reqVal) ? $reqVal : (string) $reqVal;
+                }
+            }
+        }
 
         if ($request->has('company_bank_name') || $request->has('dsc_signatory_name') || $request->exists('dsc_signature_enabled')) {
             $validated['dsc_signature_enabled'] = $request->boolean('dsc_signature_enabled') ? '1' : '0';
@@ -786,13 +798,15 @@ class SettingController extends Controller
                     $attributes['group'] = 'smtp';
                 } elseif (in_array($key, ['whatsapp_integration_enabled', 'social_integrations_enabled', 'google_connection_enabled', 'google_client_id', 'google_client_secret', 'firebase_key_file'])) {
                     $attributes['group'] = 'integrations';
+                } elseif (str_starts_with($key, 'notif_')) {
+                    $attributes['group'] = 'notifications';
                 } else {
                     $attributes['group'] = 'general';
                 }
             }
 
             if (Schema::hasColumn('settings', 'type')) {
-                $attributes['type'] = $request->hasFile($key) ? 'file' : (is_bool($value) || in_array($key, ['dsc_signature_enabled', 'commission_allow_manual_override', 'whatsapp_integration_enabled', 'social_integrations_enabled', 'google_connection_enabled']) ? 'boolean' : 'string');
+                $attributes['type'] = $request->hasFile($key) ? 'file' : (is_bool($value) || in_array($key, ['dsc_signature_enabled', 'commission_allow_manual_override', 'whatsapp_integration_enabled', 'social_integrations_enabled', 'google_connection_enabled']) || str_ends_with($key, '_enabled') ? 'boolean' : 'string');
             }
 
             Setting::updateOrCreate(['key' => $key], $attributes);
