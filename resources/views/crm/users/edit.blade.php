@@ -225,16 +225,6 @@
                             </div>
                         </div>
 
-                        <!-- Address -->
-                        <div class="col-12">
-                            <label class="form-label d-flex align-items-center gap-2" for="address">
-                                <i class="bi bi-geo-alt-fill"></i> Address
-                            </label>
-                            <textarea id="address" name="address" class="form-control @error('address') is-invalid @enderror" rows="3">{{ old('address', $user->address) }}</textarea>
-                            @error('address')
-                                <div class="staff-validation">{{ $message }}</div>
-                            @enderror
-                        </div>
                     </div>
 
                     <!-- Form Actions -->

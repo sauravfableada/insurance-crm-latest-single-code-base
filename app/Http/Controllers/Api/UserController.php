@@ -186,6 +186,7 @@ class UserController extends ApiBaseController
         ]);
 
         if (!empty($data['role'])) {
+            \Spatie\Permission\Models\Role::firstOrCreate(['name' => $data['role'], 'guard_name' => 'web']);
             $user->syncRoles([$data['role']]);
         }
 
@@ -311,6 +312,7 @@ class UserController extends ApiBaseController
         $user->save();
 
         if (!empty($data['role'])) {
+            \Spatie\Permission\Models\Role::firstOrCreate(['name' => $data['role'], 'guard_name' => 'web']);
             $user->syncRoles([$data['role']]);
         }
 
