@@ -136,7 +136,7 @@ class UserController extends ApiBaseController
             'whatsapp' => ['nullable', 'regex:/^[0-9]{4,15}$/'],
             'address' => 'nullable|string',
             'image' => 'nullable|file|mimes:avif,webp,jpg,jpeg,png,gif,bmp,svg|max:2048',
-            'role' => 'required|string|exists:roles,name',
+            'role' => 'required|string',
             'permissions' => 'nullable|array',
             'permissions.*' => ['string', Rule::in($allowedPermissions)],
         ], [
@@ -258,7 +258,7 @@ class UserController extends ApiBaseController
             'whatsapp' => ['nullable', 'regex:/^[0-9]{4,15}$/'],
             'address' => 'nullable|string',
             'image' => 'nullable|file|mimes:avif,webp,jpg,jpeg,png,gif,bmp,svg|max:2048',
-            'role' => 'required|string|exists:roles,name',
+            'role' => 'required|string',
             'permissions' => 'nullable|array',
             'permissions.*' => ['string', Rule::in($allowedPermissions)],
         ], [
