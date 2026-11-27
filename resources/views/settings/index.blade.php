@@ -1232,7 +1232,7 @@
             <!-- EMAIL SMTP TAB -->
             <div class="tab-pane fade {{ $activeSettingsTab === 'smtp' ? 'show active' : '' }}" id="smtp" role="tabpanel">
                 <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data"
-                    id="smtpSettingsForm">
+                    id="smtpSettingsForm" style="display:none;">
                     @csrf
                     @method('PUT')
                     <div class="settings-panel">
@@ -1281,7 +1281,6 @@
                         </div>
                     </div>
                 </form>
-                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
