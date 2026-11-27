@@ -7,18 +7,18 @@
     </div>
 
     <div class="settings-panel-body p-3">
-        <!-- Sub-Tabs for Email vs WhatsApp Notification -->
-        <ul class="nav nav-pills mb-4 gap-2" id="notificationSubTabs" role="tablist">
+        <!-- Sub-Tabs for Email vs WhatsApp Notification (styled like WhatsApp Configuration subtabs) -->
+        <ul class="nav settings-subtabs mb-4 border-bottom" id="notificationSubTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active px-4 py-2 rounded-pill fw-semibold" id="email-notif-subtab" data-bs-toggle="pill"
+                <button class="nav-link active" id="email-notif-subtab" data-bs-toggle="pill"
                     data-bs-target="#email-notif-content" type="button" role="tab">
-                    <i class="fa-solid fa-envelope me-2 text-primary"></i> Email Notification
+                    Email Notification
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link px-4 py-2 rounded-pill fw-semibold" id="whatsapp-notif-subtab" data-bs-toggle="pill"
+                <button class="nav-link" id="whatsapp-notif-subtab" data-bs-toggle="pill"
                     data-bs-target="#whatsapp-notif-content" type="button" role="tab">
-                    <i class="fa-brands fa-whatsapp me-2 text-success"></i> WhatsApp Notification
+                    WhatsApp Notification
                 </button>
             </li>
         </ul>
