@@ -89,7 +89,7 @@
             <table style="width:100%; border:none; border-collapse:collapse;">
                 <tr><td style="border:none; padding:2px 0; width:35%;"><strong>Name</strong></td><td style="border:none; padding:2px 0;">{{ $record['user_name'] ?? '--' }}</td></tr>
                 <tr><td style="border:none; padding:2px 0;"><strong>Email</strong></td><td style="border:none; padding:2px 0;">{{ $record['user_email'] ?? '--' }}</td></tr>
-                <tr><td style="border:none; padding:2px 0;"><strong>Payment Mode</strong></td><td style="border:none; padding:2px 0;">{{ $record['payment_method'] ?? '--' }}</td></tr>
+                <tr><td style="border:none; padding:2px 0;"><strong>Payment Mode</strong></td><td style="border:none; padding:2px 0;">{{ !empty($record['payment_method']) ? strtoupper(str_replace('_', ' ', $record['payment_method'])) : '--' }}@if(!empty($record['payout_details'])) ({{ $record['payout_details'] }})@endif</td></tr>
             </table>
         </td>
     </tr>
