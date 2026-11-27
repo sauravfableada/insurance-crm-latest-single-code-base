@@ -78,24 +78,6 @@ class ModuleNotificationService
             'email_body' => "Hello {Staff_Name},\n\nA claim record has been updated.\n\nClaim Details:\n- Claim No: {Claim_No}\n- Policy No: {Policy_No}\n- Client: {Client_Name}\n- Status: {Claim_Status}\n\nBest Regards,\n{Firm_Name}",
             'wa_message' => "Hello {Staff_Name},\nClaim Alert: {Claim_No}\nPolicy: {Policy_No}\nStatus: {Claim_Status}\n- {Firm_Name}",
         ],
-        'deals' => [
-            'key' => 'deals',
-            'name' => 'Deals',
-            'icon' => 'fa-medal',
-            'color' => '#ec4899',
-            'email_subject' => 'Deal Assigned: {Deal_Name}',
-            'email_body' => "Hello {Staff_Name},\n\nA deal has been assigned to you in {Firm_Name}.\n\nDeal Details:\n- Deal Name: {Deal_Name}\n- Value: ₹{Deal_Value}\n- Client: {Client_Name}\n\nBest Regards,\n{Firm_Name}",
-            'wa_message' => "Hello {Staff_Name},\nNew Deal: {Deal_Name}\nValue: ₹{Deal_Value}\nClient: {Client_Name}\n- {Firm_Name}",
-        ],
-        'quotations' => [
-            'key' => 'quotations',
-            'name' => 'Quotations',
-            'icon' => 'fa-file-invoice-dollar',
-            'color' => '#14b8a6',
-            'email_subject' => 'New Quotation: {Quote_No}',
-            'email_body' => "Hello {Staff_Name},\n\nA quotation has been prepared.\n\nQuotation Details:\n- Quote No: {Quote_No}\n- Client: {Client_Name}\n- Amount: ₹{Quote_Amount}\n\nBest Regards,\n{Firm_Name}",
-            'wa_message' => "Hello {Staff_Name},\nQuotation: {Quote_No}\nClient: {Client_Name}\nAmount: ₹{Quote_Amount}\n- {Firm_Name}",
-        ],
     ];
 
     /**
