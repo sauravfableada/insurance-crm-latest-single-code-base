@@ -1228,6 +1228,7 @@
                 </div>
             </div>
 
+            
             <!-- EMAIL SMTP TAB -->
             <div class="tab-pane fade {{ $activeSettingsTab === 'smtp' ? 'show active' : '' }}" id="smtp" role="tabpanel">
                 <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data"
