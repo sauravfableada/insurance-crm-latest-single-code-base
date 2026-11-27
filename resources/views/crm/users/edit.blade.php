@@ -207,17 +207,17 @@
                     </div>
 
                     <!-- Form Actions -->
-                    <div class="mt-4 pt-4 border-top d-flex flex-sm-row justify-content-end gap-2 form-actions">
-                        <a href="{{ route('users.index') }}" class="btn btn-outline-dark-blue">Cancel</a>
-                        <button type="submit" class="btn btn-dark-blue">Update</button>
-                    </div>
-
                     <!-- Permissions -->
                     @include('crm.users.partials.permission', [
                         'permissionMatrix' => $permissionMatrix ?? [],
                         'permissionActions' => $permissionActions ?? [],
                         'selectedPermissions' => old('permissions', $userPermissions ?? []),
                     ])
+
+                    <div class="mt-4 pt-4 border-top d-flex flex-sm-row justify-content-end gap-2 form-actions">
+                        <a href="{{ route('users.index') }}" class="btn btn-outline-dark-blue">Cancel</a>
+                        <button type="submit" class="btn btn-dark-blue">Update</button>
+                    </div>
 
                 </form>
             </div>
