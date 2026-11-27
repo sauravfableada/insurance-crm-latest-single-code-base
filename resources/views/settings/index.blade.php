@@ -1149,6 +1149,7 @@
                         </div>
                     </div>
                 </form>
+                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
@@ -1224,6 +1225,7 @@
 
             <!-- EMAIL SMTP TAB -->
             <div class="tab-pane fade {{ $activeSettingsTab === 'smtp' ? 'show active' : '' }}" id="smtp" role="tabpanel">
+                @if(false) {{-- SMTP credentials are managed by main admin (admin_products) --}}
                 <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data"
                     id="smtpSettingsForm">
                     @csrf
@@ -1274,6 +1276,7 @@
                         </div>
                     </div>
                 </form>
+                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
@@ -2332,6 +2335,7 @@
                         </button>
                     </div>
                 </form>
+                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
@@ -2545,6 +2549,7 @@
                         </button>
                     </div>
                 </form>
+                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
@@ -2749,6 +2754,7 @@
                         </button>
                     </div>
                 </form>
+                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
@@ -2962,6 +2968,7 @@
                         </button>
                     </div>
                 </form>
+                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
