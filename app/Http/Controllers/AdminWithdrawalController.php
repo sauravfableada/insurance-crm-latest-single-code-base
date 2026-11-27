@@ -423,6 +423,15 @@ class AdminWithdrawalController extends Controller
             }
         }
 
+        $this->notifyAgentPayoutStatus(
+            (int) $withdrawal->user_id,
+            (int) $withdrawal->id,
+            'withdrawal',
+            'approved',
+            (float) $withdrawal->amount,
+            $withdrawal->admin_remarks
+        );
+
         return back()->with('success', 'Withdrawal request of ₹' . number_format($withdrawal->amount, 2) . ' approved successfully.');
     }
 
@@ -449,6 +458,11 @@ class AdminWithdrawalController extends Controller
                 ]);
         }
 
+        if ($subagentId) {
+            $payoutAmt = (float) ($entry->pay_out_amount > 0 ? $entry->pay_out_amount : $entry->commission_amount);
+            $this->notifyAgentPayoutStatus((int) $subagentId, (int) $entry->id, 'commission', 'approved', $payoutAmt, 'Approved by Admin');
+        }
+
         return back()->with('success', 'Commission entry approved successfully.');
     }
 
@@ -473,6 +487,15 @@ class AdminWithdrawalController extends Controller
             'reviewed_by' => Auth::id(),
             'reviewed_at' => now(),
         ]);
+
+        $this->notifyAgentPayoutStatus(
+            (int) $withdrawal->user_id,
+            (int) $withdrawal->id,
+            'withdrawal',
+            'rejected',
+            (float) $withdrawal->amount,
+            $withdrawal->admin_remarks
+        );
 
         return back()->with('success', 'Withdrawal request has been rejected.');
     }
@@ -904,5 +927,99 @@ class AdminWithdrawalController extends Controller
         }
 
         return $pdf->download($filename);
+    }
+
+    private function notifyAgentPayoutStatus(int $userId, int $recordId, string $kind, string $status, float $amount, ?string $remarks = null): void
+    {
+        try {
+            $sendMode = \App\Models\Setting::where('key', 'whatsapp_send_mode')->value('value');
+            $personalConnected = \App\Models\Setting::where('key', 'whatsapp_personal_connected')->value('value');
+            if ($sendMode !== 'personal_whatsapp' && $personalConnected !== '1') {
+                return;
+            }
+
+            $agent = \App\Models\User::find($userId);
+            if (! $agent) {
+                return;
+            }
+
+            $rawPhone = (string) ($agent->phone ?? $agent->mobile ?? $agent->contact ?? $agent->contact_no ?? $agent->phone_number ?? '');
+            $digits = preg_replace('/\D+/', '', $rawPhone);
+            if ($digits === '') {
+                return;
+            }
+            if (strlen($digits) === 10) {
+                $digits = '91' . $digits;
+            }
+
+            $firmName = (string) (\App\Models\Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
+            $amtFormatted = number_format($amount, 2);
+            if ($status === 'approved') {
+                $message = "Hello {$agent->name},\nYour payout request of ₹{$amtFormatted} has been *APPROVED*.\nPlease find the attached statement PDF.\n- {$firmName}";
+            } else {
+                $reason = $remarks ? "\nReason: {$remarks}" : '';
+                $message = "Hello {$agent->name},\nYour payout request of ₹{$amtFormatted} has been *REJECTED*.{$reason}\n- {$firmName}";
+            }
+
+            $sessionId = 'user_' . (int) (Auth::id() ?: 1);
+            $secret = (string) env('WHATSAPP_SESSION_SECRET', 'wa_session_secret_key_2026');
+            $headers = ['x-session-secret' => $secret];
+            $socketPath = '/tmp/wa_session.sock';
+            $useSocket = (PHP_OS_FAMILY !== 'Windows' && file_exists($socketPath));
+            $baseUrl = rtrim((string) env('WHATSAPP_SESSION_URL', 'http://127.0.0.1:3001'), '/');
+
+            $http = \Illuminate\Support\Facades\Http::timeout(15)->withHeaders($headers);
+            if ($useSocket) {
+                $http = $http->withOptions(['curl' => [CURLOPT_UNIX_SOCKET_PATH => $socketPath]]);
+                $endpointBase = "http://localhost/sessions/{$sessionId}";
+            } else {
+                $endpointBase = "{$baseUrl}/sessions/{$sessionId}";
+            }
+
+            if ($status === 'approved') {
+                $req = new Request(['kind' => $kind]);
+                $detailsResp = $this->details($req, $recordId)->getData(true);
+                if (!empty($detailsResp['success']) && !empty($detailsResp['data'])) {
+                    $record = $detailsResp['data'];
+                    $logoBase64 = null;
+                    $settingPath = \App\Models\Setting::query()->where('key', 'company_logo_path')->value('value');
+                    if ($settingPath) {
+                        foreach ([
+                            \Illuminate\Support\Facades\Storage::disk('public')->path($settingPath),
+                            storage_path('app/public/' . ltrim($settingPath, '/\\')),
+                            public_path('storage/' . ltrim($settingPath, '/\\')),
+                            public_path(ltrim($settingPath, '/\\')),
+                        ] as $cand) {
+                            if ($cand && file_exists($cand) && !is_dir($cand)) {
+                                $mime = mime_content_type($cand) ?: 'image/png';
+                                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($cand));
+                                break;
+                            }
+                        }
+                    }
+                    $companySettings = \App\Models\Setting::query()
+                        ->whereIn('key', ['company_name', 'company_address', 'company_gstin', 'company_phone', 'company_email', 'bank_name', 'bank_account_no', 'bank_ifsc'])
+                        ->pluck('value', 'key');
+
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('crm.withdrawals.pdf', compact('record', 'logoBase64', 'companySettings'));
+                    $safeRef = preg_replace('/[^A-Za-z0-9\-_]/', '-', (string) ($record['ref_no'] ?? $recordId));
+                    $http->post("{$endpointBase}/send-document", [
+                        'phone' => $digits,
+                        'caption' => $message,
+                        'fileName' => 'payout-' . trim($safeRef, '-') . '.pdf',
+                        'mimetype' => 'application/pdf',
+                        'media' => base64_encode($pdf->output()),
+                    ]);
+                    return;
+                }
+            }
+
+            $http->post("{$endpointBase}/send-message", [
+                'phone' => $digits,
+                'message' => $message,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Personal WhatsApp payout status notification failed: ' . $e->getMessage());
+        }
     }
 }
