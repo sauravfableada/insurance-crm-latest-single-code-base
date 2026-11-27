@@ -807,7 +807,9 @@ class PolicyController extends Controller
         $policy = Policy::with($relations)->findOrFail($id);
 
         // Vehicle Details
-        $storedVehicle = VehiclePolicyModel::where('policy_id', $policy->id)->first();
+        $storedVehicle = Schema::hasTable('vehicle_policies')
+            ? VehiclePolicyModel::where('policy_id', $policy->id)->first()
+            : null;
         $vehicleDetails = [
             'vehicle_reg_no' => $storedVehicle?->vehicle_reg_no ?: $policy->vehicle_registration_number,
             'vehicle_model' => $storedVehicle?->vehicle_model ?: $policy->vehicle_model,
@@ -896,7 +898,9 @@ class PolicyController extends Controller
         // Fetch branches of the selected company only
         $branches = Branch::where('company_id', $policy->company_id)->get();
 
-        $storedVehicle = VehiclePolicyModel::where('policy_id', $policy->id)->first();
+        $storedVehicle = Schema::hasTable('vehicle_policies')
+            ? VehiclePolicyModel::where('policy_id', $policy->id)->first()
+            : null;
         $vehicleDetails = [
             'vehicle_reg_no' => $storedVehicle?->vehicle_reg_no ?: $policy->vehicle_registration_number,
             'vehicle_model' => $storedVehicle?->vehicle_model ?: $policy->vehicle_model,
