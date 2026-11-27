@@ -1,3 +1,13 @@
+<style>
+    #withdrawalsMainTable tbody td {
+        font-size: 0.85rem !important;
+        line-height: 1.4;
+    }
+    #withdrawalsMainTable tbody td .small,
+    #withdrawalsMainTable tbody td small {
+        font-size: 0.78rem !important;
+    }
+</style>
 <div class="table-responsive">
     <table class="table table-hover align-middle mb-0" id="withdrawalsMainTable">
         <thead class="table-light text-uppercase text-secondary" style="font-size: 0.76rem; letter-spacing: 0.5px;">
