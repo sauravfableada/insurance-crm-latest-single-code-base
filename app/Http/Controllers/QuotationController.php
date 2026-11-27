@@ -74,6 +74,20 @@ class QuotationController extends Controller
                         $this->cloneItinerary($package->itinerary, ['quotation_id' => $quotation->id, 'tour_package_id' => null]);
                     }
                 }
+
+                // Module Notification (WhatsApp & Email) for Quotations
+                try {
+                    $quotation->load(['lead', 'customer']);
+                    $recipientStaff = $quotation->assigned_user_id ?: ($quotation->user_id ?: ($quotation->created_by ?: auth()->id()));
+                    $clientName = $quotation->customer?->name ?: ($quotation->lead?->name ?: '--');
+                    \App\Services\ModuleNotificationService::dispatch('quotations', [
+                        '{Quote_No}'     => (string) ($quotation->quotation_no ?: ('#' . $quotation->id)),
+                        '{Client_Name}'  => (string) $clientName,
+                        '{Quote_Amount}' => (string) ($quotation->grand_total ?: ($quotation->total_amount ?: '0')),
+                    ], $recipientStaff, auth()->user());
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Quotation notification dispatch failed: ' . $e->getMessage());
+                }
             });
 
             return response()->json(['message' => 'Quotation created successfully.']);
