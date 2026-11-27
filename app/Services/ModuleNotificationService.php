@@ -38,9 +38,9 @@ class ModuleNotificationService
             'name' => 'Customers / Clients',
             'icon' => 'fa-users',
             'color' => '#10b981',
-            'email_subject' => 'New Customer Created: {Client_Name}',
-            'email_body' => "Hello {Staff_Name},\n\nA new client profile has been registered in {Firm_Name}.\n\nClient Details:\n- Name: {Client_Name}\n- Phone: {Client_Phone}\n- Email: {Client_Email}\n\nBest Regards,\n{Firm_Name}",
-            'wa_message' => "Hello {Staff_Name},\nNew Client registered: {Client_Name}\nPhone: {Client_Phone}\nEmail: {Client_Email}\n- {Firm_Name}",
+            'email_subject' => 'Welcome to {Firm_Name}, {Client_Name}!',
+            'email_body' => "Dear {Client_Name},\n\nWelcome to {Firm_Name}! Your client profile has been registered successfully.\n\nYour Registered Details:\n- Name: {Client_Name}\n- Phone: {Client_Phone}\n- Email: {Client_Email}\n\nIf you have any questions or require insurance support, feel free to contact us.\n\nWarm Regards,\n{Firm_Name}",
+            'wa_message' => "Dear {Client_Name},\nWelcome to {Firm_Name}! Your client account has been registered successfully.\nPhone: {Client_Phone}\nEmail: {Client_Email}\nThank you for choosing us.\n- {Firm_Name}",
         ],
         'followups' => [
             'key' => 'followups',
@@ -122,34 +122,63 @@ class ModuleNotificationService
     /**
      * Dispatch module notifications (both WhatsApp & Email if enabled).
      *
-     * @param string $module Module key (e.g., 'leads', 'policies')
+     * @param string $module Module key (e.g., 'leads', 'policies', 'customers')
      * @param array $placeholders Associative array of replacement placeholders
-     * @param User|int|null $recipientStaff Target staff / sub-agent (User model or user ID)
+     * @param User|\App\Models\Customer|int|null $recipient Target recipient (User model, Customer model, user ID, or recipient info)
      * @param mixed $actorUser The user initiating the action
      */
-    public static function dispatch(string $module, array $placeholders = [], $recipientStaff = null, $actorUser = null): void
+    public static function dispatch(string $module, array $placeholders = [], $recipient = null, $actorUser = null): void
     {
         try {
-            $staff = null;
-            if ($recipientStaff instanceof User) {
-                $staff = $recipientStaff;
-            } elseif (is_numeric($recipientStaff) && $recipientStaff > 0) {
-                $staff = User::find($recipientStaff);
+            $email = null;
+            $phone = null;
+            $recipientName = null;
+
+            if ($recipient instanceof \App\Models\Customer) {
+                $email = $recipient->email;
+                $phone = $recipient->whatsapp ?: $recipient->phone;
+                $recipientName = $recipient->name ?: 'Valued Client';
+                $placeholders['{Client_Name}'] = $recipientName;
+                $placeholders['{Staff_Name}'] = $recipientName;
+            } elseif ($recipient instanceof User) {
+                $email = $recipient->email;
+                $phone = $recipient->phone ?? $recipient->mobile ?? $recipient->contact_no ?? $recipient->whatsapp ?? '';
+                $recipientName = $recipient->name ?: 'Team Member';
+                $placeholders['{Staff_Name}'] = $recipientName;
+            } elseif (is_numeric($recipient) && $recipient > 0) {
+                $user = User::find($recipient);
+                if ($user) {
+                    $email = $user->email;
+                    $phone = $user->phone ?? $user->mobile ?? $user->contact_no ?? $user->whatsapp ?? '';
+                    $recipientName = $user->name ?: 'Team Member';
+                    $placeholders['{Staff_Name}'] = $recipientName;
+                }
+            } elseif (is_array($recipient)) {
+                $email = $recipient['email'] ?? null;
+                $phone = $recipient['phone'] ?? null;
+                $recipientName = $recipient['name'] ?? 'Recipient';
+                $placeholders['{Staff_Name}'] = $recipientName;
             }
 
-            if (!$staff) {
+            if (!$email && !$phone) {
                 return;
             }
 
             $firmName = (string) (Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
             $placeholders['{Firm_Name}'] = $firmName;
-            $placeholders['{Staff_Name}'] = (string) ($staff->name ?? 'Team Member');
+            if (!isset($placeholders['{Staff_Name}'])) {
+                $placeholders['{Staff_Name}'] = $recipientName ?: 'Team Member';
+            }
 
             // 1. WhatsApp notification
-            self::sendWhatsApp($module, $staff, $placeholders, $actorUser);
+            if ($phone) {
+                self::sendWhatsApp($module, (string) $phone, $placeholders, $actorUser);
+            }
 
             // 2. Email notification
-            self::sendEmail($module, $staff, $placeholders);
+            if ($email) {
+                self::sendEmail($module, (string) $email, $placeholders);
+            }
         } catch (\Throwable $e) {
             Log::warning("ModuleNotificationService::dispatch for '{$module}' failed: " . $e->getMessage());
         }
@@ -158,7 +187,7 @@ class ModuleNotificationService
     /**
      * Send WhatsApp notification if enabled for module.
      */
-    protected static function sendWhatsApp(string $module, User $staff, array $placeholders, $actorUser = null): bool
+    protected static function sendWhatsApp(string $module, string $rawPhone, array $placeholders, $actorUser = null): bool
     {
         try {
             // Check if WhatsApp notification is enabled for this module
@@ -167,7 +196,6 @@ class ModuleNotificationService
                 return false;
             }
 
-            $rawPhone = (string) ($staff->phone ?? $staff->mobile ?? $staff->contact_no ?? $staff->whatsapp ?? '');
             $digits = preg_replace('/\D+/', '', $rawPhone);
             if ($digits === '') {
                 return false;
@@ -218,7 +246,6 @@ class ModuleNotificationService
             if (class_exists(\App\Services\WhatsAppService::class)) {
                 $waService = app(\App\Services\WhatsAppService::class);
                 if ($waService->isConfigured()) {
-                    // Try to send via module template or custom text
                     $waService->sendForModule($module, $digits, array_values($placeholders));
                     return true;
                 }
@@ -234,7 +261,7 @@ class ModuleNotificationService
     /**
      * Send Email notification if enabled for module.
      */
-    protected static function sendEmail(string $module, User $staff, array $placeholders): bool
+    protected static function sendEmail(string $module, string $email, array $placeholders): bool
     {
         try {
             $isEnabled = (Setting::where('key', "notif_email_{$module}_enabled")->value('value') ?? '1') === '1';
@@ -242,7 +269,7 @@ class ModuleNotificationService
                 return false;
             }
 
-            $email = trim((string) ($staff->email ?? ''));
+            $email = trim($email);
             if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 return false;
             }

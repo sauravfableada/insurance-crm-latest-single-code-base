@@ -522,6 +522,7 @@ Route::middleware('auth.api')->group(function () {
     // Settings web routes
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::post('/settings/test-smtp', [SettingController::class, 'testSmtp'])->name('settings.smtp.test');
     Route::get('/settings/company-commission/{companyId}', [SettingController::class, 'getCompanyCommission'])->name('settings.company-commission.get');
     Route::post('/settings/company-commission', [SettingController::class, 'saveCompanyCommission'])->name('settings.company-commission.save');
     Route::get('/settings/category-commission/{typeId}', [SettingController::class, 'getCategoryCommission'])->name('settings.category-commission.get');

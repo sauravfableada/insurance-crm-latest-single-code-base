@@ -48,7 +48,7 @@
                                             </span>
                                             <div>
                                                 <h6 class="mb-0 fw-bold">{{ $modInfo['name'] }}</h6>
-                                                <small class="text-muted">Staff / Sub-Agent Alert on Action</small>
+                                                <small class="text-muted">{{ $modKey === 'customers' ? 'Sent directly to Client on Registration' : 'Sent to assigned Staff / Sub-Agent' }}</small>
                                             </div>
                                         </div>
                                         <div class="form-check form-switch m-0">
@@ -119,7 +119,7 @@
                                             </span>
                                             <div>
                                                 <h6 class="mb-0 fw-bold">{{ $modInfo['name'] }}</h6>
-                                                <small class="text-muted">Staff / Sub-Agent Alert on Action</small>
+                                                <small class="text-muted">{{ $modKey === 'customers' ? 'Sent directly to Client on Registration' : 'Sent to assigned Staff / Sub-Agent' }}</small>
                                             </div>
                                         </div>
                                         <div class="form-check form-switch m-0">

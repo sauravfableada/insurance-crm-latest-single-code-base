@@ -606,6 +606,39 @@ class SettingController extends Controller
         ]);
     }
 
+    public function testSmtp(Request $request): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+            $targetEmail = $request->input('email') ?: ($user?->email ?: Setting::where('key', 'mail_username')->value('value'));
+            if (!$targetEmail || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please provide a valid recipient email address to test.',
+                ], 422);
+            }
+
+            \App\Services\ModuleNotificationService::configureSmtpFromDatabase();
+
+            $firmName = Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM');
+            $subject = "Test Email from {$firmName}";
+            $body = "Congratulations!\n\nYour SMTP email settings configured in {$firmName} are working correctly.\n\nTimestamp: " . now()->format('d M Y, h:i A');
+
+            \Illuminate\Support\Facades\Mail::to($targetEmail)->send(new \App\Mail\GenericNotificationMail($subject, $body, $firmName));
+
+            return response()->json([
+                'success' => true,
+                'message' => "Test email sent successfully to {$targetEmail}!",
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('SMTP Test Email Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send test email: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function update(Request $request)
     {
         try {
