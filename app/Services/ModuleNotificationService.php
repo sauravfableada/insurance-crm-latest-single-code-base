@@ -164,7 +164,8 @@ class ModuleNotificationService
                 return;
             }
 
-            $firmName = (string) (Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
+            $firmName = (string) (Setting::where('key', 'company_name')->value('value')
+                ?: (Setting::where('key', 'mail_from_name')->value('value') ?: 'Fablead Developers Technolab'));
             $placeholders['{Firm_Name}'] = $firmName;
             if (!isset($placeholders['{Staff_Name}'])) {
                 $placeholders['{Staff_Name}'] = $recipientName ?: 'Team Member';
