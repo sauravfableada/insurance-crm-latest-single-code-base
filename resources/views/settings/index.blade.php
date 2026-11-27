@@ -108,7 +108,7 @@
                 <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'bank-signature' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#bank-signature" type="button" role="tab"><i class="fa-solid fa-building-columns me-1 text-primary"></i> Bank &amp; Signature</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'smtp' ? 'active' : '' }}" data-bs-toggle="tab"
-                        data-bs-target="#smtp" type="button" role="tab">Email SMTP</button></li>
+                        data-bs-target="#smtp" type="button" role="tab">Email Templates</button></li>
                 <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'whatsapp-configure' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#whatsapp-configure" type="button" role="tab">WhatsApp Configuration</button>
                 </li>
@@ -122,7 +122,7 @@
                 <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'field-customization' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#field-customization" type="button" role="tab"><i class="fa-solid fa-sliders me-1 text-primary"></i> Field Customization</button></li>
                 @endif
-                @if($canNotifications)
+                @if(false && $canNotifications)
                 <li class="nav-item" role="presentation"><button class="nav-link {{ $activeSettingsTab === 'notifications' ? 'active' : '' }}" data-bs-toggle="tab"
                         data-bs-target="#notifications" type="button" role="tab"><i class="fa-solid fa-bell me-1 text-primary"></i> Notifications</button></li>
                 @endif
@@ -1281,6 +1281,7 @@
                         </div>
                     </div>
                 </form>
+                @endif
 
                 <!-- Email Notification Templates & Toggles -->
                 <div class="settings-panel mt-4">
