@@ -204,27 +204,6 @@
                         </div>
                         @endif
                     </div>
-                            @error('image')
-                                <div class="staff-validation">{{ $message }}</div>
-                            @enderror
-
-                            <!-- Current Image Preview -->
-                            <div class="staff-avatar-preview mt-2" id="editImagePreviewWrap" style="display: inline-flex;">
-                                @php
-                                    $hasValidAvatar = $user->avatar_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar_path);
-                                @endphp
-
-                                @if($hasValidAvatar)
-                                    <img src="{{ route('users.image', $user) . '?v=' . optional($user->updated_at)->timestamp }}" alt="{{ $user->name }}" id="editImagePreview" class="img-thumbnail" style="max-width: 120px; max-height: 120px;">
-                                @else
-                                    <div id="editImagePlaceholder" class="d-flex align-items-center justify-content-center bg-light border rounded" style="width: 120px; height: 120px;">
-                                        <i class="bi bi-person-circle text-secondary" style="font-size: 3rem;"></i>
-                                    </div>
-                                    <img src="" id="editImagePreview" class="img-thumbnail d-none" style="max-width: 120px; max-height: 120px;">
-                                @endif
-                            </div>
-                        </div>
-
                     </div>
 
                     <!-- Form Actions -->
