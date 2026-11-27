@@ -126,7 +126,10 @@ class MeetingController extends Controller
     private function selectableUsers(array $roles)
     {
         if (auth()->user()?->isAdmin()) {
-            $users = User::role($roles)->orderBy('name')->get();
+            $existingRoles = \Spatie\Permission\Models\Role::whereIn('name', $roles)->where('guard_name', 'web')->pluck('name')->all();
+            $users = !empty($existingRoles)
+                ? User::role($existingRoles)->orderBy('name')->get()
+                : User::whereIn('type', ['staff', 'sub_agents', 'admin'])->orderBy('name')->get();
             if (auth()->check() && !$users->contains('id', auth()->id())) {
                 $users->prepend(auth()->user());
             }

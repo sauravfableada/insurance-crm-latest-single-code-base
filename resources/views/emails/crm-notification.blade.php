@@ -10,7 +10,11 @@
         <!-- Top Header -->
         <tr>
             <td style="padding:18px 24px; border-bottom:3px solid #f59e0b; background:#ffffff;">
-                <strong style="font-size:18px; color:#0f172a;">{{ $firmName ?? config('app.name', 'Insurance CRM') }}</strong>
+                @if(!empty($logoUrl))
+                    <img src="{{ $logoUrl }}" alt="{{ $firmName ?? 'Logo' }}" style="max-height:44px; max-width:180px; vertical-align:middle;">
+                @else
+                    <strong style="font-size:18px; color:#0f172a;">{{ $firmName ?? config('app.name', 'Insurance CRM') }}</strong>
+                @endif
             </td>
         </tr>
 

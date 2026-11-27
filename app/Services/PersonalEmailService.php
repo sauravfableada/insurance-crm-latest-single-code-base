@@ -56,10 +56,14 @@ class PersonalEmailService
             self::applyAdminSmtpConfig();
 
             $firmName = (string) (Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
+            $logoPath = (string) (Setting::where('key', 'company_logo_path')->value('value') ?: '');
+            $logoUrl = $logoPath !== '' ? url('storage/' . ltrim($logoPath, '/\\')) : null;
+
             Mail::send('emails.crm-notification', [
                 'subjectLine' => $subject,
                 'bodyText' => $message,
                 'firmName' => $firmName,
+                'logoUrl' => $logoUrl,
             ], function ($mail) use ($toEmail, $subject) {
                 $mail->to($toEmail)->subject($subject);
             });
