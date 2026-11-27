@@ -1,26 +1,33 @@
 <style>
-    #withdrawalsMainTable tbody td {
-        font-size: 0.85rem !important;
+    #withdrawalsMainTable tbody td,
+    #withdrawalsMainTable tbody td > div,
+    #withdrawalsMainTable tbody td > span,
+    #withdrawalsMainTable tbody td .fw-bold,
+    #withdrawalsMainTable tbody td .fw-semibold {
+        font-size: 13px !important;
         line-height: 1.4;
     }
     #withdrawalsMainTable tbody td .small,
     #withdrawalsMainTable tbody td small {
-        font-size: 0.78rem !important;
+        font-size: 11.5px !important;
+    }
+    #withdrawalsMainTable tbody td .badge {
+        font-size: 11px !important;
     }
 </style>
 <div class="table-responsive">
     <table class="table table-hover align-middle mb-0" id="withdrawalsMainTable">
         <thead class="table-light text-uppercase text-secondary" style="font-size: 0.76rem; letter-spacing: 0.5px;">
             <tr>
-                <th class="ps-4 py-3" style="min-width: 170px;">Ref / Policy</th>
-                <th class="py-3" style="min-width: 140px;">Insurer / Company</th>
-                <th class="py-3" style="min-width: 190px;">Sub-Agent / Staff</th>
-                <th class="py-3 text-end" style="min-width: 110px;">Gross Premium</th>
-                <th class="py-3 text-end text-primary" style="min-width: 120px;">Pay-In (Admin)</th>
-                <th class="py-3 text-end text-dark" style="min-width: 120px;">Pay-Out (Agent)</th>
-                <th class="py-3 text-end text-success" style="min-width: 110px;">Net Profit</th>
-                <th class="py-3 text-center" style="min-width: 110px;">Status</th>
-                <th class="py-3 text-end pe-4" style="min-width: 150px;">Actions</th>
+                <th class="ps-3 py-3">Ref / Policy</th>
+                <th class="py-3">Insurer / Company</th>
+                <th class="py-3">Sub-Agent / Staff</th>
+                <th class="py-3 text-end">Gross Premium</th>
+                <th class="py-3 text-end text-primary">Pay-In (Admin)</th>
+                <th class="py-3 text-end text-dark">Pay-Out (Agent)</th>
+                <th class="py-3 text-end text-success">Net Profit</th>
+                <th class="py-3 text-center">Status</th>
+                <th class="py-3 text-end pe-3" style="min-width: 210px;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -176,13 +183,6 @@
                                class="btn btn-sm btn-outline-primary px-2 py-1"
                                title="View Pay-In / Pay-Out PDF">
                                 <i class="fa-solid fa-file-pdf"></i>
-                            </a>
-
-                            <!-- Download PDF Button -->
-                            <a href="{{ route('admin.withdrawals.pdf', ['id' => $item->id, 'kind' => $item->kind]) }}"
-                               class="btn btn-sm btn-outline-success px-2 py-1"
-                               title="Download Pay-In / Pay-Out PDF">
-                                <i class="fa-solid fa-download"></i>
                             </a>
 
                             <!-- View Action Button -->

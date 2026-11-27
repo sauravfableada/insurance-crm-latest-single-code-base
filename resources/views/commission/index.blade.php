@@ -409,10 +409,13 @@
                 </div>
 
                 <div class="table-responsive">
+                    <style>
+                        #agentCommissionTable th, #agentCommissionTable td { font-size: 13px !important; padding-left: 8px !important; padding-right: 8px !important; }
+                    </style>
                     <table id="agentCommissionTable" class="table table-hover align-middle mb-0" style="width:100%;">
                         <thead class="table-light text-uppercase text-secondary" style="font-size: 0.76rem; letter-spacing: 0.5px;">
                             <tr>
-                                <th class="ps-4 py-3" style="width: 50px;">SR.NO</th>
+                                <th class="ps-3 py-3" style="width: 45px;">SR.NO</th>
                                 <th class="py-3">Member & Details</th>
                                 <th class="py-3">Role</th>
                                 <th class="py-3">Pay-In (Admin Share)</th>
@@ -420,7 +423,7 @@
                                 <th class="py-3">Calculation Basis</th>
                                 <th class="py-3">Wallet</th>
                                 <th class="py-3">Status</th>
-                                <th class="pe-4 py-3 text-end" style="width: 140px;">Action</th>
+                                <th class="pe-3 py-3 text-end" style="min-width: 110px;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -647,6 +650,13 @@
                 </div>
 
                 <div class="table-responsive">
+                    <style>
+                        #commissionEntriesTable th, #commissionEntriesTable td {
+                            font-size: 12.5px !important;
+                            padding: 8px 6px !important;
+                            vertical-align: middle;
+                        }
+                    </style>
                     <table id="commissionEntriesTable" class="table table-hover align-middle mb-0" style="width:100%">
                         <thead class="table-light text-uppercase text-secondary" style="font-size: 0.76rem; letter-spacing: 0.5px;">
                             <tr>
@@ -757,6 +767,9 @@
                                     </td>
                                     <td class="pe-4 text-end">
                                         <div class="d-inline-flex gap-1">
+                                            <a href="{{ route('admin.withdrawals.pdf', ['id' => $entry->id, 'kind' => 'commission', 'view' => 1]) }}" target="_blank" class="btn btn-sm btn-outline-primary px-2 py-1" title="View Pay-In / Pay-Out PDF">
+                                                <i class="fa-solid fa-file-pdf"></i>
+                                            </a>
                                             <button type="button" class="btn btn-sm btn-outline-info px-2 py-1 view-entry-btn" data-id="{{ $entry->id }}" title="View Details">
                                                 <i class="fa-solid fa-eye"></i>
                                             </button>
@@ -1961,6 +1974,9 @@
 
                             const actionsHtml = `
                                 <div class="d-inline-flex gap-1">
+                                    <a href="{{ url('/admin/withdrawals') }}/${e.id}/pdf?kind=commission&view=1" target="_blank" class="btn btn-sm btn-outline-primary px-2 py-1" title="View Pay-In / Pay-Out PDF">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    </a>
                                     <button type="button" class="btn btn-sm btn-outline-info px-2 py-1 view-entry-btn" data-id="${e.id}" title="View Details">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
@@ -2227,6 +2243,9 @@
 
                             const actionsHtml = `
                                 <div class="d-inline-flex gap-1">
+                                    <a href="{{ url('/admin/withdrawals') }}/${e.id}/pdf?kind=commission&view=1" target="_blank" class="btn btn-sm btn-outline-primary px-2 py-1" title="View Pay-In / Pay-Out PDF">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                    </a>
                                     <button type="button" class="btn btn-sm btn-outline-info px-2 py-1 view-entry-btn" data-id="${e.id}" title="View Details">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>

@@ -180,6 +180,25 @@ class MeetingController extends ApiBaseController
         $data['updated_by'] = $user->id;
 
         $meeting = Meeting::create($data);
+
+        try {
+            $staffId = $meeting->user_id ?? $user->id;
+            $staff = \App\Models\User::find($staffId);
+            $rawPhone = (string) ($staff->phone ?? $staff->mobile ?? $staff->contact ?? $staff->contact_no ?? $staff->phone_number ?? '');
+            if ($rawPhone !== '') {
+                $firmName = (string) (\App\Models\Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
+                $template = (string) (\App\Models\Setting::where('key', 'whatsapp_personal_meeting_message')->value('value')
+                    ?: "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}");
+                $msg = strtr($template, [
+                    '{Firm_Name}' => $firmName,
+                    '{Staff_Name}' => (string) ($staff->name ?? 'Staff'),
+                    '{Title}' => (string) ($meeting->title ?? '--'),
+                    '{Meeting_Date}' => (string) ($meeting->start_time ?? $meeting->meeting_date ?? '--'),
+                    '{Location}' => (string) ($meeting->location ?? '--'),
+                ]);
+                \App\Services\PersonalWhatsappService::sendText($rawPhone, $msg, (int) $user->id);
+            }
+        } catch (\Throwable $e) {}
         $historyEntry = $this->recordStatusHistory($meeting, $data['status'] ?? null, $data['status_comment'] ?? null);
         app(\App\Services\UserLogService::class)->created($meeting, 'Scheduled a Meeting ' . ($meeting->title ?: ('ID ' . $meeting->id)));
 

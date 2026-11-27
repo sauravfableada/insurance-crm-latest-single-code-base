@@ -562,6 +562,7 @@ class PolicyController extends Controller
                     '{Company_Name}'    => (string) ($policy->company_name ?? '--'),
                     '{Premium_Amount}'  => number_format((float) ($policy->payment_amount ?? $policy->net_premium ?? 0), 2),
                 ], $assignedStaffId, Auth::user());
+                $this->notifyAgentOnPolicyAssign($policy, (int) ($userId ?: auth()->id()));
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Policy notification dispatch failed: ' . $e->getMessage());
             }
@@ -732,6 +733,10 @@ class PolicyController extends Controller
                         'net_admin_profit' => max(0, round($pInAmt - $pOutAmt, 2)),
                     ]);
                 }
+            }
+
+            if (!empty($policy->user_id)) {
+                $this->notifyAgentOnPolicyAssign($policy, (int) (auth()->id() ?: 1));
             }
 
             return response()->json([
@@ -3784,5 +3789,73 @@ class PolicyController extends Controller
             'role' => $legacyRole,
             'user_role' => $legacyRole,
         ]);
+    }
+
+    private function notifyAgentOnPolicyAssign(Policy $policy, int $actorUserId): void
+    {
+        try {
+            $sendMode = \App\Models\Setting::where('key', 'whatsapp_send_mode')->value('value');
+            $personalConnected = \App\Models\Setting::where('key', 'whatsapp_personal_connected')->value('value');
+            if ($sendMode !== 'personal_whatsapp' && $personalConnected !== '1') {
+                return;
+            }
+
+            $agentId = (int) ($policy->user_id ?: 0);
+            if (! $agentId) {
+                return;
+            }
+
+            $agent = User::find($agentId);
+            if (! $agent) {
+                return;
+            }
+
+            $rawPhone = (string) ($agent->phone ?? $agent->mobile ?? $agent->contact ?? $agent->contact_no ?? $agent->phone_number ?? '');
+            $digits = preg_replace('/\D+/', '', $rawPhone);
+            if ($digits === '') {
+                return;
+            }
+            if (strlen($digits) === 10) {
+                $digits = '91' . $digits;
+            }
+
+            $firmName = (string) (\App\Models\Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
+            $clientName = (string) ($policy->customer_name ?: ($policy->holder?->name ?? '--'));
+            $policyNo = (string) ($policy->policy_number ?? '--');
+            $premium = number_format((float) ($policy->premium_amount ?? $policy->payment_amount ?? 0), 2);
+            $companyName = (string) ($policy->company?->name ?? $policy->company_name ?? '--');
+
+            $template = (string) (\App\Models\Setting::where('key', 'whatsapp_personal_policy_message')->value('value')
+                ?: "Hello {Agent_Name},\nA new policy has been assigned to you:\nPolicy No: {Policy_No}\nClient: {Client_Name}\nInsurer: {Company_Name}\nPremium: ₹{Premium_Amount}\n- {Firm_Name}");
+
+            $message = strtr($template, [
+                '{Firm_Name}' => $firmName,
+                '{Agent_Name}' => (string) ($agent->name ?? 'Agent'),
+                '{Policy_No}' => $policyNo,
+                '{Client_Name}' => $clientName,
+                '{Company_Name}' => $companyName,
+                '{Premium_Amount}' => $premium,
+            ]);
+
+            $sessionId = 'user_' . ($actorUserId ?: 1);
+            $secret = (string) env('WHATSAPP_SESSION_SECRET', 'wa_session_secret_key_2026');
+            $headers = ['x-session-secret' => $secret];
+            $payload = ['phone' => $digits, 'message' => $message];
+
+            $socketPath = '/tmp/wa_session.sock';
+            if (PHP_OS_FAMILY !== 'Windows' && file_exists($socketPath)) {
+                \Illuminate\Support\Facades\Http::timeout(10)
+                    ->withHeaders($headers)
+                    ->withOptions(['curl' => [CURLOPT_UNIX_SOCKET_PATH => $socketPath]])
+                    ->post("http://localhost/sessions/{$sessionId}/send-message", $payload);
+            } else {
+                $baseUrl = rtrim((string) env('WHATSAPP_SESSION_URL', 'http://127.0.0.1:3001'), '/');
+                \Illuminate\Support\Facades\Http::timeout(10)
+                    ->withHeaders($headers)
+                    ->post("{$baseUrl}/sessions/{$sessionId}/send-message", $payload);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Personal WhatsApp policy assignment notification failed: ' . $e->getMessage());
+        }
     }
 }

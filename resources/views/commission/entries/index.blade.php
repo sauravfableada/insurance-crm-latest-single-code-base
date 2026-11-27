@@ -135,8 +135,16 @@
                     </div>
                 </div>
 
-                <div class="p-4 overflow-scroll">
-                    <table id="commissionEntriesTable" class="table table-flush" style="width:100%">
+                <div class="p-3 table-responsive">
+                    <style>
+                        #commissionEntriesTable th, #commissionEntriesTable td,
+                        .my-withdrawals-table th, .my-withdrawals-table td {
+                            font-size: 12.5px !important;
+                            padding: 8px 6px !important;
+                            vertical-align: middle;
+                        }
+                    </style>
+                    <table id="commissionEntriesTable" class="table table-hover align-middle mb-0" style="width:100%">
                         <thead class="thead-light">
                             <tr>
                                 <th class="text-center">Sr.No</th>
@@ -155,6 +163,7 @@
                                 @endif
                                 <th>Entry Date</th>
                                 <th>Remarks</th>
+                                <th class="text-end">PDF</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -203,8 +212,16 @@
                                                 : '—' }}
                                         </td>
                                     @endif
-                                    <td>{{ $entry->entry_date ? $entry->entry_date->format('d-m-Y') : '—' }}</td>
+                                    <td style="white-space: nowrap;">{{ $entry->entry_date ? $entry->entry_date->format('d-m-Y') : '—' }}</td>
                                     <td><small class="text-muted">{{ $entry->remarks ?? '—' }}</small></td>
+                                    <td class="text-end">
+                                        <a href="{{ route('admin.withdrawals.pdf', ['id' => $entry->id, 'kind' => 'commission', 'view' => 1]) }}"
+                                           target="_blank"
+                                           class="btn btn-sm btn-outline-primary px-2 py-1"
+                                           title="View Pay-In / Pay-Out PDF">
+                                            <i class="fa-solid fa-file-pdf"></i>
+                                        </a>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -224,8 +241,8 @@
                         <h5 class="fw-bold mb-0">My Withdrawal Requests</h5>
                     </div>
                 </div>
-                <div class="p-4 overflow-scroll">
-                    <table class="table align-middle mb-0">
+                <div class="p-3 table-responsive">
+                    <table class="table table-hover align-middle mb-0 my-withdrawals-table">
                         <thead class="thead-light">
                             <tr>
                                 <th>Request ID</th>
@@ -235,18 +252,27 @@
                                 <th>Details</th>
                                 <th>Status</th>
                                 <th>Admin Remarks</th>
+                                <th class="text-end">PDF</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($myWithdrawals as $w)
                                 <tr>
-                                    <td class="fw-semibold">#WR-{{ str_pad($w->id, 5, '0', STR_PAD_LEFT) }}</td>
-                                    <td>{{ $w->created_at->format('d M Y, h:i A') }}</td>
-                                    <td class="fw-bold text-dark">₹{{ number_format($w->amount, 2) }}</td>
+                                    <td class="fw-semibold" style="white-space: nowrap;">#WR-{{ str_pad($w->id, 5, '0', STR_PAD_LEFT) }}</td>
+                                    <td style="white-space: nowrap;">{{ $w->created_at->format('d M Y, h:i A') }}</td>
+                                    <td class="fw-bold text-dark" style="white-space: nowrap;">₹{{ number_format($w->amount, 2) }}</td>
                                     <td><span class="badge bg-light text-dark border text-uppercase">{{ str_replace('_', ' ', $w->payout_method) }}</span></td>
                                     <td><small class="text-muted">{{ $w->payout_details }}</small></td>
                                     <td>{!! $w->status_badge !!}</td>
                                     <td><small class="text-muted">{{ $w->admin_remarks ?: '—' }}</small></td>
+                                    <td class="text-end">
+                                        <a href="{{ route('admin.withdrawals.pdf', ['id' => $w->id, 'kind' => 'withdrawal', 'view' => 1]) }}"
+                                           target="_blank"
+                                           class="btn btn-sm btn-outline-primary px-2 py-1"
+                                           title="View Pay-In / Pay-Out PDF">
+                                            <i class="fa-solid fa-file-pdf"></i>
+                                        </a>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

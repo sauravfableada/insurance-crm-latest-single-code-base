@@ -1237,6 +1237,9 @@
                             $waPersonalMessage = $settings['whatsapp_personal_message']->value ?? "Greetings from {Firm_Name}\nWe are pleased to have you as a valuable customer. Please find the details of your policy/invoice {Invoice_No} for ₹{Invoice_Amount}.";
                             $waPersonalLeadMessage = $settings['whatsapp_personal_lead_message']->value ?? "Hello {Staff_Name},\nA new lead has been assigned to you:\nName: {Lead_Name}\nPhone: {Lead_Phone}\nEmail: {Lead_Email}\nSource: {Lead_Source}\n- {Firm_Name}";
                             $waPersonalWithdrawalMessage = $settings['whatsapp_personal_withdrawal_message']->value ?? "Hello {Agent_Name},\nYour payout request of ₹{Amount} has been *{Status}*.\n{Remarks}\n- {Firm_Name}";
+                            $waPersonalPolicyMessage = $settings['whatsapp_personal_policy_message']->value ?? "Hello {Agent_Name},\nA new policy has been assigned to you:\nPolicy No: {Policy_No}\nClient: {Client_Name}\nInsurer: {Company_Name}\nPremium: ₹{Premium_Amount}\n- {Firm_Name}";
+                            $waPersonalFollowupMessage = $settings['whatsapp_personal_followup_message']->value ?? "Hello {Staff_Name},\nA new follow-up has been scheduled:\nLead/Client: {Client_Name}\nDate: {Followup_Date}\nNotes: {Notes}\n- {Firm_Name}";
+                            $waPersonalMeetingMessage = $settings['whatsapp_personal_meeting_message']->value ?? "Hello {Staff_Name},\nA new meeting has been scheduled:\nTitle: {Title}\nDate/Time: {Meeting_Date}\nLocation: {Location}\n- {Firm_Name}";
                         @endphp
 
                         <!-- Mode Selector Cards: WhatsApp Business API vs Personal WhatsApp -->
@@ -1348,8 +1351,53 @@
                                             @endforeach
                                         </div>
                                         <textarea name="whatsapp_personal_withdrawal_message" id="waPersonalWithdrawalMessageBox" rows="4" class="form-control mb-2">{{ $waPersonalWithdrawalMessage }}</textarea>
-                                        <div class="text-end">
+                                        <div class="text-end mb-3">
                                             <button type="submit" class="btn btn-primary btn-sm px-3">Save Withdrawal Message</button>
+                                        </div>
+                                    </form>
+
+                                    <form action="{{ route('settings.update') }}" method="POST">
+                                        @csrf @method('PUT')
+                                        <label class="form-label fw-semibold small text-dark">Policy Assignment Message (to Agent/Staff)</label>
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            @foreach(['{Firm_Name}', '{Agent_Name}', '{Policy_No}', '{Client_Name}', '{Company_Name}', '{Premium_Amount}'] as $tag)
+                                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
+                                                    onclick="insertWaPolicyPlaceholder('{{ $tag }}')">{{ $tag }}</button>
+                                            @endforeach
+                                        </div>
+                                        <textarea name="whatsapp_personal_policy_message" id="waPersonalPolicyMessageBox" rows="4" class="form-control mb-2">{{ $waPersonalPolicyMessage }}</textarea>
+                                        <div class="text-end mb-3">
+                                            <button type="submit" class="btn btn-primary btn-sm px-3">Save Policy Message</button>
+                                        </div>
+                                    </form>
+
+                                    <form action="{{ route('settings.update') }}" method="POST">
+                                        @csrf @method('PUT')
+                                        <label class="form-label fw-semibold small text-dark">Follow-Up Message</label>
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            @foreach(['{Firm_Name}', '{Staff_Name}', '{Client_Name}', '{Followup_Date}', '{Notes}'] as $tag)
+                                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
+                                                    onclick="insertWaFollowupPlaceholder('{{ $tag }}')">{{ $tag }}</button>
+                                            @endforeach
+                                        </div>
+                                        <textarea name="whatsapp_personal_followup_message" id="waPersonalFollowupMessageBox" rows="3" class="form-control mb-2">{{ $waPersonalFollowupMessage }}</textarea>
+                                        <div class="text-end mb-3">
+                                            <button type="submit" class="btn btn-primary btn-sm px-3">Save Follow-Up Message</button>
+                                        </div>
+                                    </form>
+
+                                    <form action="{{ route('settings.update') }}" method="POST">
+                                        @csrf @method('PUT')
+                                        <label class="form-label fw-semibold small text-dark">Meeting Message</label>
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            @foreach(['{Firm_Name}', '{Staff_Name}', '{Title}', '{Meeting_Date}', '{Location}'] as $tag)
+                                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
+                                                    onclick="insertWaMeetingPlaceholder('{{ $tag }}')">{{ $tag }}</button>
+                                            @endforeach
+                                        </div>
+                                        <textarea name="whatsapp_personal_meeting_message" id="waPersonalMeetingMessageBox" rows="3" class="form-control mb-2">{{ $waPersonalMeetingMessage }}</textarea>
+                                        <div class="text-end">
+                                            <button type="submit" class="btn btn-primary btn-sm px-3">Save Meeting Message</button>
                                         </div>
                                     </form>
                                 </div>
@@ -1580,6 +1628,33 @@
             }
             function insertWaWithdrawalPlaceholder(tag) {
                 const ta = document.getElementById('waPersonalWithdrawalMessageBox');
+                if (!ta) return;
+                const start = ta.selectionStart || 0;
+                const end = ta.selectionEnd || 0;
+                ta.value = ta.value.substring(0, start) + tag + ta.value.substring(end);
+                ta.focus();
+                ta.selectionStart = ta.selectionEnd = start + tag.length;
+            }
+            function insertWaPolicyPlaceholder(tag) {
+                const ta = document.getElementById('waPersonalPolicyMessageBox');
+                if (!ta) return;
+                const start = ta.selectionStart || 0;
+                const end = ta.selectionEnd || 0;
+                ta.value = ta.value.substring(0, start) + tag + ta.value.substring(end);
+                ta.focus();
+                ta.selectionStart = ta.selectionEnd = start + tag.length;
+            }
+            function insertWaFollowupPlaceholder(tag) {
+                const ta = document.getElementById('waPersonalFollowupMessageBox');
+                if (!ta) return;
+                const start = ta.selectionStart || 0;
+                const end = ta.selectionEnd || 0;
+                ta.value = ta.value.substring(0, start) + tag + ta.value.substring(end);
+                ta.focus();
+                ta.selectionStart = ta.selectionEnd = start + tag.length;
+            }
+            function insertWaMeetingPlaceholder(tag) {
+                const ta = document.getElementById('waPersonalMeetingMessageBox');
                 if (!ta) return;
                 const start = ta.selectionStart || 0;
                 const end = ta.selectionEnd || 0;

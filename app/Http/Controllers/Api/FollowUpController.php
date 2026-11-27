@@ -116,6 +116,25 @@ class FollowUpController extends ApiBaseController
         $data['updated_by'] = auth()->id();
 
         $followUp = FollowUp::create($data);
+
+        try {
+            $staffId = $followUp->user_id ?? $user->id;
+            $staff = \App\Models\User::find($staffId);
+            $rawPhone = (string) ($staff->phone ?? $staff->mobile ?? $staff->contact ?? $staff->contact_no ?? $staff->phone_number ?? '');
+            if ($rawPhone !== '') {
+                $firmName = (string) (\App\Models\Setting::where('key', 'company_name')->value('value') ?: config('app.name', 'Insurance CRM'));
+                $template = (string) (\App\Models\Setting::where('key', 'whatsapp_personal_followup_message')->value('value')
+                    ?: "Hello {Staff_Name},\nA new follow-up has been scheduled:\nLead/Client: {Client_Name}\nDate: {Followup_Date}\nNotes: {Notes}\n- {Firm_Name}");
+                $msg = strtr($template, [
+                    '{Firm_Name}' => $firmName,
+                    '{Staff_Name}' => (string) ($staff->name ?? 'Staff'),
+                    '{Client_Name}' => (string) ($followUp->lead?->name ?? $followUp->customer?->name ?? '--'),
+                    '{Followup_Date}' => (string) ($followUp->followup_date ?? $followUp->date ?? '--'),
+                    '{Notes}' => (string) ($followUp->notes ?? $followUp->remarks ?? '--'),
+                ]);
+                \App\Services\PersonalWhatsappService::sendText($rawPhone, $msg, (int) $user->id);
+            }
+        } catch (\Throwable $e) {}
         $historyEntry = $this->recordStatusHistory($followUp, $data['status'] ?? null, $data['status_comment'] ?? null);
         app(\App\Services\UserLogService::class)->created($followUp, 'Created a Follow Up ' . ($followUp->purpose ?: ('ID ' . $followUp->id)));
 
