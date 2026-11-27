@@ -182,7 +182,8 @@ class MeetingController extends ApiBaseController
         $meeting = Meeting::create($data);
 
         try {
-            $staffId = $meeting->user_id ?? $user->id;
+            if (\App\Services\PersonalWhatsappService::isModuleEnabled('whatsapp_personal_meeting_enabled')) {
+                $staffId = $meeting->user_id ?? $user->id;
             $staff = \App\Models\User::find($staffId);
             $rawPhone = (string) ($staff->phone ?? $staff->mobile ?? $staff->contact ?? $staff->contact_no ?? $staff->phone_number ?? '');
             if ($rawPhone !== '') {
@@ -196,7 +197,8 @@ class MeetingController extends ApiBaseController
                     '{Meeting_Date}' => (string) ($meeting->start_time ?? $meeting->meeting_date ?? '--'),
                     '{Location}' => (string) ($meeting->location ?? '--'),
                 ]);
-                \App\Services\PersonalWhatsappService::sendText($rawPhone, $msg, (int) $user->id);
+                    \App\Services\PersonalWhatsappService::sendText($rawPhone, $msg, (int) $user->id);
+                }
             }
         } catch (\Throwable $e) {}
         $historyEntry = $this->recordStatusHistory($meeting, $data['status'] ?? null, $data['status_comment'] ?? null);

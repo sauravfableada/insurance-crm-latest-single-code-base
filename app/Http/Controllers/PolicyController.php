@@ -3794,9 +3794,7 @@ class PolicyController extends Controller
     private function notifyAgentOnPolicyAssign(Policy $policy, int $actorUserId): void
     {
         try {
-            $sendMode = \App\Models\Setting::where('key', 'whatsapp_send_mode')->value('value');
-            $personalConnected = \App\Models\Setting::where('key', 'whatsapp_personal_connected')->value('value');
-            if ($sendMode !== 'personal_whatsapp' && $personalConnected !== '1') {
+            if (! \App\Services\PersonalWhatsappService::isModuleEnabled('whatsapp_personal_policy_enabled')) {
                 return;
             }
 

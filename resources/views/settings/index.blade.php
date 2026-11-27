@@ -1313,7 +1313,14 @@
                                 <div class="col-md-7">
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
-                                        <label class="form-label fw-semibold small text-dark">Sale / Policy Message</label>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label fw-semibold small text-dark mb-0">Sale / Policy Message</label>
+                                            <div class="form-check form-switch m-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    {{ ($settings['whatsapp_personal_sale_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
+                                                    onchange="toggleWaModule('whatsapp_personal_sale_enabled', this)">
+                                            </div>
+                                        </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
                                             @foreach(['{Firm_Name}', '{Transaction_Type}', '{Invoice_Amount}', '{Transaction_Balance}', '{Invoice_No}', '{Customer_Name}'] as $tag)
                                                 <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
@@ -1328,7 +1335,14 @@
 
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
-                                        <label class="form-label fw-semibold small text-dark">Lead Assignment Message (to Staff)</label>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label fw-semibold small text-dark mb-0">Lead Assignment Message (to Staff)</label>
+                                            <div class="form-check form-switch m-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    {{ ($settings['whatsapp_personal_lead_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
+                                                    onchange="toggleWaModule('whatsapp_personal_lead_enabled', this)">
+                                            </div>
+                                        </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
                                             @foreach(['{Firm_Name}', '{Staff_Name}', '{Lead_Name}', '{Lead_Phone}', '{Lead_Email}', '{Lead_Source}'] as $tag)
                                                 <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
@@ -1343,7 +1357,14 @@
 
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
-                                        <label class="form-label fw-semibold small text-dark">Withdrawal / Payout Message (to Agent/Staff)</label>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label fw-semibold small text-dark mb-0">Withdrawal / Payout Message (to Agent/Staff)</label>
+                                            <div class="form-check form-switch m-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    {{ ($settings['whatsapp_personal_withdrawal_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
+                                                    onchange="toggleWaModule('whatsapp_personal_withdrawal_enabled', this)">
+                                            </div>
+                                        </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
                                             @foreach(['{Firm_Name}', '{Agent_Name}', '{Amount}', '{Status}', '{Remarks}'] as $tag)
                                                 <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
@@ -1358,7 +1379,14 @@
 
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
-                                        <label class="form-label fw-semibold small text-dark">Policy Assignment Message (to Agent/Staff)</label>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label fw-semibold small text-dark mb-0">Policy Assignment Message (to Agent/Staff)</label>
+                                            <div class="form-check form-switch m-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    {{ ($settings['whatsapp_personal_policy_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
+                                                    onchange="toggleWaModule('whatsapp_personal_policy_enabled', this)">
+                                            </div>
+                                        </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
                                             @foreach(['{Firm_Name}', '{Agent_Name}', '{Policy_No}', '{Client_Name}', '{Company_Name}', '{Premium_Amount}'] as $tag)
                                                 <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
@@ -1373,7 +1401,14 @@
 
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
-                                        <label class="form-label fw-semibold small text-dark">Follow-Up Message</label>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label fw-semibold small text-dark mb-0">Follow-Up Message</label>
+                                            <div class="form-check form-switch m-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    {{ ($settings['whatsapp_personal_followup_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
+                                                    onchange="toggleWaModule('whatsapp_personal_followup_enabled', this)">
+                                            </div>
+                                        </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
                                             @foreach(['{Firm_Name}', '{Staff_Name}', '{Client_Name}', '{Followup_Date}', '{Notes}'] as $tag)
                                                 <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
@@ -1388,7 +1423,14 @@
 
                                     <form action="{{ route('settings.update') }}" method="POST">
                                         @csrf @method('PUT')
-                                        <label class="form-label fw-semibold small text-dark">Meeting Message</label>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label fw-semibold small text-dark mb-0">Meeting Message</label>
+                                            <div class="form-check form-switch m-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    {{ ($settings['whatsapp_personal_meeting_enabled']->value ?? '1') === '1' ? 'checked' : '' }}
+                                                    onchange="toggleWaModule('whatsapp_personal_meeting_enabled', this)">
+                                            </div>
+                                        </div>
                                         <div class="d-flex flex-wrap gap-1 mb-2">
                                             @foreach(['{Firm_Name}', '{Staff_Name}', '{Title}', '{Meeting_Date}', '{Location}'] as $tag)
                                                 <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 text-primary" style="font-size:11px;"
@@ -1661,6 +1703,16 @@
                 ta.value = ta.value.substring(0, start) + tag + ta.value.substring(end);
                 ta.focus();
                 ta.selectionStart = ta.selectionEnd = start + tag.length;
+            }
+            function toggleWaModule(key, el) {
+                const fd = new FormData();
+                fd.append('_method', 'PUT');
+                fd.append(key, el.checked ? '1' : '0');
+                fetch("{{ route('settings.update') }}", {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                    body: fd
+                });
             }
             let waPollTimer = null;
             function renderPersonalWaState(data) {

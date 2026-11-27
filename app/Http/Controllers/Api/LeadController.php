@@ -864,15 +864,7 @@ class LeadController extends ApiBaseController
     private function notifyStaffOnLeadAssign(Lead $lead, $actorUser): void
     {
         try {
-            $sendMode = \App\Models\Setting::where('key', 'whatsapp_send_mode')->value('value');
-            $personalConnected = \App\Models\Setting::where('key', 'whatsapp_personal_connected')->value('value');
-            \Illuminate\Support\Facades\Log::info('Personal WhatsApp lead notify check', [
-                'lead_id' => $lead->id,
-                'assigned_user_id' => $lead->assigned_user_id,
-                'send_mode' => $sendMode,
-                'personal_connected' => $personalConnected,
-            ]);
-            if ($sendMode !== 'personal_whatsapp' && $personalConnected !== '1') {
+            if (! \App\Services\PersonalWhatsappService::isModuleEnabled('whatsapp_personal_lead_enabled')) {
                 return;
             }
 

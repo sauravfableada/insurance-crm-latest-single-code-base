@@ -15,6 +15,15 @@ class PersonalWhatsappService
         return $sendMode === 'personal_whatsapp' || $personalConnected === '1';
     }
 
+    public static function isModuleEnabled(string $settingKey): bool
+    {
+        if (! self::isEnabled()) {
+            return false;
+        }
+        $val = Setting::where('key', $settingKey)->value('value');
+        return $val === null || $val === '1';
+    }
+
     public static function sendText(string $rawPhone, string $message, int $actorUserId = 1): void
     {
         try {

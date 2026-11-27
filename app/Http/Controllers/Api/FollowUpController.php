@@ -118,7 +118,8 @@ class FollowUpController extends ApiBaseController
         $followUp = FollowUp::create($data);
 
         try {
-            $staffId = $followUp->user_id ?? $user->id;
+            if (\App\Services\PersonalWhatsappService::isModuleEnabled('whatsapp_personal_followup_enabled')) {
+                $staffId = $followUp->user_id ?? $user->id;
             $staff = \App\Models\User::find($staffId);
             $rawPhone = (string) ($staff->phone ?? $staff->mobile ?? $staff->contact ?? $staff->contact_no ?? $staff->phone_number ?? '');
             if ($rawPhone !== '') {
@@ -132,7 +133,8 @@ class FollowUpController extends ApiBaseController
                     '{Followup_Date}' => (string) ($followUp->followup_date ?? $followUp->date ?? '--'),
                     '{Notes}' => (string) ($followUp->notes ?? $followUp->remarks ?? '--'),
                 ]);
-                \App\Services\PersonalWhatsappService::sendText($rawPhone, $msg, (int) $user->id);
+                    \App\Services\PersonalWhatsappService::sendText($rawPhone, $msg, (int) $user->id);
+                }
             }
         } catch (\Throwable $e) {}
         $historyEntry = $this->recordStatusHistory($followUp, $data['status'] ?? null, $data['status_comment'] ?? null);
