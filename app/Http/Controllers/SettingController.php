@@ -781,6 +781,16 @@ class SettingController extends Controller
             'dsc_display_mode' => ['sometimes', 'nullable', 'in:image_only,dsc_only,both'],
             'dsc_stamp_path' => ['sometimes', 'nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:4096'],
             'whatsapp_personal_lead_message' => ['sometimes', 'nullable', 'string'],
+            'whatsapp_personal_withdrawal_message' => ['sometimes', 'nullable', 'string'],
+            'whatsapp_personal_policy_message' => ['sometimes', 'nullable', 'string'],
+            'whatsapp_personal_followup_message' => ['sometimes', 'nullable', 'string'],
+            'whatsapp_personal_meeting_message' => ['sometimes', 'nullable', 'string'],
+            'whatsapp_personal_sale_enabled' => ['sometimes', 'boolean'],
+            'whatsapp_personal_lead_enabled' => ['sometimes', 'boolean'],
+            'whatsapp_personal_withdrawal_enabled' => ['sometimes', 'boolean'],
+            'whatsapp_personal_policy_enabled' => ['sometimes', 'boolean'],
+            'whatsapp_personal_followup_enabled' => ['sometimes', 'boolean'],
+            'whatsapp_personal_meeting_enabled' => ['sometimes', 'boolean'],
         ]);
 
         // Accept any dynamic notification module settings: notif_email_{module}_*, notif_wa_{module}_*
