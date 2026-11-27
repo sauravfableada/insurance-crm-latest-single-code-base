@@ -439,7 +439,8 @@ class FableadAiController extends Controller
                 ], 409);
             }
 
-            $policy = Policy::create($data);
+            $policyCols = Schema::getColumnListing('policies');
+            $policy = Policy::create(array_intersect_key($data, array_flip($policyCols)));
             $familyGroup = app(\App\Services\PolicyFamilySync::class)->sync($policy, $request->input('covered_members') ?? [], $currentUser);
 
             $coveredMembersJson = $request->input('covered_members');
